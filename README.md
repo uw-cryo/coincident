@@ -3,12 +3,6 @@
 [![Actions Status][actions-badge]][actions-link]
 [![Documentation Status][rtd-badge]][rtd-link]
 
-[![PyPI version][pypi-version]][pypi-link]
-[![Conda-Forge][conda-badge]][conda-link]
-[![PyPI platforms][pypi-platforms]][pypi-link]
-
-[![GitHub Discussion][github-discussions-badge]][github-discussions-link]
-
 <!-- SPHINX-START -->
 
 <!-- prettier-ignore-start -->
@@ -32,7 +26,7 @@ Such datasets are intended to be used by the NASA STV community for
 calibration/validation, fusion algorithm development, and discipline-specific
 scientific analysis.
 
-**This tool is under active development, there are no stable releases yet! **
+**This tool is under active development, there are no stable releases yet!**
 
 ## Development
 
@@ -42,10 +36,16 @@ Use [pixi](https://pixi.sh) for environment management
 git clone https://github.com/uw-cryo/coincident.git
 cd coincident
 git checkout -b newfeature
-pixi install
+pixi shell --environment dev # type `exit` to deactivate
+pre-commit install
 
-# Pre-configured environments and commands
+# Or run pre-configured environments and commands
 pixi run test
 pixi run lint
 pixi run docs
 ```
+
+### Acknowledgements
+
+- Python packaging template provided by https://github.com/scientific-python/cookie
+
