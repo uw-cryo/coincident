@@ -40,6 +40,7 @@ jobs:
       attestations: write
       contents: read
     runs-on: ubuntu-latest
+    
     if: github.event_name == 'release' && github.event.action == 'published'
 
     steps:
