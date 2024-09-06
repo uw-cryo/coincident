@@ -35,17 +35,12 @@ dependencies = [
   "maxar-platform>=1.0.1,<2",
   "geopandas>=1.0.1,<2",
 ]
-  
-
 
 [project.optional-dependencies]
-test = [
-  "pytest >=6",
-  "pytest-cov >=3",
-]
 dev = [
   "pytest >=6",
   "pytest-cov >=3",
+  "pre-commit>=3.8.0,<4"
 ]
 docs = [
   "sphinx>=7.0",
@@ -171,9 +166,19 @@ coincident = { path = ".", editable = true }
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
 docs = { features = ["docs"], solve-group = "default" }
-test = { features = ["test"], solve-group = "default" }
 
 [tool.pixi.tasks]
 
 [tool.pixi.dependencies]
 geopandas = "*"
+
+[tool.pixi.feature.dev.dependencies]
+pre-commit = "*"
+pytest = "*"
+
+[tool.pixi.feature.dev.tasks]
+lint = "pre-commit run --all"
+test = "pytest -ra --cov --cov-report=xml --cov-report=term"
+
+[tool.pixi.feature.docs.tasks]
+docs = "python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"

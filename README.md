@@ -26,7 +26,11 @@
 
 <!-- prettier-ignore-end -->
 
-Identify, curate, process and distribute coincident datasets contained within select archives across a range of representative terrain and landcover types. Such datasets are indended to be used by the NASA STV community for calibration/validation, fusion algorithm development, and disciplin-specific scientific analysis.
+Identify, curate, process and distribute coincident datasets contained within
+select archives across a range of representative terrain and landcover types.
+Such datasets are intended to be used by the NASA STV community for
+calibration/validation, fusion algorithm development, and discipline-specific
+scientific analysis.
 
 **This tool is under active development, there are no stable releases yet! **
 
@@ -39,5 +43,9 @@ git clone https://github.com/uw-cryo/coincident.git
 cd coincident
 git checkout -b newfeature
 pixi install
-pixi run --environment test pytest
+
+# Pre-configured environments and commands
+pixi run test
+pixi run lint
+pixi run docs
 ```
