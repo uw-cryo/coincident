@@ -27,6 +27,7 @@ calibration/validation, fusion algorithm development, and discipline-specific
 scientific analysis.
 
 **This tool is under active development, there are no stable releases yet!**
+https://science.nasa.gov/earth-science/decadal-surveys/decadal-stv/coincident-datasets/
 
 ## Development
 
@@ -45,7 +46,19 @@ pixi run lint
 pixi run docs
 ```
 
+## Authentication
+
+Some datasets require authentication to _search_ (Maxar) others only require
+authentication to _download_ data (NASA). `coincident` assumes you have the
+following Environment Variables defined:
+
+```bash
+export EARTHDATA_USERNAME=xxxxx
+export EARTHDATA_PASSWORD=yyyyy
+export MAXAR_API_KEY=zzzzz
+```
+
 ### Acknowledgements
 
-- Python packaging template provided by https://github.com/scientific-python/cookie
-
+- Python packaging template provided by
+  https://github.com/scientific-python/cookie

@@ -2,7 +2,6 @@
 requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
-
 [project]
 name = "coincident"
 authors = [
@@ -32,15 +31,19 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-  "maxar-platform>=1.0.1,<2",
   "geopandas>=1.0.1,<2",
+  "planetary-computer>=1.0.0,<2",
+  "stac-geoparquet>=0.6,<0.7",
+  "pystac-client>=0.8.3,<0.9",
 ]
 
 [project.optional-dependencies]
 dev = [
+  "ipykernel>=6.29.5,<7",
+  "mypy>=1.11.2,<2",
   "pytest >=6",
   "pytest-cov >=3",
-  "pre-commit>=3.8.0,<4"
+  "pre-commit>=3.8.0,<4",
 ]
 docs = [
   "sphinx>=7.0",
@@ -56,7 +59,6 @@ Homepage = "https://github.com/uw-cryo/coincident"
 Discussions = "https://github.com/uw-cryo/coincident/discussions"
 Changelog = "https://github.com/uw-cryo/coincident/releases"
 
-
 [tool.hatch]
 version.source = "vcs"
 build.hooks.vcs.version-file = "src/coincident/_version.py"
@@ -65,19 +67,22 @@ build.hooks.vcs.version-file = "src/coincident/_version.py"
 features = ["test"]
 scripts.test = "pytest {args}"
 
-
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = [
   "error",
+  "ignore::DeprecationWarning:lark",
+  "ignore:maxar_plaform authentication error:UserWarning"
 ]
 log_cli_level = "INFO"
 testpaths = [
   "tests",
 ]
-
+markers = [
+    "network: marks test requiring internet (select with -o markers=network)",
+]
 
 [tool.coverage]
 run.source = ["coincident"]
@@ -94,12 +99,14 @@ enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
 warn_unreachable = true
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
+# NOTE: not sure why mypy not finding dependency libraries, so disabling this check...
+# error: Cannot find implementation or library stub for module named "geopandas"  [import-not-found]
+ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = "coincident.*"
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
-
 
 [tool.ruff]
 
@@ -140,7 +147,6 @@ isort.required-imports = ["from __future__ import annotations"]
 "tests/**" = ["T20"]
 "noxfile.py" = ["T20"]
 
-
 [tool.pylint]
 ignore-paths = [".*/_version.py"]
 reports.output-format = "colorized"
@@ -154,7 +160,6 @@ messages_control.disable = [
   "wrong-import-position",
 ]
 
-# https://pixi.sh/latest/advanced/pyproject_toml/#initial-setup-of-the-pyprojecttoml-file
 [tool.pixi.project]
 channels = ["conda-forge"]
 platforms = ["osx-arm64"]
@@ -168,17 +173,42 @@ dev = { features = ["dev"], solve-group = "default" }
 docs = { features = ["docs"], solve-group = "default" }
 
 [tool.pixi.tasks]
+# Until release supporting pystac-client>0.8 # NOTE: this only goes into default environment :(
+postinstall = "uv pip install maxar-platform"
 
+# NOTE: pixi will match project.dependencies versions above but get them from conda-forge
+# If a package is listed in project.dependencies but not repeated here, it is installed from pypi
 [tool.pixi.dependencies]
+uv = ">=0.4.14,<0.5"
 geopandas = "*"
+planetary-computer = "*"
+pystac-client = "*"
+stac-geoparquet = "*"
+# NOTE: required to run notebooks in vscode
+ipykernel = ">=6.29.5,<7"
+rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
+pyarrow = "17.*"
+fsspec = ">=2024.9.0,<2025"
+libgdal-arrow-parquet = ">=3.9.2,<4"
 
 [tool.pixi.feature.dev.dependencies]
 pre-commit = "*"
 pytest = "*"
+ipykernel = "*"
+mypy = "*"
 
 [tool.pixi.feature.dev.tasks]
 lint = "pre-commit run --all"
-test = "pytest -ra --cov --cov-report=xml --cov-report=term"
+# NOTE: environment variables picked up automatically
+#test = {cmd = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term", env = { MAXAR_API_KEY = "fake_key" }}
+test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
+networktest = "pytest --cov --cov-report=xml --cov-report=term"
+postinstall = "uv pip install maxar-platform"
 
 [tool.pixi.feature.docs.tasks]
 docs = "python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
+
+# Isn't currently picked up by pixi, but works when uv is run as a postinstall task
+[tool.uv]
+# https://docs.astral.sh/uv/reference/settings/#override-dependencies
+override-dependencies = ["pystac-client>=0.8"]
