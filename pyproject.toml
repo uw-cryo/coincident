@@ -108,8 +108,6 @@ module = "coincident.*"
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 
-[tool.ruff]
-
 [tool.ruff.lint]
 extend-select = [
   "B",        # flake8-bugbear
@@ -164,15 +162,10 @@ messages_control.disable = [
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
 
-[tool.pixi.pypi-dependencies]
-coincident = { path = ".", editable = true }
-
 [tool.pixi.environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
 docs = { features = ["docs"], solve-group = "default" }
-
-[tool.pixi.tasks]
 
 # NOTE: pixi will match project.dependencies versions above but get them from conda-forge
 # If a package is listed in project.dependencies but not repeated here, it is installed from pypi
@@ -191,6 +184,9 @@ uv = ">=0.4.14,<0.5"
 ipykernel = ">=6.29.5,<7"
 rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
 pyarrow = "17.*"
+
+[tool.pixi.feature.dev.pypi-dependencies]
+coincident = { path = ".", editable = true }
 
 [tool.pixi.feature.dev.tasks]
 precommit = "pre-commit run --all"
