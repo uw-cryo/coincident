@@ -24,12 +24,12 @@ _pystac_client = _ItemSearch("no_url")
 def search(
     dataset: str | _Dataset,
     intersects: _gpd.GeoDataFrame | _gpd.GeoSeries,
-    datetime: str | None = None,
+    datetime: str | list[str] | None = None,
     # NOTE: change to explicitly stac_kwargs? not sure of proper kwargs type (Optional[dict[str, Any]]?)
     **kwargs: Any,
 ) -> _gpd.GeoDataFrame:
     """
-    Perform a search for geospatial data using STAC or non-STAC APIs.
+    Perform a search for geospatial data using STAC or non-STAC APIs for a single dataset.
     Parameters
     ----------
     dataset : str or _Dataset
@@ -60,24 +60,8 @@ def search(
             )
             raise ValueError(message) from e
 
-    if datetime is not None:
-        # Use pystac_client to parse all supported datetime inputs
-        start, end = _pystac_client._format_datetime(datetime).split(
-            "/"
-        )  # to tz-aware UTC datetimes
-        search_start = _gpd.pd.to_datetime(start)
-        search_end = _gpd.pd.to_datetime(end)
-    else:
-        search_start = search_end = None
-
-    if not isinstance(intersects, _gpd.GeoDataFrame | _gpd.GeoSeries):
-        message = f"intersects value must be a GeoDataFrame or GeoSeries, not {type(intersects)}"
-        raise ValueError(message)
-    if len(intersects) > 1:
-        message = "GeoDataFrame contains multiple geometries, search requires a single geometry"
-        raise ValueError(message)
-
-    _validate_search_params(dataset, intersects, search_start, search_end)
+    _validate_temporal_bounds(dataset, datetime)
+    _validate_spatial_bounds(intersects)
 
     # NOTE: not very robust, explode() demotes MultiPolygons to single Polygon (seems many GeoJSONs have this)
     # ANd 'exterior' not available for Multipolygons, just
@@ -120,58 +104,73 @@ def search(
             mask=intersects,
             **kwargs,
         )
-        # Apply datetime interval filter after reading GPKG
-        if datetime is not None:
-            results_intervals = _gpd.pd.IntervalIndex.from_arrays(
-                gf["start_datetime"], gf["end_datetime"], closed="both"
-            )
-            search_interval = _gpd.pd.Interval(search_start, search_end, closed="both")
-            keep = results_intervals.overlaps(search_interval)
-            gf = gf.loc[keep, :]
+        # NOTE: Apply datetime interval filter after reading GPKG?
 
     return gf
 
 
-def _validate_search_params(
+def _validate_temporal_bounds(
     dataset: _Dataset,
-    intersects: _gpd.GeoSeries,
-    search_start: _gpd.pd.Timestamp | None = None,
-    search_end: _gpd.pd.Timestamp | None = None,
+    datetime: str | list[str] | None = None,
 ) -> None:
     """
-    Validate search parameters including date range and spatial bounds.
-    This function checks if the requested search polygon and date range fall within the
-    Continental United States (CONUS) and the dataset's date range.
+    Validates the temporal bounds of a dataset against a given datetime range.
     Parameters
     ----------
     dataset : _Dataset
-        The dataset object containing start and end dates.
-    intersects : _gpd.GeoDataFrame
-        A GeoDataFrame representing the search polygon.
-    search_start : _gpd.pd.Timestamp, optional
-        The start date of the search range. Default is None.
-    search_end : _gpd.pd.Timestamp, optional
-        The end date of the search range. Default is None.
+        The dataset object containing start and end attributes.
+    datetime : str, list, or None, optional
+        The datetime range to validate against the dataset's temporal bounds.
+        It can be a single string, a list of strings, or None. The datetime
+        range should be in a format supported by pystac_client.
     Raises
     ------
     ValueError
-        If the search end date is earlier than the dataset start date.
-        If the search start date is later than the dataset end date.
-        If the intersects parameter is not a GeoDataFrame.
-        If the search polygon is not within the Continental U.S. or Alaska.
+        If the requested search start date is after the dataset's end date or
+        if the requested search end date is before the dataset's start date.
     """
+    if datetime is not None:
+        # Use pystac_client to parse all supported datetime inputs
+        start, end = _pystac_client._format_datetime(datetime).split("/")
 
-    # NOTE: currently assumes single dataset searched at a time
-    dataset_start = _gpd.pd.to_datetime(dataset.start, utc=True)
-    dataset_end = _gpd.pd.to_datetime(dataset.end, utc=True)
-    if (search_end is not None) and (search_end < dataset_start):
-        message = f"Requested search end {search_end} < {dataset.alias} start date: {dataset_start}"
+        if start != ".." and dataset.end is not None:
+            search_start = _gpd.pd.to_datetime(start)
+            dataset_end = _gpd.pd.to_datetime(dataset.end, utc=True)
+            if search_start > dataset_end:
+                message = f"Requested search start {search_start} > {dataset.alias} end date: {dataset_end}"
+                raise ValueError(message)
+
+        if end != ".." and dataset.start is not None:
+            search_end = _gpd.pd.to_datetime(end)
+            dataset_start = _gpd.pd.to_datetime(dataset.start, utc=True)
+            if search_end < dataset_start:
+                message = f"Requested search end {search_end} < {dataset.alias} start date: {dataset_start}"
+                raise ValueError(message)
+
+
+def _validate_spatial_bounds(
+    intersects: _gpd.GeoSeries,
+) -> None:
+    """
+    Validate that the specified area of interest (AOI) within CONUS or Alaska.
+    Parameters
+    ----------
+    dataset : _Dataset
+        The dataset to validate.
+    intersects : _gpd.GeoSeries
+        A GeoSeries containing the area of interest (AOI) geometry.
+    Raises
+    ------
+    ValueError
+        If the AOI is not within the bounds of the Continental U.S. or Alaska.
+    """
+    if not isinstance(intersects, _gpd.GeoDataFrame | _gpd.GeoSeries):
+        message = f"intersects value must be a GeoDataFrame or GeoSeries, not {type(intersects)}"
         raise ValueError(message)
-    if (search_start is not None) and (search_start > dataset_end):
-        message = f"Requested search start {search_start} > {dataset.alias} end date: {dataset_end}"
+    if len(intersects) > 1:
+        message = "GeoDataFrame contains multiple geometries, search requires a single geometry"
         raise ValueError(message)
 
-    # Check spatial bounds
     # NOTE: use geopandas to first convert to projected CRS?
     aoi = intersects.to_crs("EPSG:4326").geometry.iloc[0]  # shapely geometry
     CONUS = _box(*(-124.84, 24.39, -66.88, 49.38))

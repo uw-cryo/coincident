@@ -24,5 +24,4 @@ jobs:
         env:
           MAXAR_API_KEY: ${{ secrets.MAXAR_API_KEY}}
         run: |
-          pixi run postinstall
           pixi run networktest
