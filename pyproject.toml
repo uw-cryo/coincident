@@ -30,6 +30,7 @@ classifiers = [
   "Typing :: Typed",
 ]
 dynamic = ["version"]
+
 dependencies = [
   "geopandas>=1.0.1,<2",
   "maxar-platform==1.0.2a2",
