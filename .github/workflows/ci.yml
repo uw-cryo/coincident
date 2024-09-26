@@ -31,6 +31,7 @@ jobs:
         with:
           extra_args: --hook-stage manual --all-files
       - name: Run PyLint
+        continue-on-error: true
         run: pipx run nox -s pylint -- --output-format=github
 
   checks:

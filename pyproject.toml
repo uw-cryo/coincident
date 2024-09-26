@@ -162,7 +162,7 @@ messages_control.disable = [
 
 [tool.pixi.project]
 channels = ["conda-forge"]
-platforms = ["osx-arm64"]
+platforms = ["osx-arm64", "linux-64"]
 
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = true }
@@ -184,7 +184,7 @@ geopandas = "*"
 planetary-computer = "*"
 pystac-client = "*"
 stac-geoparquet = "*"
-# NOTE: required to run notebooks in vscode
+# NOTE: ipykernel to run notebooks in vscode
 ipykernel = ">=6.29.5,<7"
 rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
 pyarrow = "17.*"
@@ -198,12 +198,13 @@ ipykernel = "*"
 mypy = "*"
 
 [tool.pixi.feature.dev.tasks]
-lint = "pre-commit run --all"
-# NOTE: environment variables picked up automatically
-#test = {cmd = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term", env = { MAXAR_API_KEY = "fake_key" }}
+precommit = "pre-commit run --all"
+# PyLint run separately https://pylint.pycqa.org/en/latest/user_guide/installation/pre-commit-integration.html
+pylint = "pipx run nox -s pylint"
 test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
 networktest = "pytest --cov --cov-report=xml --cov-report=term"
 postinstall = "uv pip install maxar-platform"
+
 
 [tool.pixi.feature.docs.tasks]
 docs = "python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
