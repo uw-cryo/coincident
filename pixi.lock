@@ -3024,9 +3024,9 @@ packages:
   timestamp: 1692311973840
 - kind: pypi
   name: coincident
-  version: 0.1.dev8+g091ade5.d20240926
+  version: 0.1.dev9+g26ff725
   path: .
-  sha256: 8d6807ef72a3fe646ff844f9d469eca4f32a568091c28312b871544b9aea51da
+  sha256: 650ff0231bf4050c105cdfe504492829b3dd9a2654dfc3128bb96a2d5adb2e98
   requires_dist:
   - geopandas<2,>=1.0.1
   - planetary-computer<2,>=1.0.0
