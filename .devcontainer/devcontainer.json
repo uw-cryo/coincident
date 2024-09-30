@@ -1,18 +1,17 @@
 {
   "image": "ghcr.io/prefix-dev/pixi:0.30.0-jammy",
   "postCreateCommand": {
-  // This should happen *after* source code with pyproject.toml is pulled to CWD
+  // Run *after* source code with pyproject.toml is pulled to CWD
     "pixi-install": "pixi install"
   },
   // Slow...
   // Git maybe added to base image https://github.com/prefix-dev/pixi-docker/issues/41
-  // For now, just `pixi install git` into default env
-    // "features": {
-    //     "ghcr.io/devcontainers/features/git:1": {
-    //         "version": "latest",
-    //         "ppa": "false"
-    //     }
-    // },
+    "features": {
+         "ghcr.io/devcontainers/features/git:1": {
+             "version": "latest",
+             "ppa": "false"
+         }
+    },
     "customizations": {
     // for notebooks to render correctly see https://github.com/orgs/community/discussions/58399#discussioncomment-10504531
     "codespaces": {
@@ -26,6 +25,17 @@
   "MAXAR_API_KEY": {
 "description": "Maxar platform api key",
 "documentationUrl": "https://developers.maxar.com/docs/authentication/guides/api-key"
+},
+  "PC_SDK_SUBSCRIPTION_KEY": {
+"description": "Microsoft planetary computer subscription key",
+"documentationUrl": "https://github.com/microsoft/planetary-computer-sdk-for-python"
+},
+  "EARTHDATA_USERNAME": {
+"description": "NASA Earthdata username",
+"documentationUrl": "https://earthaccess.readthedocs.io/en/latest/howto/authenticate/#authenticate-with-earthdata-login"
+},
+  "EARTHDATA_Password": {
+"description": "NASA Earthdata password"
 }
 }
 }
