@@ -36,6 +36,7 @@ dependencies = [
   "maxar-platform==1.0.2a2",
   "planetary-computer>=1.0.0,<2",
   "pystac-client>=0.8.3,<0.9",
+  #"stac-asset>=0.4.3,<0.5",
 ]
 
 [project.optional-dependencies]
@@ -137,6 +138,7 @@ ignore = [
   "PLR09",    # Too many <...>
   "PLR2004",  # Magic value used in comparison
   "ISC001",   # Conflicts with formatter
+  "PLC0414"   # explicit re-export
 ]
 isort.required-imports = ["from __future__ import annotations"]
 # Uncomment if using a _compat.typing backport
@@ -174,6 +176,11 @@ docs = { features = ["docs"], solve-group = "default" }
 geopandas = "*"
 planetary-computer = "*"
 pystac-client = "*"
+fsspec = ">=2024.9.0,<2025"
+requests = ">=2.32.3,<3"
+aiohttp = ">=3.10.6,<4"
+#rasterio = ">=1.4.0,<2"
+#rioxarray = ">=0.17.0,<0.18"
 
 [tool.pixi.feature.dev.dependencies]
 pre-commit = "*"
@@ -185,6 +192,7 @@ uv = ">=0.4.14,<0.5"
 ipykernel = ">=6.29.5,<7"
 rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
 pyarrow = "17.*"
+aiohttp = ">=3.10.6,<4"
 
 [tool.pixi.feature.dev.pypi-dependencies]
 coincident = { path = ".", editable = true }
@@ -195,6 +203,10 @@ precommit = "pre-commit run --all"
 pylint = "pipx run nox -s pylint"
 test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
 networktest = "pytest --cov --cov-report=xml --cov-report=term"
+
+
+[tool.pixi.feature.docs.pypi-dependencies]
+coincident = { path = ".", editable = true }
 
 [tool.pixi.feature.docs.tasks]
 docs = "python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"

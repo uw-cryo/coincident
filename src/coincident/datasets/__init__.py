@@ -23,7 +23,8 @@ _datasets = [
     nasa.GEDI(),
     planetary_computer.COP30(),
 ]
-_aliases = [x.alias for x in _datasets]
-_alias_to_Dataset = dict(zip(_aliases, _datasets, strict=False))
+
+aliases = [x.alias for x in _datasets]
+_alias_to_Dataset = dict(zip(aliases, _datasets, strict=False))
 
 __all__ = ["Dataset", "usgs", "maxar", "nasa", "planetary_computer"]

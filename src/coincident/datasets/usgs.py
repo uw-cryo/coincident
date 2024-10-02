@@ -20,7 +20,7 @@ class ThreeDEP(Dataset):
     search: str = (
         "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/metadata/WESM.gpkg"
     )
-    start: str = "2007-01-01"
+    start: str = "2000-12-01"
     end: str | None = None
     type: str = "lidar"
     alias: str = "3dep"

@@ -5,17 +5,18 @@ STAC Search Functions
 from __future__ import annotations
 
 import contextlib
+import warnings
 from typing import Any
 
 import geopandas as gpd
 import pystac_client
 
-# maxar_platform tries to authenticate upon import, change errors to warnings
-# try:
-#     import maxar_platform.discovery
-# except Exception as e:
-#     error_msg = str(e)
-#     warnings.warn(f'maxar_plaform authentication error: {error_msg}')
+# maxar_platform tries to authenticate upon import, change error to warning
+try:
+    import maxar_platform  # noqa: F401
+except Exception as e:
+    message = f"maxar_plaform authentication error: {e}, setting MAXAR_API_KEY environment variable is recommended."
+    warnings.warn(message, stacklevel=2)
 
 # MSPC authenticated access has higher limits
 # try:
@@ -72,6 +73,7 @@ def to_geopandas(
     # gf['datetime'] = gpd.pd.to_datetime(gf.datetime)
     # NOTE: assumption = all timestamps UTC, don't worry about timezone from here on out
     gf["datetime"] = gpd.pd.to_datetime(gf.datetime).dt.tz_localize(None)
+    gf["dayofyear"] = gf["datetime"].dt.dayofyear
     if "start_datetime" in gf.columns:
         gf["start_datetime"] = gpd.pd.to_datetime(gf.start_datetime).dt.tz_localize(
             None

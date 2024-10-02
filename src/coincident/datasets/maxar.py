@@ -22,7 +22,7 @@ class Collection(str, Enum):
 
 @dataclass
 class Stereo(Dataset):
-    """Essential metadata for Maxar In Track Stere o"""
+    """Essential metadata for Maxar In Track Stereo"""
 
     alias: str = "maxar"
     has_stac_api: bool = True

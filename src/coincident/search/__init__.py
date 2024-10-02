@@ -4,9 +4,10 @@ Wrapper for various data provider search APIs
 Results returned as GeoDataFrame with consistent STAC column headings and best dtypes
 """
 
+# from __future__ import annotations
 from __future__ import annotations
 
-from typing import Any
+from typing import Any as _Any
 
 import geopandas as _gpd
 
@@ -18,15 +19,20 @@ from coincident.datasets import _alias_to_Dataset
 from coincident.datasets.general import Dataset as _Dataset
 from coincident.search import _stac, _wesm
 
+# NOTE: how to expose some functions in submodule of mostly private methods?
+from coincident.search._wesm import get_swath_polygons as get_swath_polygons
+from coincident.search._wesm import load_wesm_by_fid as load_wesm_by_fid
+
+# Used to access formatters
 _pystac_client = _ItemSearch("no_url")
 
 
 def search(
     dataset: str | _Dataset,
-    intersects: _gpd.GeoDataFrame | _gpd.GeoSeries,
+    intersects: _gpd.GeoDataFrame | _gpd.GeoSeries | None = None,
     datetime: str | list[str] | None = None,
     # NOTE: change to explicitly stac_kwargs? not sure of proper kwargs type (Optional[dict[str, Any]]?)
-    **kwargs: Any,
+    **kwargs: _Any,
 ) -> _gpd.GeoDataFrame:
     """
     Perform a search for geospatial data using STAC or non-STAC APIs for a single dataset.
@@ -50,7 +56,7 @@ def search(
     ValueError
         If the provided dataset alias is not supported.
     """
-    # Validation of inputs
+    # Validate Dataset
     if isinstance(dataset, str):
         try:
             dataset = _alias_to_Dataset[dataset]
@@ -60,17 +66,32 @@ def search(
             )
             raise ValueError(message) from e
 
+    # Validate Datetimes
     _validate_temporal_bounds(dataset, datetime)
-    _validate_spatial_bounds(intersects)
+    if datetime is not None:
+        start, end = _pystac_client._format_datetime(datetime).split("/")
+        search_start = (
+            _gpd.pd.to_datetime(start).tz_localize(None) if start != ".." else None
+        )
+        search_end = _gpd.pd.to_datetime(end).tz_localize(None) if end != ".." else None
+    else:
+        search_start = None  # or  _gpd.pd.Timestamp(dataset.start) ?
+        search_end = None  # or _gpd.pd.Timestamp.today()?
 
-    # NOTE: not very robust, explode() demotes MultiPolygons to single Polygon (seems many GeoJSONs have this)
-    # ANd 'exterior' not available for Multipolygons, just
-    shapely_geometry = intersects.geometry.explode().iloc[0]
-    if (
-        not shapely_geometry.exterior.is_ccw
-    ):  # Apparently NASA CMR enforces polygon CCW order
-        shapely_geometry = shapely_geometry.reverse()
-    aoi = _pystac_client._format_intersects(shapely_geometry)  # to JSON geometry
+    # Validate Intersects
+    if intersects is not None:
+        _validate_spatial_bounds(intersects)
+
+        # NOTE: not very robust, explode() demotes MultiPolygons to single Polygon (seems many GeoJSONs have this)
+        # ANd 'exterior' not available for Multipolygons, just
+        shapely_geometry = intersects.geometry.explode().iloc[0]
+        if (
+            not shapely_geometry.exterior.is_ccw
+        ):  # Apparently NASA CMR enforces polygon CCW order
+            shapely_geometry = shapely_geometry.reverse()
+        aoi = _pystac_client._format_intersects(shapely_geometry)  # to JSON geometry
+    else:
+        aoi = None
 
     # STAC API Searches
     if dataset.has_stac_api:
@@ -99,12 +120,12 @@ def search(
 
     # Non-STAC Searches
     elif dataset.alias == "3dep":
-        gf = _wesm.search_gpkg(
-            dataset.search,  # type: ignore[arg-type]
-            mask=intersects,
+        gf = _wesm.search_convex_hulls(
+            intersects=intersects,
+            search_start=search_start,
+            search_end=search_end,
             **kwargs,
         )
-        # NOTE: Apply datetime interval filter after reading GPKG?
 
     return gf
 
