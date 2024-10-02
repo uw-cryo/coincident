@@ -2562,15 +2562,17 @@ packages:
   timestamp: 1692311973840
 - kind: pypi
   name: coincident
-  version: 0.1.dev20+g57dfd05.d20241002
+  version: 0.1.dev21+g4e65cd0.d20241002
   path: .
-  sha256: 044e42dd206235280b3867e715bea9036c6974b5d2f92031c293aea6c110d294
+  sha256: 316396e9e04bfc17869ee199125b50b6cd62394165493b420ae07f17d85f4b93
   requires_dist:
+  - aiohttp<4,>=3.10.6
   - fsspec<2025,>=2024.9.0
   - geopandas<2,>=1.0.1
   - maxar-platform==1.0.2a2
   - planetary-computer<2,>=1.0.0
   - pystac-client<0.9,>=0.8.3
+  - requests<3,>=2.32.3
   - ipykernel<7,>=6.29.5 ; extra == 'dev'
   - mypy<2,>=1.11.2 ; extra == 'dev'
   - pre-commit<4,>=3.8.0 ; extra == 'dev'

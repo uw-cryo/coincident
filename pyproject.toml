@@ -37,6 +37,8 @@ dependencies = [
   "planetary-computer>=1.0.0,<2",
   "pystac-client>=0.8.3,<0.9",
   "fsspec>=2024.9.0,<2025",
+  "requests>=2.32.3,<3",
+  "aiohttp>=3.10.6,<4",
   #"stac-asset>=0.4.3,<0.5",
 ]
 
@@ -178,8 +180,8 @@ geopandas = "*"
 planetary-computer = "*"
 pystac-client = "*"
 fsspec = "*"
-requests = ">=2.32.3,<3"
-aiohttp = ">=3.10.6,<4"
+requests = "*"
+aiohttp = "*"
 #rasterio = ">=1.4.0,<2"
 #rioxarray = ">=0.17.0,<0.18"
 
@@ -193,7 +195,6 @@ uv = ">=0.4.14,<0.5"
 ipykernel = ">=6.29.5,<7"
 rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
 pyarrow = "17.*"
-aiohttp = ">=3.10.6,<4"
 
 [tool.pixi.feature.dev.pypi-dependencies]
 coincident = { path = ".", editable = true }
