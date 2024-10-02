@@ -36,6 +36,7 @@ dependencies = [
   "maxar-platform==1.0.2a2",
   "planetary-computer>=1.0.0,<2",
   "pystac-client>=0.8.3,<0.9",
+  "fsspec>=2024.9.0,<2025",
   #"stac-asset>=0.4.3,<0.5",
 ]
 
@@ -176,7 +177,7 @@ docs = { features = ["docs"], solve-group = "default" }
 geopandas = "*"
 planetary-computer = "*"
 pystac-client = "*"
-fsspec = ">=2024.9.0,<2025"
+fsspec = "*"
 requests = ">=2.32.3,<3"
 aiohttp = ">=3.10.6,<4"
 #rasterio = ">=1.4.0,<2"

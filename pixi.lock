@@ -2562,10 +2562,11 @@ packages:
   timestamp: 1692311973840
 - kind: pypi
   name: coincident
-  version: 0.1.dev19+ga079eb8.d20241002
+  version: 0.1.dev20+g57dfd05.d20241002
   path: .
-  sha256: 42aee67f2924a5ade2c4555e7a54b83d452ba53ac7b04d680393db6a8f5646fe
+  sha256: 044e42dd206235280b3867e715bea9036c6974b5d2f92031c293aea6c110d294
   requires_dist:
+  - fsspec<2025,>=2024.9.0
   - geopandas<2,>=1.0.1
   - maxar-platform==1.0.2a2
   - planetary-computer<2,>=1.0.0
