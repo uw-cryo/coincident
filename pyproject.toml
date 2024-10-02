@@ -39,6 +39,7 @@ dependencies = [
   "fsspec>=2024.9.0,<2025",
   "requests>=2.32.3,<3",
   "aiohttp>=3.10.6,<4",
+  "pyarrow>=17",
   #"stac-asset>=0.4.3,<0.5",
 ]
 
@@ -189,12 +190,12 @@ aiohttp = "*"
 pre-commit = "*"
 pytest = "*"
 mypy = "*"
-stac-geoparquet = "*"
+pyarrow = "*"
 # NOTE: ipykernel to run notebooks in vscode
-uv = ">=0.4.14,<0.5"
 ipykernel = ">=6.29.5,<7"
-rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
-pyarrow = "17.*"
+#rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
+#uv = ">=0.4.14,<0.5"
+#stac-geoparquet = "*"
 
 [tool.pixi.feature.dev.pypi-dependencies]
 coincident = { path = ".", editable = true }
