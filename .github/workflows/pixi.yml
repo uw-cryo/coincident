@@ -20,6 +20,11 @@ jobs:
           cache-write:
             ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
+      # NOTE: https://github.com/prefix-dev/setup-pixi/issues/136
+      - name: Ensure Dynamic version
+        run: |
+          pip install -e .
+
       - name: Run Pytest
         env:
           MAXAR_API_KEY: ${{ secrets.MAXAR_API_KEY}}
