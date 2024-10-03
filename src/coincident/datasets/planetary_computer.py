@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 
 from coincident.datasets.general import Dataset
 
+STACAPI = "https://planetarycomputer.microsoft.com/api/stac/v1"
+
 
 @dataclass
 class COP30(Dataset):
@@ -21,7 +23,7 @@ class COP30(Dataset):
     alias: str = "cop30"
     has_stac_api: bool = True
     collections: list[str] = field(default_factory=lambda: ["cop-dem-glo-30"])
-    search: str = "https://planetarycomputer.microsoft.com/api/stac/v1"
+    search: str = STACAPI
     start: str | None = None  # NOTE: has 'representative' datetime of 2021-04-22
     end: str | None = None
     type: str = "sar"
@@ -34,7 +36,7 @@ class WorldCover(Dataset):
     alias: str = "worldcover"
     has_stac_api: bool = True
     collections: list[str] = field(default_factory=lambda: ["esa-worldcover"])
-    search: str = "https://planetarycomputer.microsoft.com/api/stac/v1"
+    search: str = STACAPI
     start: str = "2020-01-01"
     end: str = "2021-12-31"
     type: str = "lulc"

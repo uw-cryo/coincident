@@ -114,7 +114,7 @@ def configure_maxar_client(area_based_calc: bool = True) -> pystac_client.client
     return client
 
 
-def configure_nasa_client(url: str) -> pystac_client.client.Client:
+def configure_stac_client(url: str) -> pystac_client.client.Client:
     """ """
     return pystac_client.Client.open(url=url)
 
@@ -123,5 +123,5 @@ def configure_mspc_client(url: str) -> pystac_client.client.Client:
     """ """
     return pystac_client.Client.open(
         url=url,
-        modifier=modifier,
+        modifier=modifier,  # planetary_computer.sign_inplace?
     )

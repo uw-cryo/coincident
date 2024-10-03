@@ -69,6 +69,8 @@ def test_maxar_search(aoi):
     assert "browse" in gf.columns
 
 
+# NASA
+# =======
 @network
 def test_icesat2_search(aoi):
     gf = m.search.search(
@@ -92,12 +94,28 @@ def test_gedi_search(aoi):
 
 
 @network
+def test_tdx_search(aoi):
+    gf = m.search.search(dataset="tdx", intersects=aoi, datetime=["2009", "2020"])
+    assert len(gf) == 48
+
+
+# MS PLANETARY COMPUTER
+# =======
+@network
 def test_cop30_search(aoi):
     gf = m.search.search(dataset="cop30", intersects=aoi)
     # expected_cols = ['geometry','gsd','datetime','platform','proj:epsg','proj:shape','proj:transform','stac_id','data']
     assert len(gf) == 4
 
 
+@network
+def test_worldcover_search(aoi):
+    gf = m.search.search(dataset="worldcover", intersects=aoi, datetime="2020")
+    assert len(gf) == 4
+
+
+# USGS
+# =======
 @network
 def test_wesm_search(aoi):
     gf = m.search.search(

@@ -94,6 +94,7 @@ def search(
         aoi = None
 
     # STAC API Searches
+    # NOTE: refactor so that search config lives alongside dataset? easier to add, would need conditionals below
     if dataset.has_stac_api:
         stac_api_kwargs = {**kwargs, **dataset.stac_kwargs}  # NOTE: override order?
         stac_api_kwargs["datetime"] = datetime
@@ -108,13 +109,19 @@ def search(
             # Client-side reduce to only acquisitions having stereo pairs
             gf = gf.loc[gf.stereo_pair_identifiers.str[0].dropna().index]
 
-        elif dataset.alias in ["icesat-2", "gedi"]:
-            client = _stac.configure_nasa_client(dataset.search)  # type: ignore[arg-type]
+        # elif dataset.alias in ["icesat-2", "gedi"]:
+        #     client = _stac.configure_stac_client(dataset.search)  # type: ignore[arg-type]
+        #     results = _stac.search(client, **stac_api_kwargs)
+        #     gf = _stac.to_geopandas(results)
+
+        elif dataset.alias in ["cop30", "worldcover"]:
+            client = _stac.configure_mspc_client(dataset.search)  # type: ignore[arg-type]
             results = _stac.search(client, **stac_api_kwargs)
             gf = _stac.to_geopandas(results)
 
-        elif dataset.alias in ["cop30"]:
-            client = _stac.configure_mspc_client(dataset.search)  # type: ignore[arg-type]
+        # Generic STAC endpoint w/o additional config
+        else:  # icesat-2, gedi, worldcover,
+            client = _stac.configure_stac_client(dataset.search)  # type: ignore[arg-type]
             results = _stac.search(client, **stac_api_kwargs)
             gf = _stac.to_geopandas(results)
 
