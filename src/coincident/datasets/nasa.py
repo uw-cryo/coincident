@@ -2,6 +2,8 @@
 NASA Datasets
 
 https://github.com/nasa/cmr-stac
+
+NOTE: Different search endpoints dependng on DAAC
 """
 
 # from pydantic.dataclasses import dataclass
