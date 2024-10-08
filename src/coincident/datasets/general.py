@@ -28,5 +28,6 @@ class Dataset:
     start: str | None = None  # first acquisition date
     end: str | None = None  # last acquisition date (or None if ongoing)
     type: str | None = None  # lidar | stereo | altimeter | sar
+    provider: str | None = None  # usgs, maxar, nasa, microsoft, csda
     # Pystac client default limit=100, but seems set by API endpoint as well (nasa cmr-stac=25)
     stac_kwargs: dict[str, Any] = field(default_factory=lambda: {"limit": 1000})

@@ -27,6 +27,7 @@ class ICESat2(Dataset):
     collections: list[str] = field(
         default_factory=lambda: ["ATL03_006"]
     )  # ATL08_006 etc.
+    provider: str = "nasa"
 
 
 @dataclass
@@ -43,3 +44,4 @@ class GEDI(Dataset):
     type: str = "altimeter"
     alias: str = "gedi"
     collections: list[str] = field(default_factory=lambda: ["GEDI02_A_002"])
+    provider: str = "nasa"

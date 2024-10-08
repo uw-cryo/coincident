@@ -2,16 +2,24 @@ from __future__ import annotations
 
 import geopandas as gpd
 import pytest
+from geopandas.testing import assert_geodataframe_equal
 
 import coincident as m
 
-# Decorate tests requiring internet
+# Decorate tests requiring internet (slow & flaky)
 network = pytest.mark.network
 
 
 @pytest.fixture
 def aoi():
     aoi_url = "https://raw.githubusercontent.com/SlideRuleEarth/sliderule-python/main/data/grandmesa.geojson"
+    return gpd.read_file(aoi_url)
+
+
+@pytest.fixture
+def large_aoi():
+    # 260 vertices, large area
+    aoi_url = "https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/CO/shape.geojson"
     return gpd.read_file(aoi_url)
 
 
@@ -65,8 +73,21 @@ def test_maxar_search(aoi):
     )
     assert len(gf) == 10
     assert isinstance(gf.datetime.iloc[0], gpd.pd.Timestamp)
-    assert "stac_id" in gf.columns
-    assert "browse" in gf.columns
+    # NOTE: add more comprehensive check of column names & schema?
+    assert "id" in gf.columns
+    assert "assets" in gf.columns
+
+
+@network
+def test_maxar_large_aoi(large_aoi):
+    gf = m.search.search(
+        dataset="maxar",
+        intersects=large_aoi,
+        datetime="2023",
+        # NOTE: this limits total *mono* results, which may or may not have stereo
+        max_items=10,
+    )
+    assert len(gf) <= 10
 
 
 # NASA
@@ -78,7 +99,6 @@ def test_icesat2_search(aoi):
         intersects=aoi,
         datetime="2023",
     )
-    # expected_cols = ['geometry', 'datetime', 'start_datetime', 'end_datetime', 'stac_id', 'data', 'browse'] # Also GEDI
     assert len(gf) == 25
     assert isinstance(gf.start_datetime.iloc[0], gpd.pd.Timestamp)
 
@@ -104,7 +124,6 @@ def test_tdx_search(aoi):
 @network
 def test_cop30_search(aoi):
     gf = m.search.search(dataset="cop30", intersects=aoi)
-    # expected_cols = ['geometry','gsd','datetime','platform','proj:epsg','proj:shape','proj:transform','stac_id','data']
     assert len(gf) == 4
 
 
@@ -112,6 +131,15 @@ def test_cop30_search(aoi):
 def test_worldcover_search(aoi):
     gf = m.search.search(dataset="worldcover", intersects=aoi, datetime="2020")
     assert len(gf) == 4
+
+
+@network
+def test_round_trip_parquet(aoi):
+    outpath = "/tmp/search_results.parquet"
+    A = m.search.search(dataset="cop30", intersects=aoi)
+    A.to_parquet(outpath)
+    B = gpd.read_parquet(outpath)
+    assert_geodataframe_equal(A, B)
 
 
 # USGS
@@ -123,3 +151,28 @@ def test_wesm_search(aoi):
         intersects=aoi,
     )
     assert len(gf) == 3
+
+
+# NOTE ~10s on wifi
+@network
+def test_get_swath_polygon():
+    row = gpd.pd.Series(
+        dict(  # noqa: C408
+            project="CO_CameronPeakWildfire_2021_D21",
+            workunit="CO_CameronPkFire_1_2021",
+        )
+    )
+    gf = m.search.wesm.get_swath_polygons(row)
+    assert isinstance(gf, gpd.GeoDataFrame)
+    assert len(gf) == 51
+    assert "start_datetime" in gf.columns
+    assert isinstance(gf.datetime.iloc[0], gpd.pd.Timestamp)
+
+
+@network
+def test_swath_polygon_not_found():
+    row = gpd.pd.Series(dict(project="AL_SWCentral_B22", workunit="AL_SWCentral_1_B22"))  # noqa: C408
+    with pytest.raises(
+        FileNotFoundError, match="Unable to find swath polygon shapefile"
+    ):
+        m.search.wesm.get_swath_polygons(row)

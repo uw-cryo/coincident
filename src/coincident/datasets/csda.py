@@ -52,3 +52,4 @@ class TDX(Dataset):
     start: str = "2007-07-01"  # TODO: check this
     end: str | None = None
     type: str = "sar"
+    provider: str = "csda"

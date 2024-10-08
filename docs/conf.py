@@ -9,8 +9,10 @@ author = "Scott Henderson"
 version = release = importlib.metadata.version("coincident")
 
 extensions = [
-    "myst_parser",
+    # "myst_parser",
+    "myst_nb",
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
@@ -18,7 +20,11 @@ extensions = [
     "sphinx_copybutton",
 ]
 
-source_suffix = [".rst", ".md"]
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".ipynb": "myst-nb",
+    ".md": "myst-nb",
+}
 exclude_patterns = [
     "_build",
     "**.ipynb_checkpoints",
@@ -54,6 +60,11 @@ myst_enable_extensions = [
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
+    "geopandas": ("https://geopandas.org/en/latest", None),
+    "pystac_client": ("https://pystac-client.readthedocs.io/en/stable", None),
+    "pystac": ("https://pystac.readthedocs.io/en/stable", None),
+    "stac-asset": ("https://stac-asset.readthedocs.io/en/latest", None),
+    "xarray": ("https://docs.xarray.dev/en/stable", None),
 }
 
 nitpick_ignore = [
@@ -62,3 +73,5 @@ nitpick_ignore = [
 ]
 
 always_document_param_types = True
+# autodoc_typehints = "none"
+nb_execution_mode = "auto"  # off, on

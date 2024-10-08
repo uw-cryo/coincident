@@ -27,6 +27,7 @@ class COP30(Dataset):
     start: str | None = None  # NOTE: has 'representative' datetime of 2021-04-22
     end: str | None = None
     type: str = "sar"
+    provider: str = "microsoft"
 
 
 @dataclass
@@ -40,3 +41,4 @@ class WorldCover(Dataset):
     start: str = "2020-01-01"
     end: str = "2021-12-31"
     type: str = "lulc"
+    provider: str = "microsoft"

@@ -24,3 +24,4 @@ class ThreeDEP(Dataset):
     end: str | None = None
     type: str = "lidar"
     alias: str = "3dep"
+    provider: str = "usgs"

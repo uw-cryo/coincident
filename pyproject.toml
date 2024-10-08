@@ -40,7 +40,10 @@ dependencies = [
   "requests>=2.32.3,<3",
   "aiohttp>=3.10.6,<4",
   "pyarrow>=17",
-  #"stac-asset>=0.4.3,<0.5",
+  "stac-asset>=0.4.3,<0.5",
+  "rioxarray>=0.17.0,<0.18",
+  "stac-geoparquet>=0.6.0,<0.7",
+  "s3fs>=2024.9.0,<2025",
 ]
 
 [project.optional-dependencies]
@@ -52,11 +55,12 @@ dev = [
   "pre-commit>=3.8.0,<4",
 ]
 docs = [
-  "sphinx>=7.0",
-  "myst_parser>=0.13",
-  "sphinx_copybutton",
-  "sphinx_autodoc_typehints",
   "furo>=2023.08.17",
+  "myst-nb",
+  "myst_parser>=0.13",
+  "sphinx>=7.0",
+  "sphinx_autodoc_typehints",
+  "sphinx_copybutton",
 ]
 
 [project.urls]
@@ -79,8 +83,12 @@ addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = [
   "error",
+  # NOTE: try to remove with maxar-platform>1.0.1
   "ignore::DeprecationWarning:lark",
-  "ignore:maxar_plaform authentication error:UserWarning"
+  "ignore:maxar_plaform authentication error:UserWarning",
+  # https://github.com/microsoft/planetary-computer-sdk-for-python/issues/58
+  "ignore::pydantic.warnings.PydanticDeprecatedSince20",
+  "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning"
 ]
 log_cli_level = "INFO"
 testpaths = [
@@ -177,17 +185,20 @@ docs = { features = ["docs"], solve-group = "default" }
 # NOTE: pixi will match project.dependencies versions above but get them from conda-forge
 # If a package is listed in project.dependencies but not repeated here, it is installed from pypi
 [tool.pixi.dependencies]
+aiohttp = "*"
+fsspec = "*"
 geopandas = "*"
 planetary-computer = "*"
 pystac-client = "*"
-fsspec = "*"
 requests = "*"
-aiohttp = "*"
-#rasterio = ">=1.4.0,<2"
-#rioxarray = ">=0.17.0,<0.18"
+rioxarray = "*"
+# stac-asset = "*" # not on conda-forge
+stac-geoparquet = "*"
+s3fs = "*"
 
 [tool.pixi.feature.dev.dependencies]
-pre-commit = "*"
+# Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.
+pre-commit = "<4"
 pytest = "*"
 mypy = "*"
 pyarrow = "*"
@@ -196,6 +207,8 @@ ipykernel = ">=6.29.5,<7"
 #rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
 #uv = ">=0.4.14,<0.5"
 #stac-geoparquet = "*"
+#rasterio = ">=1.4.0,<2"
+xvec = ">=0.3.0,<0.4"
 
 [tool.pixi.feature.dev.pypi-dependencies]
 coincident = { path = ".", editable = true }
