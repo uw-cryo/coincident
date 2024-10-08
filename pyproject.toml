@@ -195,6 +195,7 @@ rioxarray = "*"
 # stac-asset = "*" # not on conda-forge
 stac-geoparquet = "*"
 s3fs = "*"
+sliderule = ">=4.7.1,<5"
 
 [tool.pixi.feature.dev.dependencies]
 # Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.

@@ -43,8 +43,10 @@ def test_geographic_area(geodataframe):
 
 
 def test_subset_by_minimum_area(geodataframe):
-    subset = m.overlaps.subset_by_minimum_area(geodataframe)
-    assert len(subset) == 0
+    big_enough = m.overlaps.subset_by_minimum_area(geodataframe)
+    too_small = m.overlaps.subset_by_minimum_area(geodataframe, 20100)
+    assert len(big_enough) == 1
+    assert len(too_small) == 0
 
 
 def test_subset_by_temporal_overlap(geodataframe):

@@ -144,6 +144,6 @@ def subset_by_minimum_area(
         A GeoDataFrame containing only the features with an area less than or equal
         to the specified minimum area.
     """
-    areas = geographic_area(gf)
+    areas = geographic_area(gf) * 1e-6
 
-    return gf.loc[areas <= min_area, :]
+    return gf.loc[areas >= min_area, :]
