@@ -171,7 +171,8 @@ def _validate_spatial_bounds(
     intersects: gpd.GeoSeries,
 ) -> None:
     """
-    Validate that the specified area of interest (AOI) wis of type GeoDataFrame or GeoSeries
+    Validate that the specified area of interest (AOI) within CONUS or Alaska.
+    Parameters
     ----------
     dataset : _Dataset
         The dataset to validate.
@@ -180,7 +181,7 @@ def _validate_spatial_bounds(
     Raises
     ------
     ValueError
-        If the AOI is not type GeoDataFrame or GeoSeries
+        If the AOI is not within the bounds of the Continental U.S. or Alaska.
     """
     if not isinstance(intersects, gpd.GeoDataFrame | gpd.GeoSeries):
         message = f"intersects value must be a GeoDataFrame or GeoSeries, not {type(intersects)}"
@@ -190,10 +191,10 @@ def _validate_spatial_bounds(
         raise ValueError(message)
 
     # NOTE: use geopandas to first convert to projected CRS?
-    #aoi = intersects.to_crs("EPSG:4326").geometry.iloc[0]  # shapely geometry
-    #CONUS = box(*(-124.84, 24.39, -66.88, 49.38))
-    #AK = box(*(-179.99, 51.21, -129.63, 71.35))
-    #if not aoi.within(CONUS) and not aoi.within(AK):
-    #    message = "Requested search polygon not within Continental U.S. or Alaska"
-    #    raise ValueError(message)
+    aoi = intersects.to_crs("EPSG:4326").geometry.iloc[0]  # shapely geometry
+    CONUS = box(*(-124.84, 24.39, -66.88, 49.38))
+    AK = box(*(-179.99, 51.21, -129.63, 71.35))
+    if not aoi.within(CONUS) and not aoi.within(AK):
+        message = "Requested search polygon not within Continental U.S. or Alaska"
+        raise ValueError(message)
         # warnings.warn(f'Requested search polygon not within Continental U.S. or Alaska')
