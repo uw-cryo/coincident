@@ -6,7 +6,6 @@ import geopandas as gpd
 
 # Used to access formatters
 from pystac_client.item_search import ItemSearch as _ItemSearch
-from shapely.geometry import box
 
 from coincident.datasets import _alias_to_Dataset
 from coincident.datasets.general import Dataset
@@ -171,7 +170,7 @@ def _validate_spatial_bounds(
     intersects: gpd.GeoSeries,
 ) -> None:
     """
-    Validate that the specified area of interest (AOI) within CONUS or Alaska.
+    Validate that the specified area of interest (AOI) is type GeoDataFrame or GeoSeries
     Parameters
     ----------
     dataset : _Dataset
@@ -181,7 +180,7 @@ def _validate_spatial_bounds(
     Raises
     ------
     ValueError
-        If the AOI is not within the bounds of the Continental U.S. or Alaska.
+        If the AOI is not type GeoDataFrame or GeoSeries
     """
     if not isinstance(intersects, gpd.GeoDataFrame | gpd.GeoSeries):
         message = f"intersects value must be a GeoDataFrame or GeoSeries, not {type(intersects)}"
@@ -189,12 +188,3 @@ def _validate_spatial_bounds(
     if len(intersects) > 1:
         message = "GeoDataFrame contains multiple geometries, search requires a single geometry"
         raise ValueError(message)
-
-    # NOTE: use geopandas to first convert to projected CRS?
-    aoi = intersects.to_crs("EPSG:4326").geometry.iloc[0]  # shapely geometry
-    CONUS = box(*(-124.84, 24.39, -66.88, 49.38))
-    AK = box(*(-179.99, 51.21, -129.63, 71.35))
-    if not aoi.within(CONUS) and not aoi.within(AK):
-        message = "Requested search polygon not within Continental U.S. or Alaska"
-        raise ValueError(message)
-        # warnings.warn(f'Requested search polygon not within Continental U.S. or Alaska')

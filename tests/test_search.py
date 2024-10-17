@@ -42,25 +42,6 @@ def test_polygon_invalid_type():
         m.search.search(dataset="3dep", intersects="-120, 40, -121, 41")
 
 
-# For now raise an error to not complicate things
-def test_polygon_out_of_bounds():
-    feature_coll = {
-        "type": "FeatureCollection",
-        "features": [
-            {
-                "id": "0",
-                "properties": {"col1": "name1"},
-                "type": "Feature",
-                "geometry": {"type": "Point", "coordinates": (1.0, 2.0)},
-            }
-        ],
-    }
-    aoi = gpd.GeoDataFrame.from_features(feature_coll, crs="EPSG:4326")
-    # with pytest.warns(UserWarning, match="Requested search polygon not within"):
-    with pytest.raises(ValueError, match="Requested search polygon not within"):
-        m.search.search(dataset="3dep", intersects=aoi)
-
-
 # TODO: add more assertions / tests for this section
 @network
 @pytest.mark.filterwarnings("ignore:Server does not conform")
