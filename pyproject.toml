@@ -88,7 +88,9 @@ filterwarnings = [
   "ignore:maxar_plaform authentication error:UserWarning",
   # https://github.com/microsoft/planetary-computer-sdk-for-python/issues/58
   "ignore::pydantic.warnings.PydanticDeprecatedSince20",
-  "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning"
+  "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning",
+  # sliderule datetime.datetime.utcnow() is deprecated...
+  "ignore::DeprecationWarning:sliderule",
 ]
 log_cli_level = "INFO"
 testpaths = [
@@ -104,6 +106,9 @@ report.exclude_also = [
   '\.\.\.',
   'if typing.TYPE_CHECKING:',
 ]
+
+[tool.codespell]
+skip="pixi.lock"
 
 [tool.mypy]
 files = ["src", "tests"]
@@ -158,7 +163,6 @@ isort.required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
-"noxfile.py" = ["T20"]
 
 [tool.pylint]
 ignore-paths = [".*/_version.py"]
@@ -210,17 +214,17 @@ ipykernel = ">=6.29.5,<7"
 #stac-geoparquet = "*"
 #rasterio = ">=1.4.0,<2"
 xvec = ">=0.3.0,<0.4"
+pylint = ">=3.3.1,<4"
 
 [tool.pixi.feature.dev.pypi-dependencies]
 coincident = { path = ".", editable = true }
 
 [tool.pixi.feature.dev.tasks]
 precommit = "pre-commit run --all"
-# PyLint run separately https://pylint.pycqa.org/en/latest/user_guide/installation/pre-commit-integration.html
-pylint = "pipx run nox -s pylint"
+# NOTE: consider --output-format=github for github actions
+lint = "pylint src"
 test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
 networktest = "pytest --cov --cov-report=xml --cov-report=term"
-
 
 [tool.pixi.feature.docs.pypi-dependencies]
 coincident = { path = ".", editable = true }

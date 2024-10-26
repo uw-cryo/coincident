@@ -25,9 +25,7 @@ import xarray as xr
 from coincident.datasets.general import Dataset
 
 MAXAR_CONFIG = stac_asset.Config(
-    http_headers={"MAXAR-API-KEY": os.environ.get("MAXAR_API_KEY")},
-    # https://github.com/stac-utils/stac-asset/issues/223
-    http_check_content_type=False,
+    http_headers={"MAXAR-API-KEY": os.environ.get("MAXAR_API_KEY")}
 )
 
 

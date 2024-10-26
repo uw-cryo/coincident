@@ -63,3 +63,5 @@ export MAXAR_API_KEY=zzzzz
 
 - Python packaging template provided by
   https://github.com/scientific-python/cookie
+
+- Funding for this effort was provided by NASA Grant 80NSSC22K1094

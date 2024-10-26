@@ -25,6 +25,11 @@ jobs:
         run: |
           pip install -e .
 
+      - name: Run Pylint
+        continue-on-error: true
+        run: |
+          pixi run lint
+
       - name: Run Pytest
         env:
           MAXAR_API_KEY: ${{ secrets.MAXAR_API_KEY}}
