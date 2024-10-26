@@ -4,11 +4,20 @@ Read ICESat-2 & GEDI using Sliderule
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import geopandas as gpd
 import pandas as pd
-from sliderule import gedi, icesat2, toregion
+
+try:
+    from sliderule import gedi, icesat2, toregion
+except ImportError:
+    warnings.warn(
+        "sliderule not found. it is required for io.sliderule functionality: see https://slideruleearth.io/web/rtd/getting_started/Install.html",
+        stacklevel=2,
+    )
+from coincident._utils import depends_on_optional
 
 # TODO: make these configurable?
 default_params = {
@@ -20,6 +29,7 @@ default_params = {
 }
 
 
+@depends_on_optional("sliderule.gedi")
 def load_gedi(
     aoi: gpd.GeoDataFrame,
     start_datetime: pd.Timestamp,
@@ -40,6 +50,7 @@ def load_gedi(
     return gedi.gedi02ap(params)
 
 
+@depends_on_optional("sliderule.icesat2")
 def load_icesat2(
     aoi: gpd.GeoDataFrame,
     start_datetime: pd.Timestamp,

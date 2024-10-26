@@ -10,6 +10,7 @@
 
 installation
 introduction
+datasets
 ```
 
 ```{toctree}

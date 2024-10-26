@@ -91,6 +91,8 @@ filterwarnings = [
   "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning",
   # sliderule datetime.datetime.utcnow() is deprecated...
   "ignore::DeprecationWarning:sliderule",
+  # Optional imports
+  "ignore:sliderule not found*:UserWarning",
 ]
 log_cli_level = "INFO"
 testpaths = [
@@ -175,6 +177,8 @@ messages_control.disable = [
   "missing-module-docstring",
   "missing-function-docstring",
   "wrong-import-position",
+  "C0103", # Allow ALLCAPS variable names
+  "W0212", # Access to a protected member _...
 ]
 
 [tool.pixi.project]
@@ -199,7 +203,7 @@ rioxarray = "*"
 # stac-asset = "*" # not on conda-forge
 stac-geoparquet = "*"
 s3fs = "*"
-sliderule = ">=4.7.1,<5"
+#sliderule = ">=4.7.1,<5"
 
 [tool.pixi.feature.dev.dependencies]
 # Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.

@@ -13,20 +13,30 @@ if TYPE_CHECKING:
     from stac_asset import Config
 
 import os
+import warnings
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
 
+import numpy as np
 import pystac
 import rasterio
 import stac_asset
 import xarray as xr
 
+from coincident._utils import depends_on_optional
 from coincident.datasets.general import Dataset
 
 MAXAR_CONFIG = stac_asset.Config(
     http_headers={"MAXAR-API-KEY": os.environ.get("MAXAR_API_KEY")}
 )
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    warnings.warn(
+        "matplotlib not found. Install for plotting functions",
+        stacklevel=2,
+    )
 
 
 class Collection(str, Enum):
@@ -69,6 +79,7 @@ async def download_item(
     return item  # noqa: RET504
 
 
+@depends_on_optional("matplotlib")
 def open_browse(item: pystac.Item, overview_level: int = 0) -> xr.DataArray:
     """
     Open a browse image from a STAC item using the specified overview level.
@@ -108,6 +119,7 @@ def open_browse(item: pystac.Item, overview_level: int = 0) -> xr.DataArray:
         )
 
 
+@depends_on_optional("matplotlib")
 def plot_browse(item: pystac.Item, overview_level: int = 0) -> None:
     """
     Plots a browse image from a STAC item using Matplotlib.
@@ -125,13 +137,10 @@ def plot_browse(item: pystac.Item, overview_level: int = 0) -> None:
         This function does not return any value
     """
 
-    import matplotlib.pyplot as plt
-    import numpy as np
-
     da = open_browse(item, overview_level=overview_level)
     mid_lat = da.y[int(da.y.size / 2)].to_numpy()  # PD011
 
-    fig, ax = plt.subplots(figsize=(8, 11))
+    fig, ax = plt.subplots(figsize=(8, 11))  # pylint: disable=unused-variable
     da.plot.imshow(rgb="band", add_labels=False, ax=ax)
     ax.set_aspect(aspect=1 / np.cos(np.deg2rad(mid_lat)))
     ax.set_title(item.id)
