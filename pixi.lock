@@ -219,7 +219,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.6-ha6fb4c9_0.conda
       - pypi: https://files.pythonhosted.org/packages/a5/45/30bb92d442636f570cb5651bc661f52b610e2eec3f891a5dc3a4c3667db0/aiofiles-24.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/42/0e/c2500f07a6b8e79983ecda6acf43505c7f12cc53e6e940e8e46afc3f7a5a/aiohttp_oauth2_client-1.0.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/57/57/af573003eca6248a5cbc538fc46bea5b249c2ac86f27140b0a621bcd3fde/aiohttp_retry-2.8.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/13/1f/ec9b0dfcbad7b48f2ca06e0ba5e6d9932eb9f27108f36628131b52d961d9/aiohttp_retry-2.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a4/29/db12aa4dda81580be1999824a689bd52aa40061fc12c9ccdc3feab5ea718/dateparser-1.2.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cb/39/cef2ccdfd984ae3cf93878d050c1b7c9354dd9493ce83fd9bb33a41f7a33/lark-0.12.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0a/6e/94537acfb5b8f18235d13186d247bca478fea5e87d224644e0fe907df976/lxml-5.3.0-cp312-cp312-manylinux_2_28_x86_64.whl
@@ -438,7 +438,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.6-hb46c0d2_0.conda
       - pypi: https://files.pythonhosted.org/packages/a5/45/30bb92d442636f570cb5651bc661f52b610e2eec3f891a5dc3a4c3667db0/aiofiles-24.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/42/0e/c2500f07a6b8e79983ecda6acf43505c7f12cc53e6e940e8e46afc3f7a5a/aiohttp_oauth2_client-1.0.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/57/57/af573003eca6248a5cbc538fc46bea5b249c2ac86f27140b0a621bcd3fde/aiohttp_retry-2.8.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/13/1f/ec9b0dfcbad7b48f2ca06e0ba5e6d9932eb9f27108f36628131b52d961d9/aiohttp_retry-2.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a4/29/db12aa4dda81580be1999824a689bd52aa40061fc12c9ccdc3feab5ea718/dateparser-1.2.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cb/39/cef2ccdfd984ae3cf93878d050c1b7c9354dd9493ce83fd9bb33a41f7a33/lark-0.12.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/eb/6d/d1f1c5e40c64bf62afd7a3f9b34ce18a586a1cccbf71e783cd0a6d8e8971/lxml-5.3.0-cp312-cp312-macosx_10_9_universal2.whl
@@ -728,7 +728,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.6-ha6fb4c9_0.conda
       - pypi: https://files.pythonhosted.org/packages/a5/45/30bb92d442636f570cb5651bc661f52b610e2eec3f891a5dc3a4c3667db0/aiofiles-24.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/42/0e/c2500f07a6b8e79983ecda6acf43505c7f12cc53e6e940e8e46afc3f7a5a/aiohttp_oauth2_client-1.0.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/57/57/af573003eca6248a5cbc538fc46bea5b249c2ac86f27140b0a621bcd3fde/aiohttp_retry-2.8.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/13/1f/ec9b0dfcbad7b48f2ca06e0ba5e6d9932eb9f27108f36628131b52d961d9/aiohttp_retry-2.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c0/70/6b0627e5bd68204ee580126ed3513140b2298995c1233bd67404b4e44d0e/coverage-7.6.4-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/a4/29/db12aa4dda81580be1999824a689bd52aa40061fc12c9ccdc3feab5ea718/dateparser-1.2.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cb/39/cef2ccdfd984ae3cf93878d050c1b7c9354dd9493ce83fd9bb33a41f7a33/lark-0.12.0-py2.py3-none-any.whl
@@ -1004,7 +1004,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.6-hb46c0d2_0.conda
       - pypi: https://files.pythonhosted.org/packages/a5/45/30bb92d442636f570cb5651bc661f52b610e2eec3f891a5dc3a4c3667db0/aiofiles-24.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/42/0e/c2500f07a6b8e79983ecda6acf43505c7f12cc53e6e940e8e46afc3f7a5a/aiohttp_oauth2_client-1.0.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/57/57/af573003eca6248a5cbc538fc46bea5b249c2ac86f27140b0a621bcd3fde/aiohttp_retry-2.8.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/13/1f/ec9b0dfcbad7b48f2ca06e0ba5e6d9932eb9f27108f36628131b52d961d9/aiohttp_retry-2.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/27/03/932c2c5717a7fa80cd43c6a07d3177076d97b79f12f40f882f9916db0063/coverage-7.6.4-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/a4/29/db12aa4dda81580be1999824a689bd52aa40061fc12c9ccdc3feab5ea718/dateparser-1.2.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cb/39/cef2ccdfd984ae3cf93878d050c1b7c9354dd9493ce83fd9bb33a41f7a33/lark-0.12.0-py2.py3-none-any.whl
@@ -1274,7 +1274,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/zstd-1.5.6-ha6fb4c9_0.conda
       - pypi: https://files.pythonhosted.org/packages/a5/45/30bb92d442636f570cb5651bc661f52b610e2eec3f891a5dc3a4c3667db0/aiofiles-24.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/42/0e/c2500f07a6b8e79983ecda6acf43505c7f12cc53e6e940e8e46afc3f7a5a/aiohttp_oauth2_client-1.0.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/57/57/af573003eca6248a5cbc538fc46bea5b249c2ac86f27140b0a621bcd3fde/aiohttp_retry-2.8.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/13/1f/ec9b0dfcbad7b48f2ca06e0ba5e6d9932eb9f27108f36628131b52d961d9/aiohttp_retry-2.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7e/b3/6b4067be973ae96ba0d615946e314c5ae35f9f993eca561b356540bb0c2b/alabaster-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ed/20/bc79bc575ba2e2a7f70e8a1155618bb1301eaa5132a8271373a6903f73f8/babel-2.16.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/b1/fe/e8c672695b37eecc5cbf43e1d0638d88d66ba3a44c4d321c796f4e59167f/beautifulsoup4-4.12.3-py3-none-any.whl
@@ -1557,7 +1557,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/zstd-1.5.6-hb46c0d2_0.conda
       - pypi: https://files.pythonhosted.org/packages/a5/45/30bb92d442636f570cb5651bc661f52b610e2eec3f891a5dc3a4c3667db0/aiofiles-24.1.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/42/0e/c2500f07a6b8e79983ecda6acf43505c7f12cc53e6e940e8e46afc3f7a5a/aiohttp_oauth2_client-1.0.2-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/57/57/af573003eca6248a5cbc538fc46bea5b249c2ac86f27140b0a621bcd3fde/aiohttp_retry-2.8.3-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/13/1f/ec9b0dfcbad7b48f2ca06e0ba5e6d9932eb9f27108f36628131b52d961d9/aiohttp_retry-2.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7e/b3/6b4067be973ae96ba0d615946e314c5ae35f9f993eca561b356540bb0c2b/alabaster-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ed/20/bc79bc575ba2e2a7f70e8a1155618bb1301eaa5132a8271373a6903f73f8/babel-2.16.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/b1/fe/e8c672695b37eecc5cbf43e1d0638d88d66ba3a44c4d321c796f4e59167f/beautifulsoup4-4.12.3-py3-none-any.whl
@@ -1773,9 +1773,9 @@ packages:
   requires_python: '>=3.8'
 - kind: pypi
   name: aiohttp-retry
-  version: 2.8.3
-  url: https://files.pythonhosted.org/packages/57/57/af573003eca6248a5cbc538fc46bea5b249c2ac86f27140b0a621bcd3fde/aiohttp_retry-2.8.3-py3-none-any.whl
-  sha256: 3aeeead8f6afe48272db93ced9440cf4eda8b6fd7ee2abb25357b7eb28525b45
+  version: 2.9.0
+  url: https://files.pythonhosted.org/packages/13/1f/ec9b0dfcbad7b48f2ca06e0ba5e6d9932eb9f27108f36628131b52d961d9/aiohttp_retry-2.9.0-py3-none-any.whl
+  sha256: 7661af92471e9a96c69d9b8f32021360272073397e6a15bc44c1726b12f46056
   requires_dist:
   - aiohttp
   requires_python: '>=3.7'
@@ -3157,9 +3157,9 @@ packages:
   timestamp: 1633637895378
 - kind: pypi
   name: coincident
-  version: 0.1.dev30+g5c42c74.d20241026
+  version: 0.1.dev31+g21d13d7.d20241027
   path: .
-  sha256: 9b232b12c931344f1c6aa2470220f740e26bec5ec53f99a22fbfd18126bf1954
+  sha256: 102ed813b6ec18c23b759550aa33a1ab4c457e6500a2cd9e2fdd99f5465196b4
   requires_dist:
   - aiohttp<4,>=3.10.6
   - fsspec<2025,>=2024.9.0
