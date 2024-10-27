@@ -27,8 +27,10 @@ Such datasets are intended to be used by the NASA STV community for
 calibration/validation, fusion algorithm development, and discipline-specific
 scientific analysis.
 
+See here for more information:
+<https://science.nasa.gov/earth-science/decadal-surveys/decadal-stv/coincident-datasets>
+
 **This tool is under active development, there are no stable releases yet!**
-https://science.nasa.gov/earth-science/decadal-surveys/decadal-stv/coincident-datasets/
 
 ## Development
 
@@ -62,6 +64,6 @@ export MAXAR_API_KEY=zzzzz
 ### Acknowledgements
 
 - Python packaging template provided by
-  https://github.com/scientific-python/cookie
+  <https://github.com/scientific-python/cookie>
 
 - Funding for this effort was provided by NASA Grant 80NSSC22K1094
