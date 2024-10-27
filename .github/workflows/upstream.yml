@@ -3,10 +3,6 @@ name: Upstream versions
 
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,8 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Could add "3.14", which installs alpha versions
-        python-version: ["3.13"]
+        python-version: ["3.13", "3.14"]
         # windows-latest,
         runs-on: [ubuntu-latest, macos-14]
         #include:

@@ -19,7 +19,7 @@ jobs:
           environments: dev
           manifest-path: pyproject.toml
           cache: false
-          locked: false
+          locked: true
           #cache-write:
           #  ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
