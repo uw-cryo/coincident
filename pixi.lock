@@ -237,6 +237,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cc/75/7c3eb97f88043aa74dc664d03d706e09ac818efbd3e4987806b95c50190b/stac_asset-0.4.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/a1/cb/93bc0e51bea4e171a85151dbba3c3b3f612b50b953cd3076f5b4f0db9e14/time_machine-2.16.0-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/97/3f/c4c51c55ff8487f2e6d0e618dba917e3c3ee2caae6cf0fbb59c9b1876f2e/tzlocal-5.2-py3-none-any.whl
+      - pypi: .
       osx-arm64:
       - conda: https://conda.anaconda.org/conda-forge/noarch/affine-2.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/aiobotocore-2.15.1-pyhd8ed1ab_0.conda
@@ -456,6 +457,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cc/75/7c3eb97f88043aa74dc664d03d706e09ac818efbd3e4987806b95c50190b/stac_asset-0.4.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/4a/f4/603a84e7ae6427a53953db9f61b689dc6adf233e03c5f5ca907a901452fd/time_machine-2.16.0-cp312-cp312-macosx_10_9_universal2.whl
       - pypi: https://files.pythonhosted.org/packages/97/3f/c4c51c55ff8487f2e6d0e618dba917e3c3ee2caae6cf0fbb59c9b1876f2e/tzlocal-5.2-py3-none-any.whl
+      - pypi: .
   dev:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
@@ -3135,9 +3137,9 @@ packages:
   timestamp: 1633637895378
 - kind: pypi
   name: coincident
-  version: 0.1.dev32+gdaa9f44.d20241027
+  version: 0.1.dev33+g56b8caa.d20241027
   path: .
-  sha256: 98687ffc780fe80fc2b86cb545f7cfd82e07ec6d890bc50ca9720691c253a589
+  sha256: df8cbdefa959f9d3480ef16900520164ad859feb922b3a5bae1556854d3b9707
   requires_dist:
   - aiohttp<4,>=3.10.6
   - fsspec<2025,>=2024.9.0

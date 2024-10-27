@@ -224,6 +224,9 @@ mypy = "*"
 #rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
 #xvec = ">=0.3.0,<0.4"
 
+[tool.pixi.pypi-dependencies]
+coincident = { path = ".", editable = false }
+
 [tool.pixi.feature.dev.pypi-dependencies]
 coincident = { path = ".", editable = true }
 
