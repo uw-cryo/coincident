@@ -61,6 +61,8 @@ docs = [
   "sphinx>=7.0",
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
+  "matplotlib-base>=3.9.2,<4",
+  "sliderule>=4.7.1,<5"
 ]
 # all = [
 #   "matplotlib-base>=3.9.2,<4",
