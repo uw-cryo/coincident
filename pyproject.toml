@@ -25,23 +25,22 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
   "Topic :: Scientific/Engineering",
   "Typing :: Typed",
 ]
 dynamic = ["version"]
 
 dependencies = [
+  "aiohttp>=3.10.6,<4",
+  "fsspec>=2024.9.0,<2025",
   "geopandas>=1.0.1,<2",
   "maxar-platform==1.0.2a2",
   "planetary-computer>=1.0.0,<2",
   "pystac-client>=0.8.3,<0.9",
-  "fsspec>=2024.9.0,<2025",
-  "requests>=2.32.3,<3",
-  "aiohttp>=3.10.6,<4",
   "pyarrow>=17",
-  "stac-asset>=0.4.3,<0.5",
+  "requests>=2.32.3,<3",
   "rioxarray>=0.17.0,<0.18",
+  "stac-asset>=0.4.3,<0.5",
   "stac-geoparquet>=0.6.0,<0.7",
   "s3fs>=2024.9.0,<2025",
 ]
@@ -50,9 +49,10 @@ dependencies = [
 dev = [
   "ipykernel>=6.29.5,<7",
   "mypy>=1.11.2,<2",
+  "pre-commit>=3.8.0,<4",
+  "pylint>=3.3.1,<4",
   "pytest >=6",
   "pytest-cov >=3",
-  "pre-commit>=3.8.0,<4",
 ]
 docs = [
   "furo>=2023.08.17",
@@ -202,6 +202,7 @@ aiohttp = "*"
 fsspec = "*"
 geopandas = "*"
 planetary-computer = "*"
+pyarrow = "*"
 pystac-client = "*"
 requests = "*"
 rioxarray = "*"
@@ -212,19 +213,16 @@ s3fs = "*"
 #sliderule = ">=4.7.1,<5"
 
 [tool.pixi.feature.dev.dependencies]
-# Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.
-pre-commit = "<4"
-pytest = "*"
-mypy = "*"
-pyarrow = "*"
 # NOTE: ipykernel to run notebooks in vscode
 ipykernel = ">=6.29.5,<7"
+# Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.
+pre-commit = "<4"
+pylint = "*"
+pytest = "*"
+mypy = "*"
+# Testing additional dependencies
 #rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
-#uv = ">=0.4.14,<0.5"
-#stac-geoparquet = "*"
-#rasterio = ">=1.4.0,<2"
-xvec = ">=0.3.0,<0.4"
-pylint = ">=3.3.1,<4"
+#xvec = ">=0.3.0,<0.4"
 
 [tool.pixi.feature.dev.pypi-dependencies]
 coincident = { path = ".", editable = true }

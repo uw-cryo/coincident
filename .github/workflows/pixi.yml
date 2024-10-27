@@ -35,3 +35,7 @@ jobs:
           MAXAR_API_KEY: ${{ secrets.MAXAR_API_KEY}}
         run: |
           pixi run networktest
+
+      - name: Build Documentation
+        run: |
+          pixi run docs

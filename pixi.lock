@@ -503,7 +503,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/c-ares-1.34.2-heb4867d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ca-certificates-2024.8.30-hbcca054_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/certifi-2024.8.30-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/cf_xarray-0.10.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/cffi-1.17.1-py312h06ac9bb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cfgv-3.3.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/charset-normalizer-3.4.0-pyhd8ed1ab_0.conda
@@ -716,7 +715,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xerces-c-3.2.5-h988505b_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xorg-libxau-1.0.11-hb9d3cd8_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xorg-libxdmcp-1.1.5-hb9d3cd8_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/xvec-0.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xyzservices-2024.9.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xz-5.2.6-h166bdaf_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/linux-64/yaml-0.2.5-h7f98852_2.tar.bz2
@@ -789,7 +787,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/c-ares-1.34.2-h7ab814d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/ca-certificates-2024.8.30-hf0a4a13_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/certifi-2024.8.30-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/cf_xarray-0.10.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/cffi-1.17.1-py312h0fad829_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cfgv-3.3.1-pyhd8ed1ab_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/noarch/charset-normalizer-3.4.0-pyhd8ed1ab_0.conda
@@ -992,7 +989,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/xerces-c-3.2.5-h92fc2f4_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/xorg-libxau-1.0.11-hd74edd7_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/xorg-libxdmcp-1.1.5-hd74edd7_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/xvec-0.3.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xyzservices-2024.9.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/xz-5.2.6-h57fd34a_0.tar.bz2
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/yaml-0.2.5-h3422bc3_2.tar.bz2
@@ -2967,24 +2963,6 @@ packages:
   size: 163752
   timestamp: 1725278204397
 - kind: conda
-  name: cf_xarray
-  version: 0.10.0
-  build: pyhd8ed1ab_0
-  subdir: noarch
-  noarch: python
-  url: https://conda.anaconda.org/conda-forge/noarch/cf_xarray-0.10.0-pyhd8ed1ab_0.conda
-  sha256: 9733b1e42114f8f4be88005d89ecb39d56738750510601941e2197e1ba76efbc
-  md5: 9437cfe346eab83b011b4def99f0e879
-  depends:
-  - python >=3.10
-  - xarray >=2022.03.0
-  license: Apache-2.0
-  license_family: APACHE
-  purls:
-  - pkg:pypi/cf-xarray?source=hash-mapping
-  size: 62322
-  timestamp: 1729665344149
-- kind: conda
   name: cffi
   version: 1.17.1
   build: py312h06ac9bb_0
@@ -3157,9 +3135,9 @@ packages:
   timestamp: 1633637895378
 - kind: pypi
   name: coincident
-  version: 0.1.dev31+g21d13d7.d20241027
+  version: 0.1.dev32+gdaa9f44.d20241027
   path: .
-  sha256: 102ed813b6ec18c23b759550aa33a1ab4c457e6500a2cd9e2fdd99f5465196b4
+  sha256: 98687ffc780fe80fc2b86cb545f7cfd82e07ec6d890bc50ca9720691c253a589
   requires_dist:
   - aiohttp<4,>=3.10.6
   - fsspec<2025,>=2024.9.0
@@ -3176,6 +3154,7 @@ packages:
   - ipykernel<7,>=6.29.5 ; extra == 'dev'
   - mypy<2,>=1.11.2 ; extra == 'dev'
   - pre-commit<4,>=3.8.0 ; extra == 'dev'
+  - pylint<4,>=3.3.1 ; extra == 'dev'
   - pytest-cov>=3 ; extra == 'dev'
   - pytest>=6 ; extra == 'dev'
   - furo>=2023.8.17 ; extra == 'docs'
@@ -10377,27 +10356,6 @@ packages:
   purls: []
   size: 18487
   timestamp: 1727795205022
-- kind: conda
-  name: xvec
-  version: 0.3.0
-  build: pyhd8ed1ab_0
-  subdir: noarch
-  noarch: python
-  url: https://conda.anaconda.org/conda-forge/noarch/xvec-0.3.0-pyhd8ed1ab_0.conda
-  sha256: 537600fd25cf0dda2eb871542b19826105f67b4ebdbcbd53e32051a29070b3b5
-  md5: 6e69b7b186ae05e3322cce8a4a8b0cf7
-  depends:
-  - cf_xarray >=0.9.2
-  - pyproj >=3.0.0
-  - python >=3.9
-  - shapely >=2.0b1
-  - xarray >=2022.12.0
-  license: MIT
-  license_family: MIT
-  purls:
-  - pkg:pypi/xvec?source=hash-mapping
-  size: 31802
-  timestamp: 1721244885050
 - kind: conda
   name: xyzservices
   version: 2024.9.0
