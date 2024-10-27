@@ -24,7 +24,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.13", "3.14"]
+        # Could add "3.14", which installs alpha versions
+        python-version: ["3.13"]
         # windows-latest,
         runs-on: [ubuntu-latest, macos-14]
         #include:
