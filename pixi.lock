@@ -3137,9 +3137,9 @@ packages:
   timestamp: 1633637895378
 - kind: pypi
   name: coincident
-  version: 0.1.dev34+g9745d5e.d20241027
+  version: 0.1.dev37+g4521909.d20241027
   path: .
-  sha256: df8cbdefa959f9d3480ef16900520164ad859feb922b3a5bae1556854d3b9707
+  sha256: 25812a630b39d554cbf5b9b7925e42fb461080be789db98552c19c18a6011dd2
   requires_dist:
   - aiohttp<4,>=3.10.6
   - fsspec<2025,>=2024.9.0

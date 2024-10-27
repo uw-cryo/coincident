@@ -14,7 +14,7 @@ try:
     from sliderule import gedi, icesat2, toregion
 except ImportError:
     warnings.warn(
-        "sliderule not found. it is required for io.sliderule functionality: see https://slideruleearth.io/web/rtd/getting_started/Install.html",
+        "'sliderule' package not found. Install for GEDI & ICESat2 functionality: https://slideruleearth.io/web/rtd/getting_started/Install.html",
         stacklevel=2,
     )
 from coincident._utils import depends_on_optional

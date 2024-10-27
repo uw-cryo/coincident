@@ -34,7 +34,7 @@ try:
     import matplotlib.pyplot as plt
 except ImportError:
     warnings.warn(
-        "matplotlib not found. Install for plotting functions",
+        "'matplotlib' package not found. Install for plotting functions: https://matplotlib.org/stable/install/index.html",
         stacklevel=2,
     )
 

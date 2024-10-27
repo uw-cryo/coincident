@@ -61,8 +61,6 @@ docs = [
   "sphinx>=7.0",
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
-  "matplotlib-base>=3.9.2,<4",
-  "sliderule>=4.7.1,<5"
 ]
 # all = [
 #   "matplotlib-base>=3.9.2,<4",
@@ -98,8 +96,8 @@ filterwarnings = [
   # sliderule datetime.datetime.utcnow() is deprecated...
   "ignore::DeprecationWarning:sliderule",
   # Optional imports
-  "ignore:sliderule not found*:UserWarning",
-  "ignore:matplotlib not found*:UserWarning",
+  "ignore:Unable to authenticate with Maxar API:UserWarning",
+  "ignore:.* package not found:UserWarning",
 ]
 log_cli_level = "INFO"
 testpaths = [

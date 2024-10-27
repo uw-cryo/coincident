@@ -56,10 +56,17 @@ authentication to _download_ data (NASA). `coincident` assumes you have the
 following Environment Variables defined:
 
 ```bash
-export EARTHDATA_USERNAME=xxxxx
-export EARTHDATA_PASSWORD=yyyyy
-export MAXAR_API_KEY=zzzzz
+export EARTHDATA_USERNAME=aaaaa
+export EARTHDATA_PASSWORD=bbbbb
+export MAXAR_API_KEY=ccccc
+export PC_SDK_SUBSCRIPTION_KEY=ddddd
 ```
+
+Sign up for credentials at the following webpages:
+
+- https://urs.earthdata.nasa.gov
+- https://developers.maxar.com/docs/authentication/guides/api-key
+- https://planetarycomputer.developer.azure-api.net
 
 ### Acknowledgements
 
