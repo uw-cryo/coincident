@@ -25,43 +25,51 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
   "Topic :: Scientific/Engineering",
   "Typing :: Typed",
 ]
 dynamic = ["version"]
 
 dependencies = [
+  #"aiohttp>=3.10.6,<4",
+  "cloudpathlib[s3]>=0.20.0,<0.21",
+  #"fsspec>=2024.9.0,<2025",
   "geopandas>=1.0.1,<2",
-  "maxar-platform==1.0.2a2",
+  "maxar-platform>=1.0.2,<2",
   "planetary-computer>=1.0.0,<2",
+  "pyarrow>=18.0.0,<19",
   "pystac-client>=0.8.3,<0.9",
-  "fsspec>=2024.9.0,<2025",
   "requests>=2.32.3,<3",
-  "aiohttp>=3.10.6,<4",
-  "pyarrow>=17",
-  "stac-asset>=0.4.3,<0.5",
   "rioxarray>=0.17.0,<0.18",
+  "stac-asset>=0.4.3,<0.5",
   "stac-geoparquet>=0.6.0,<0.7",
-  "s3fs>=2024.9.0,<2025",
+  #"s3fs>=2024.9.0,<2025",
 ]
 
 [project.optional-dependencies]
 dev = [
   "ipykernel>=6.29.5,<7",
   "mypy>=1.11.2,<2",
+  "pre-commit>=3.8.0,<4",
+  "pylint>=3.3.1,<4",
   "pytest >=6",
   "pytest-cov >=3",
-  "pre-commit>=3.8.0,<4",
 ]
 docs = [
+  "folium", # comes w/ geopandas on conda-forge but not pypi
   "furo>=2023.08.17",
+  "mapclassify",
+  "matplotlib",
   "myst-nb",
   "myst_parser>=0.13",
   "sphinx>=7.0",
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
 ]
+# all = [
+#   "matplotlib-base>=3.9.2,<4",
+#   "sliderule>=4.7.1,<5"
+# ]
 
 [project.urls]
 Homepage = "https://github.com/uw-cryo/coincident"
@@ -88,7 +96,12 @@ filterwarnings = [
   "ignore:maxar_plaform authentication error:UserWarning",
   # https://github.com/microsoft/planetary-computer-sdk-for-python/issues/58
   "ignore::pydantic.warnings.PydanticDeprecatedSince20",
-  "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning"
+  "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning",
+  # sliderule datetime.datetime.utcnow() is deprecated...
+  "ignore::DeprecationWarning:sliderule",
+  # Optional imports
+  "ignore:Unable to authenticate with Maxar API:UserWarning",
+  "ignore:.* package not found:UserWarning",
 ]
 log_cli_level = "INFO"
 testpaths = [
@@ -104,6 +117,9 @@ report.exclude_also = [
   '\.\.\.',
   'if typing.TYPE_CHECKING:',
 ]
+
+[tool.codespell]
+skip="pixi.lock"
 
 [tool.mypy]
 files = ["src", "tests"]
@@ -150,7 +166,11 @@ ignore = [
   "PLR09",    # Too many <...>
   "PLR2004",  # Magic value used in comparison
   "ISC001",   # Conflicts with formatter
-  "PLC0414"   # explicit re-export
+  "PLC0414",  # explicit re-export
+  "PD901",    # df for DataFrame
+]
+exclude = [
+    "docs/*.ipynb",
 ]
 isort.required-imports = ["from __future__ import annotations"]
 # Uncomment if using a _compat.typing backport
@@ -158,7 +178,6 @@ isort.required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
-"noxfile.py" = ["T20"]
 
 [tool.pylint]
 ignore-paths = [".*/_version.py"]
@@ -171,6 +190,8 @@ messages_control.disable = [
   "missing-module-docstring",
   "missing-function-docstring",
   "wrong-import-position",
+  "C0103", # Allow ALLCAPS variable names
+  "W0212", # Access to a protected member _...
 ]
 
 [tool.pixi.project]
@@ -185,42 +206,48 @@ docs = { features = ["docs"], solve-group = "default" }
 # NOTE: pixi will match project.dependencies versions above but get them from conda-forge
 # If a package is listed in project.dependencies but not repeated here, it is installed from pypi
 [tool.pixi.dependencies]
-aiohttp = "*"
-fsspec = "*"
+python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
+#aiohttp = "*"
+#fsspec = "*"
 geopandas = "*"
 planetary-computer = "*"
 pystac-client = "*"
 requests = "*"
 rioxarray = "*"
 # stac-asset = "*" # not on conda-forge
+#s3fs = "*"
 stac-geoparquet = "*"
-s3fs = "*"
-sliderule = ">=4.7.1,<5"
+pyarrow = "*"
+#nbconvert = ">=7.16.4,<8"
+#cloudpathlib-s3 = ">=0.20.0,<0.21"
+#matplotlib-base = ">=3.9.2,<4"
+#sliderule = ">=4.7.1,<5"
 
 [tool.pixi.feature.dev.dependencies]
-# Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.
-pre-commit = "<4"
-pytest = "*"
-mypy = "*"
-pyarrow = "*"
 # NOTE: ipykernel to run notebooks in vscode
 ipykernel = ">=6.29.5,<7"
+# Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.
+pre-commit = "<4"
+pylint = "*"
+pytest = "*"
+mypy = "*"
+# Testing additional dependencies
 #rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
-#uv = ">=0.4.14,<0.5"
-#stac-geoparquet = "*"
-#rasterio = ">=1.4.0,<2"
-xvec = ">=0.3.0,<0.4"
+#xvec = ">=0.3.0,<0.4"
+
+[tool.pixi.pypi-dependencies]
+coincident = { path = ".", editable = false }
+#cloudpathlib = { version = "0.20.0,<0.21", extras = ["s3"]}
 
 [tool.pixi.feature.dev.pypi-dependencies]
 coincident = { path = ".", editable = true }
 
 [tool.pixi.feature.dev.tasks]
 precommit = "pre-commit run --all"
-# PyLint run separately https://pylint.pycqa.org/en/latest/user_guide/installation/pre-commit-integration.html
-pylint = "pipx run nox -s pylint"
+# NOTE: consider --output-format=github for github actions
+lint = "pylint src"
 test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
 networktest = "pytest --cov --cov-report=xml --cov-report=term"
-
 
 [tool.pixi.feature.docs.pypi-dependencies]
 coincident = { path = ".", editable = true }

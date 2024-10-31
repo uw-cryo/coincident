@@ -7,8 +7,8 @@ coincident directly from GitHub:
 pip install git+https://github.com/uw-cryo/coincident.git@main
 ```
 
-Alternatively, you can install a fresh locked environment with
-[pixi.sh](https://pixi.sh/latest/):
+Alternatively, you can install a fresh locked environment using the
+[GitHub CLI](https://cli.github.com) and [pixi.sh](https://pixi.sh/latest/):
 
 ```bash
 gh repo clone uw-cryo/coincident

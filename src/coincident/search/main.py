@@ -115,7 +115,7 @@ def search(
 
     # Non-STAC Searches
     elif dataset.alias == "3dep":
-        gf = wesm.search_convex_hulls(
+        gf = wesm.search_bboxes(
             intersects=intersects,
             search_start=search_start,
             search_end=search_end,

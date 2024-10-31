@@ -131,19 +131,13 @@ def test_wesm_search(aoi):
         dataset="3dep",
         intersects=aoi,
     )
-    assert len(gf) == 3
+    assert len(gf) == 5
 
 
 # NOTE ~10s on wifi
 @network
 def test_get_swath_polygon():
-    row = gpd.pd.Series(
-        dict(  # noqa: C408
-            project="CO_CameronPeakWildfire_2021_D21",
-            workunit="CO_CameronPkFire_1_2021",
-        )
-    )
-    gf = m.search.wesm.get_swath_polygons(row)
+    gf = m.search.wesm.get_swath_polygons("CO_CameronPkFire_1_2021")
     assert isinstance(gf, gpd.GeoDataFrame)
     assert len(gf) == 51
     assert "start_datetime" in gf.columns
@@ -152,8 +146,5 @@ def test_get_swath_polygon():
 
 @network
 def test_swath_polygon_not_found():
-    row = gpd.pd.Series(dict(project="AL_SWCentral_B22", workunit="AL_SWCentral_1_B22"))  # noqa: C408
-    with pytest.raises(
-        FileNotFoundError, match="Unable to find swath polygon shapefile"
-    ):
-        m.search.wesm.get_swath_polygons(row)
+    with pytest.raises(ValueError, match="No swath polygons found for workunit="):
+        m.search.wesm.get_swath_polygons("AL_SWCentral_1_B22")

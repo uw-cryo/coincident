@@ -27,8 +27,10 @@ Such datasets are intended to be used by the NASA STV community for
 calibration/validation, fusion algorithm development, and discipline-specific
 scientific analysis.
 
+See here for more information:
+<https://science.nasa.gov/earth-science/decadal-surveys/decadal-stv/coincident-datasets>
+
 **This tool is under active development, there are no stable releases yet!**
-https://science.nasa.gov/earth-science/decadal-surveys/decadal-stv/coincident-datasets/
 
 ## Development
 
@@ -41,8 +43,9 @@ git checkout -b newfeature
 pixi shell --environment dev # type `exit` to deactivate
 pre-commit install
 
-# Or run pre-configured environments and commands
-pixi run test
+# Or run pre-configured commands:
+pixi run networktest # or 'test'
+pixi run precommit # also runs automatically upon commits
 pixi run lint
 pixi run docs
 ```
@@ -54,12 +57,21 @@ authentication to _download_ data (NASA). `coincident` assumes you have the
 following Environment Variables defined:
 
 ```bash
-export EARTHDATA_USERNAME=xxxxx
-export EARTHDATA_PASSWORD=yyyyy
-export MAXAR_API_KEY=zzzzz
+export EARTHDATA_USERNAME=aaaaa
+export EARTHDATA_PASSWORD=bbbbb
+export MAXAR_API_KEY=ccccc
+export PC_SDK_SUBSCRIPTION_KEY=ddddd
 ```
+
+Sign up for credentials at the following webpages:
+
+- [](https://urs.earthdata.nasa.gov)
+- [](https://developers.maxar.com/docs/authentication/guides/api-key)
+- [](https://planetarycomputer.developer.azure-api.net)
 
 ### Acknowledgements
 
 - Python packaging template provided by
-  https://github.com/scientific-python/cookie
+  <https://github.com/scientific-python/cookie>
+
+- Funding for this effort was provided by NASA Grant 80NSSC22K1094

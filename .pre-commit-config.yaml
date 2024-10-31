@@ -87,3 +87,13 @@ repos:
       - id: check-dependabot
       - id: check-github-workflows
       - id: check-readthedocs
+
+  # https://pylint.pycqa.org/en/latest/user_guide/installation/pre-commit-integration.html#pre-commit-integration
+  # - repo: local
+  #   hooks:
+  #     - id: pylint
+  #       name: pylint
+  #       entry: pylint
+  #       language: system
+  #       types: [python]
+  #       require_serial: true

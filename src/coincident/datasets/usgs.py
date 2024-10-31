@@ -18,7 +18,8 @@ class ThreeDEP(Dataset):
 
     has_stac_api: bool = False
     search: str = (
-        "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/metadata/WESM.gpkg"
+        # "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/metadata/WESM.gpkg"
+        "s3://prd-tnm/StagedProducts/Elevation/metadata/WESM.gpkg"
     )
     start: str = "2000-12-01"
     end: str | None = None

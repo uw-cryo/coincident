@@ -19,7 +19,6 @@ Search
    wesm.get_swath_polygons
 
 
-
 Overlaps
 --------
 
@@ -29,6 +28,7 @@ Overlaps
    :toctree: generated/
 
    geographic_area
+   subset_by_minimum_area
    subset_by_temporal_overlap
 
 

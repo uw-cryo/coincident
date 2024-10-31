@@ -10,6 +10,15 @@
 
 installation
 introduction
+datasets
+```
+
+```{toctree}
+:maxdepth: 2
+:hidden:
+:caption: Examples
+
+quickstart
 ```
 
 ```{toctree}
