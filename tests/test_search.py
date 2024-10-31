@@ -42,6 +42,16 @@ def test_polygon_invalid_type():
         m.search.search(dataset="3dep", intersects="-120, 40, -121, 41")
 
 
+def test_to_geopandas_empty_search_result():
+    with pytest.raises(ValueError, match="ItemCollection is empty"):
+        m.search.stac.to_geopandas([])
+
+
+def test_unconstrained_search_warns():
+    with pytest.warns(match="Neither `bbox` nor `intersects` provided"):
+        m.search.search(dataset="tdx")
+
+
 # TODO: add more assertions / tests for this section
 @network
 @pytest.mark.filterwarnings("ignore:Server does not conform")
@@ -98,6 +108,7 @@ def test_gedi_search(aoi):
 def test_tdx_search(aoi):
     gf = m.search.search(dataset="tdx", intersects=aoi, datetime=["2009", "2020"])
     assert len(gf) == 48
+    assert gf["sar:product_type"].unique() == "SSC"
 
 
 # MS PLANETARY COMPUTER

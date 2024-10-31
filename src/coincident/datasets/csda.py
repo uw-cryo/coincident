@@ -14,6 +14,7 @@ https://github.com/stac-extensions/sar?tab=readme-ov-file#product-type
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 from coincident.datasets.general import Dataset
 
@@ -53,3 +54,19 @@ class TDX(Dataset):
     end: str | None = None
     type: str = "sar"
     provider: str = "csda"
+    stac_kwargs: dict[str, Any] = field(
+        default_factory=lambda: {
+            "limit": 1000,
+            "filter": {
+                "op": "and",
+                "args": [
+                    # exclude PAZ, only SSC products
+                    {
+                        "op": "in",
+                        "args": [{"property": "platform"}, ["TDX-1", "TSX-1"]],
+                    },
+                    {"op": "=", "args": [{"property": "sar:product_type"}, "SSC"]},
+                ],
+            },
+        }
+    )

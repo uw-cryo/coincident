@@ -30,7 +30,32 @@ except maxar_platform.session.NoSessionCredentials:
 def to_geopandas(
     collection: pystac.item_collection.ItemCollection,
 ) -> gpd.GeoDataFrame:
-    """Convert returned from STAC API to geodataframe via arrow"""
+    """
+    Convert a STAC ItemCollection to a GeoDataFrame.
+    This function converts a given STAC ItemCollection to a GeoDataFrame using the
+    `stac_geoparquet.arrow.parse_stac_items_to_arrow` method. It also adds an additional
+    column 'dayofyear' for convenience.
+
+    Parameters
+    ----------
+    collection : pystac.item_collection.ItemCollection
+        The STAC ItemCollection to be converted.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        A GeoDataFrame containing the data from the STAC ItemCollection.
+
+    Raises
+    ------
+    ValueError
+        If the provided ItemCollection is empty.
+    """
+    # Catch if no items are passed
+    if len(collection) == 0:
+        message = "ItemCollection is empty, cannot convert to GeoDataFrame"
+        raise ValueError(message)
+
     record_batch_reader = stac_geoparquet.arrow.parse_stac_items_to_arrow(collection)
     gf = gpd.GeoDataFrame.from_arrow(record_batch_reader)  # doesn't keep arrow dtypes
 
@@ -65,6 +90,8 @@ def search(
     client: pystac_client.client.Client, **kwargs: dict[str, Any] | None
 ) -> pystac_client.item_search.ItemSearch:
     """Search any STAC API (e.g. https://github.com/nasa/cmr-stac)"""
+    # NOTE: add logging for kwargs?
+    # print(kwargs)
     results = client.search(
         **kwargs,
     )
