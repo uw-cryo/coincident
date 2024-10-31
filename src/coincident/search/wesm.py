@@ -10,7 +10,6 @@ from typing import Any
 
 import pandas as pd
 import pyogrio
-import rasterio.env
 from cloudpathlib import S3Client
 from geopandas import GeoDataFrame, read_file
 from pandas import Timedelta, Timestamp
@@ -21,13 +20,8 @@ from coincident.overlaps import subset_by_temporal_overlap
 
 # Cloudpath-based S3 client
 client = S3Client(no_sign_request=True)
-# rasterio/GDAL S3 Client
-OGRENV = rasterio.Env(
-    AWS_NO_SIGN_REQUEST="YES",
-    GDAL_PAM_ENABLED="NO",
-    FDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
-)
-
+# Geopandas S3 Client
+pyogrio.set_gdal_config_options({"AWS_NO_SIGN_REQUEST": True})
 
 swath_polygon_csv = resources.files("coincident.search") / "swath_polygons.csv"
 
@@ -125,10 +119,9 @@ def search_bboxes(
     """
     # NOTE: much faster to JUST read bboxes, not full geometry or other columns
     sql = "select * from rtree_WESM_geometry"
-    with OGRENV:
-        df = pyogrio.read_dataframe(
-            url, sql=sql
-        )  # , use_arrow=True... arrow probably doesn;t matter for <10000 rows?
+    df = pyogrio.read_dataframe(
+        url, sql=sql
+    )  # , use_arrow=True... arrow probably doesn;t matter for <10000 rows?
 
     bboxes = df.apply(lambda x: box(x.minx, x.miny, x.maxx, x.maxy), axis=1)
     gf = (
@@ -176,17 +169,17 @@ def load_by_fid(
     # Format SQL: # special case for (a) not (a,)
     # Reading a remote WESM by specific FIDs is fast
     query = f"fid in ({fids[0]})" if len(fids) == 1 else f"fid in {*fids,}"
-    with OGRENV:
-        gf = read_file(
-            url,
-            where=query,
-            **kwargs,
-            # mask=mask, # spatial subset intolerably slow for remote GPKG...
-            # NOTE: worth additional dependencies for speed?
-            # Only faster I think if GPKG is local & large https://github.com/geopandas/pyogrio/issues/252
-            # engine='pyogrio',
-            # pyarrow=True,
-        )
+
+    gf = read_file(
+        url,
+        where=query,
+        **kwargs,
+        # mask=mask, # spatial subset intolerably slow for remote GPKG...
+        # NOTE: worth additional dependencies for speed?
+        # Only faster I think if GPKG is local & large https://github.com/geopandas/pyogrio/issues/252
+        # engine='pyogrio',
+        # pyarrow=True,
+    )
 
     # For the purposes of footprint polygon search, just ignore datum (NAD83)
     gf = gf.set_crs("EPSG:4326", allow_override=True)
@@ -255,8 +248,7 @@ def get_swath_polygons(
         raise ValueError(message) from e
 
     # Actually read from S3!
-    with OGRENV:
-        gf = read_file(url)
+    gf = read_file(url)
 
     gf = swathtime_to_datetime(gf)
     # Swath polygons likely have different CRS (EPSG:6350), so reproject
