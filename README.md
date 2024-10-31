@@ -43,8 +43,9 @@ git checkout -b newfeature
 pixi shell --environment dev # type `exit` to deactivate
 pre-commit install
 
-# Or run pre-configured environments and commands
+# Or run pre-configured commands:
 pixi run test
+pixi run precommit # (also runs automatically upon commit)
 pixi run lint
 pixi run docs
 ```

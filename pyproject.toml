@@ -31,18 +31,19 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
-  "aiohttp>=3.10.6,<4",
-  "fsspec>=2024.9.0,<2025",
+  #"aiohttp>=3.10.6,<4",
+  "cloudpathlib[s3]>=0.20.0,<0.21",
+  #"fsspec>=2024.9.0,<2025",
   "geopandas>=1.0.1,<2",
-  "maxar-platform==1.0.2a2",
+  "maxar-platform>=1.0.2,<2",
   "planetary-computer>=1.0.0,<2",
+  "pyarrow>=18.0.0,<19",
   "pystac-client>=0.8.3,<0.9",
-  "pyarrow>=17",
   "requests>=2.32.3,<3",
   "rioxarray>=0.17.0,<0.18",
   "stac-asset>=0.4.3,<0.5",
   "stac-geoparquet>=0.6.0,<0.7",
-  "s3fs>=2024.9.0,<2025",
+  #"s3fs>=2024.9.0,<2025",
 ]
 
 [project.optional-dependencies]
@@ -162,7 +163,11 @@ ignore = [
   "PLR09",    # Too many <...>
   "PLR2004",  # Magic value used in comparison
   "ISC001",   # Conflicts with formatter
-  "PLC0414"   # explicit re-export
+  "PLC0414",  # explicit re-export
+  "PD901",    # df for DataFrame
+]
+exclude = [
+    "docs/*.ipynb",
 ]
 isort.required-imports = ["from __future__ import annotations"]
 # Uncomment if using a _compat.typing backport
@@ -198,17 +203,20 @@ docs = { features = ["docs"], solve-group = "default" }
 # NOTE: pixi will match project.dependencies versions above but get them from conda-forge
 # If a package is listed in project.dependencies but not repeated here, it is installed from pypi
 [tool.pixi.dependencies]
-aiohttp = "*"
-fsspec = "*"
+python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
+#aiohttp = "*"
+#fsspec = "*"
 geopandas = "*"
 planetary-computer = "*"
-pyarrow = "*"
 pystac-client = "*"
 requests = "*"
 rioxarray = "*"
 # stac-asset = "*" # not on conda-forge
+#s3fs = "*"
 stac-geoparquet = "*"
-s3fs = "*"
+pyarrow = "*"
+#nbconvert = ">=7.16.4,<8"
+#cloudpathlib-s3 = ">=0.20.0,<0.21"
 #matplotlib-base = ">=3.9.2,<4"
 #sliderule = ">=4.7.1,<5"
 
@@ -226,6 +234,7 @@ mypy = "*"
 
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = false }
+#cloudpathlib = { version = "0.20.0,<0.21", extras = ["s3"]}
 
 [tool.pixi.feature.dev.pypi-dependencies]
 coincident = { path = ".", editable = true }

@@ -5,24 +5,27 @@ https://www.usgs.gov/ngp-standards-and-specifications/wesm-data-dictionary
 
 from __future__ import annotations
 
+from importlib import resources
 from typing import Any
 
-import fsspec
-import s3fs
-from geopandas import GeoDataFrame, read_file, read_parquet
-from pandas import Series, Timedelta, Timestamp
+import pandas as pd
+import pyogrio
+import rasterio.env
+from cloudpathlib import S3Client
+from geopandas import GeoDataFrame, read_file
+from pandas import Timedelta, Timestamp
+from shapely.geometry import box
 
 from coincident.datasets import usgs
 from coincident.overlaps import subset_by_temporal_overlap
 
+# explicitly instantiate a client that always uses the local cache
+client = S3Client(no_sign_request=True)
+
+swath_polygon_csv = resources.files("coincident.search") / "swath_polygons.csv"
+
 defaults = usgs.ThreeDEP()
 wesm_gpkg_url = defaults.search
-
-
-def simplify_footprint(gf: GeoDataFrame, tolerance: float = 0.1) -> None:
-    """complexity of WESM footprints causes slow STAC searches"""
-    # parts of a simplified geometry will be no more than `tolerance` distance from the original
-    gf = gf.simplify(tolerance)
 
 
 def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
@@ -52,6 +55,8 @@ def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
         "collect_end": "end_datetime",
     }
     gf = gf.rename(columns=name_map)
+    gf["start_datetime"] = pd.to_datetime(gf["start_datetime"])
+    gf["end_datetime"] = pd.to_datetime(gf["end_datetime"])
     duration = gf.end_datetime - gf.start_datetime
     gf["datetime"] = gf.start_datetime + duration / 2
     gf["dayofyear"] = gf.datetime.dt.dayofyear
@@ -60,20 +65,45 @@ def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
     return gf
 
 
-def search_convex_hulls(
-    url: str = "https://github.com/uw-cryo/stv-aux-data/releases/download/v0.1/WESM-chulls.geoparquet",
+def read_wesm_csv(url: str = wesm_gpkg_url) -> GeoDataFrame:
+    """
+    Read WESM metadata from a remote CSV file.
+
+    The CSV contains up to date metadata and a mapping of workunit to feature ID (FID)
+    in the main GPKG file.
+
+    Parameters
+    ----------
+    url : str, optional
+        The URL or file path to the WESM  index file
+
+    Returns
+    -------
+    GeoDataFrame
+        A GeoDataFrame containing the metadata from the CSV file.
+    """
+    # Cache CSV locally, so subsequent reads are faster
+    wesm_csv = client.CloudPath(url.replace(".gpkg", ".csv"))
+    df = pd.read_csv(wesm_csv)
+    df.index += 1
+    df.index.name = "fid"
+    return df
+
+
+def search_bboxes(
+    url: str = wesm_gpkg_url,
     intersects: GeoDataFrame | None = None,
     search_start: Timestamp | None = None,
     search_end: Timestamp | None = None,
     # **kwargs: dict[str, Any] | None,
 ) -> GeoDataFrame:
     """
-    Search GeoParquet WESM index of convex hulls within a time range and spatial intersection.
+    Search WESM.gpkg bounding boxes for spatial and temporal overlap
 
     Parameters
     ----------
     url : str, optional
-        URL to the GeoParquet file containing the convex hulls, by default "https://github.com/uw-cryo/stv-aux-data/releases/download/v0.1/WESM-chulls.geoparquet".
+        The URL or file path to the GeoPackage (GPKG) file.
     intersects : GeoDataFrame, optional
         A GeoDataFrame to spatially intersect with the convex hulls, by default None.
     search_start : Timestamp, optional
@@ -86,10 +116,25 @@ def search_convex_hulls(
     GeoDataFrame
         A GeoDataFrame containing the convex hull geometries and FIDs in EPSG:4326
     """
-    with fsspec.open(url) as f:
-        gf = read_parquet(f)
+    # NOTE: much faster to JUST read bboxes, not full geometry or other columns
+    sql = "select * from rtree_WESM_geometry"
+    with rasterio.Env(aws_unsigned=True):
+        df = pyogrio.read_dataframe(
+            url, sql=sql
+        )  # , use_arrow=True... arrow probably doesn;t matter for <10000 rows?
+
+    bboxes = df.apply(lambda x: box(x.minx, x.miny, x.maxx, x.maxy), axis=1)
+    gf = (
+        GeoDataFrame(df, geometry=bboxes, crs="EPSG:4326")
+        .rename(columns={"id": "fid"})
+        .set_index("fid")
+    )
+
+    df = read_wesm_csv(url)
+    gf = gf.merge(df, right_index=True, left_index=True)
 
     gf = stacify_column_names(gf)
+
     if intersects is not None:
         gf = gf[gf.intersects(intersects.geometry.iloc[0])]
 
@@ -122,18 +167,19 @@ def load_by_fid(
         modified by :meth:`stacify_column_names`.
     """
     # Format SQL: # special case for (a) not (a,)
+    # Reading a remote WESM by specific FIDs is fast
     query = f"fid in ({fids[0]})" if len(fids) == 1 else f"fid in {*fids,}"
-
-    gf = read_file(
-        url,
-        where=query,
-        **kwargs,
-        # mask=mask, # spatial subset intolerably slow for remote GPKG...
-        # NOTE: worth additional dependencies for speed?
-        # Only faster I think if GPKG is local https://github.com/geopandas/pyogrio/issues/252
-        # engine='pyogrio',
-        # pyarrow=True,
-    )
+    with rasterio.Env(aws_unsigned=True):
+        gf = read_file(
+            url,
+            where=query,
+            **kwargs,
+            # mask=mask, # spatial subset intolerably slow for remote GPKG...
+            # NOTE: worth additional dependencies for speed?
+            # Only faster I think if GPKG is local & large https://github.com/geopandas/pyogrio/issues/252
+            # engine='pyogrio',
+            # pyarrow=True,
+        )
 
     # For the purposes of footprint polygon search, just ignore datum (NAD83)
     gf = gf.set_crs("EPSG:4326", allow_override=True)
@@ -172,14 +218,16 @@ def swathtime_to_datetime(
     return stacify_column_names(gf)
 
 
-def get_swath_polygons(row: Series) -> GeoDataFrame:
+def get_swath_polygons(
+    workunit: str,
+) -> GeoDataFrame:
     """
     Retrieve swath polygons from a remote URL and convert swath time to datetime.
 
     Parameters
     ----------
-    row : pd.Series
-        A pandas Series containing the project and workunit information needed to construct the URL.
+    fid : int
+        A pandas Series containing WESM feature ID (FID)
 
     Returns
     -------
@@ -188,23 +236,21 @@ def get_swath_polygons(row: Series) -> GeoDataFrame:
 
     Notes
     -----
-        - Swath polygons only available for data collected after 2020
-        - Usually takes ~10 to 60s to load one of these shapefiles
+        - Swath polygons not available for all workunits
     """
-    s3 = s3fs.S3FileSystem(anon=True)
-    url = f"prd-tnm/StagedProducts/Elevation/metadata/{row.project}/{row.workunit}/spatial_metadata/USGS/**/*.shp"
-    try:
-        files = s3.glob(url)
-        swath_poly_key = next(x for x in files if "swath" in x.lower())
-    except StopIteration:
-        missing_link = f"http://prd-tnm.s3.amazonaws.com/index.html?prefix=StagedProducts/Elevation/metadata/{row.project}/{row.workunit}"
-        message = f"Unable to find swath polygon shapefile in {missing_link}"
-        raise FileNotFoundError(message) from None
+    # NOTE: this CSV comes from crawling WESM USGS/spatial_metadata in S3 bucket
+    df = pd.read_csv(swath_polygon_csv)
 
-    uri = swath_poly_key.replace("prd-tnm", "https://prd-tnm.s3.amazonaws.com")
-    gf = read_file(uri)
+    try:
+        url = df[df.workunit == workunit].swathpolygon_link.iloc[0]
+    except Exception as e:
+        message = f"No swath polygons found for workunit={workunit}"
+        raise ValueError(message) from e
+
+    # Actually read from S3!
+    with rasterio.Env(aws_unsigned=True):
+        gf = read_file(url)
 
     gf = swathtime_to_datetime(gf)
-
     # Swath polygons likely have different CRS (EPSG:6350), so reproject
     return gf.to_crs("EPSG:4326")
