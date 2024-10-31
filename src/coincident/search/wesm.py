@@ -21,7 +21,9 @@ from coincident.overlaps import subset_by_temporal_overlap
 # Cloudpath-based S3 client
 client = S3Client(no_sign_request=True)
 # Geopandas S3 Client
-pyogrio.set_gdal_config_options({"AWS_NO_SIGN_REQUEST": True})
+pyogrio.set_gdal_config_options(
+    {"AWS_NO_SIGN_REQUEST": True, "GDAL_PAM_ENABLED": False}
+)
 
 swath_polygon_csv = resources.files("coincident.search") / "swath_polygons.csv"
 
