@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import geopandas as gpd
@@ -51,10 +52,10 @@ def search(
         try:
             dataset = _alias_to_Dataset[dataset]
         except KeyError as e:
-            message = (
+            msg_unsupported = (
                 f"{dataset} is not a supported dataset: {_alias_to_Dataset.keys()}"
             )
-            raise ValueError(message) from e
+            raise ValueError(msg_unsupported) from e
 
     # Validate Datetimes
     _validate_temporal_bounds(dataset, datetime)
@@ -81,6 +82,11 @@ def search(
             shapely_geometry = shapely_geometry.reverse()
         aoi = _pystac_client._format_intersects(shapely_geometry)  # to JSON geometry
     else:
+        if "bbox" not in kwargs:
+            msg_unconstrained = (
+                "Neither `bbox` nor `intersects` provided... search will be global"
+            )
+            warnings.warn(msg_unconstrained, stacklevel=2)
         aoi = None
 
     # STAC API Searches
@@ -94,8 +100,8 @@ def search(
         if dataset.provider == "maxar":
             # NOTE: not sure how to avoid incompatible type "str | None"; expected "str" for Dataset.attrs
             client = stac.configure_maxar_client(dataset.area_based_calc)  # type: ignore[attr-defined]
-            results = stac.search(client, **stac_api_kwargs)
-            gf = stac.to_geopandas(results)
+            item_collection = stac.search(client, **stac_api_kwargs)
+            gf = stac.to_geopandas(item_collection)
             # Client-side reduce to only acquisitions having stereo pairs
             gf = gf.loc[gf.stereo_pair_identifiers.str[0].dropna().index]
 
@@ -110,8 +116,26 @@ def search(
             # Generic STAC endpoint w/o additional config
             else:
                 client = stac.configure_stac_client(dataset.search)  # type: ignore[arg-type]
-            results = stac.search(client, **stac_api_kwargs)
-            gf = stac.to_geopandas(results)
+            item_collection = stac.search(client, **stac_api_kwargs)
+
+            # Per-dataset munging
+            # https://github.com/uw-cryo/coincident/issues/8#issuecomment-2449810481
+            if dataset.alias == "tdx":
+                # Drop columns with messy schema
+                dropcols = [
+                    "sceneInfo",
+                    "missionInfo",
+                    "previewInfo",
+                    "imageDataInfo",
+                    "generationInfo",
+                    "acquisitionInfo",
+                    "productVariantInfo",
+                ]
+                for item in item_collection:
+                    for col in dropcols:
+                        item.properties.pop(col)
+
+            gf = stac.to_geopandas(item_collection)
 
     # Non-STAC Searches
     elif dataset.alias == "3dep":
