@@ -44,8 +44,8 @@ pixi shell --environment dev # type `exit` to deactivate
 pre-commit install
 
 # Or run pre-configured commands:
-pixi run test
-pixi run precommit # (also runs automatically upon commit)
+pixi run networktest # or 'test'
+pixi run precommit # also runs automatically upon commits
 pixi run lint
 pixi run docs
 ```

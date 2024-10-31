@@ -3117,9 +3117,9 @@ packages:
   requires_python: '>=3.8'
 - kind: pypi
   name: coincident
-  version: 0.1.dev42+g4d5eb30.d20241031
+  version: 0.1.dev43+g16468bc.d20241031
   path: .
-  sha256: e2326c97099ab79e13cb5f1af0b46e633caba3f80def8309d07d0de01ac05899
+  sha256: ff33a9cdefb73e562804affbed3bda6ba7e9ee34533e3112f68164a7babf7107
   requires_dist:
   - cloudpathlib[s3]<0.21,>=0.20.0
   - geopandas<2,>=1.0.1
@@ -3139,6 +3139,8 @@ packages:
   - pytest>=6 ; extra == 'dev'
   - folium ; extra == 'docs'
   - furo>=2023.8.17 ; extra == 'docs'
+  - mapclassify ; extra == 'docs'
+  - matplotlib ; extra == 'docs'
   - myst-nb ; extra == 'docs'
   - myst-parser>=0.13 ; extra == 'docs'
   - sphinx-autodoc-typehints ; extra == 'docs'

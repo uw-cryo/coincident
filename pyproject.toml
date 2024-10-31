@@ -58,6 +58,8 @@ dev = [
 docs = [
   "folium", # comes w/ geopandas on conda-forge but not pypi
   "furo>=2023.08.17",
+  "mapclassify",
+  "matplotlib",
   "myst-nb",
   "myst_parser>=0.13",
   "sphinx>=7.0",
