@@ -215,7 +215,7 @@ def _validate_spatial_bounds(
         raise ValueError(message)
 
 
-def iterative_search(
+def cascading_search(
     primary_dataset: gpd.GeoDataFrame,
     secondary_datasets: list[tuple[str, int]] = [  # noqa: B006
         ("maxar", 14),
@@ -225,7 +225,9 @@ def iterative_search(
     min_overlap_area: float = 20,
 ) -> list[gpd.GeoDataFrame]:
     """
-    Perform an iterative search to find overlapping datasets acquired within specific time ranges.
+    Perform an cascading search to find overlapping datasets acquired within specific time ranges.
+
+    Secondary datasets are searched based only on spatial overlap areas with previous datasets. In other words, the overlapping area is progressively reduced.
 
     Temporal buffer is applied as either (datetime-buffer <= acquisition <= datetime+buffer)
      or (start_datetime-buffer <= acquisition <= end_datetime+buffer)
@@ -246,10 +248,11 @@ def iterative_search(
     list of gpd.GeoDataFrame
         A list of GeoDataFrames containing the search results for each secondary dataset.
     """
-    # Do searches on convex hull, but intersect results with original geometry
-    aoi = primary_dataset.convex_hull
+    # Do searches on simple geometry, but intersect results with original geometry
+    search_geometry = primary_dataset.simplify(0.01)  # or convex_hull?
+    detailed_geometry = primary_dataset[["geometry"]]
 
-    if "start_datetime" and "end_datetime" in primary_dataset.columns:
+    if "end_datetime" in primary_dataset.columns:
         start = primary_dataset.start_datetime.iloc[0]
         end = primary_dataset.end_datetime.iloc[0]
     else:
@@ -260,26 +263,26 @@ def iterative_search(
         pad = gpd.pd.Timedelta(days=temporal_buffer)
         date_range = [start - pad, end + pad]
 
-        # Search secondarxy dataset
+        # Search secondary dataset
         gfs = search(
             dataset=dataset,
-            intersects=aoi,
+            intersects=search_geometry,
             datetime=date_range,
         )
 
-        # Do intersection
         if dataset == "maxar":
             gfs["stereo_pair_id"] = gfs.stereo_pair_identifiers.str[0]
             gfs = gfs.dissolve(by="stereo_pair_id", as_index=False)
-            gf_i = gfs.overlay(primary_dataset[["geometry"]], how="intersection")
-        else:
-            # NOTE: here we just take the boundary of the union of all maxar+lidar regions to avoid many overlay geometries
-            union = gpd.GeoDataFrame(geometry=[gf_i.union_all()], crs="EPSG:4326")
-            gf_i = union.overlay(gfs, how="intersection")
-        gf_i = subset_by_minimum_area(gf_i, min_overlap_area)
 
-        # We've refined our search polygon again, so use a new AOI
+        # Keep track of original footprints
+        gfs["original_geometry"] = gfs["geometry"]
+
+        gf_i = gfs.overlay(detailed_geometry, how="intersection")
+        gf_i = subset_by_minimum_area(gf_i, min_overlap_area)
         results.append(gf_i)
-        aoi = gpd.GeoSeries(gf_i.union_all().convex_hull, crs="EPSG:4326")
+
+        # We've refined our search polygon again, so update search GeoDataFrame
+        detailed_geometry = gf_i.dissolve()[["geometry"]]
+        search_geometry = detailed_geometry.simplify(0.01)
 
     return results

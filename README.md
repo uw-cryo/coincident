@@ -2,6 +2,7 @@
 
 [![Actions Status][actions-badge]][actions-link]
 [![Documentation Status][rtd-badge]][rtd-link]
+
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/uw-cryo/coincident)
 
 <!-- SPHINX-START -->
@@ -32,44 +33,7 @@ See here for more information:
 
 **This tool is under active development, there are no stable releases yet!**
 
-## Development
-
-Use [pixi](https://pixi.sh) for environment management
-
-```bash
-git clone https://github.com/uw-cryo/coincident.git
-cd coincident
-git checkout -b newfeature
-pixi shell --environment dev # type `exit` to deactivate
-pre-commit install
-
-# Or run pre-configured commands:
-pixi run networktest # or 'test'
-pixi run precommit # also runs automatically upon commits
-pixi run lint
-pixi run docs
-```
-
-## Authentication
-
-Some datasets require authentication to _search_ (Maxar) others only require
-authentication to _download_ data (NASA). `coincident` assumes you have the
-following Environment Variables defined:
-
-```bash
-export EARTHDATA_USERNAME=aaaaa
-export EARTHDATA_PASSWORD=bbbbb
-export MAXAR_API_KEY=ccccc
-export PC_SDK_SUBSCRIPTION_KEY=ddddd
-```
-
-Sign up for credentials at the following webpages:
-
-- [](https://urs.earthdata.nasa.gov)
-- [](https://developers.maxar.com/docs/authentication/guides/api-key)
-- [](https://planetarycomputer.developer.azure-api.net)
-
-### Acknowledgements
+## Acknowledgements
 
 - Python packaging template provided by
   <https://github.com/scientific-python/cookie>

@@ -65,7 +65,7 @@ html_static_path = ["_static"]
 
 # NOTE: consider adding back in once for distinct sections (user guide, examples, API reference)
 # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/layout.html#primary-sidebar-left
-html_sidebars = {"**": []}
+# html_sidebars = {"**": []}
 
 myst_enable_extensions = [
     "colon_fence",

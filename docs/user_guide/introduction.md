@@ -39,4 +39,4 @@ gf.explore(column="workunit", popup=True)
 `coincident` also provides a number of convenience functions, some of which only
 pertain to specific datasets. For example, loading raster imagery via
 [Xarray](https://docs.xarray.dev/en/stable) or creating visualizations of browse
-imagery. Refer to [the API Docs](./api) for a listing of functions.
+imagery. Refer to [the API Docs](../api) for a listing of functions.
