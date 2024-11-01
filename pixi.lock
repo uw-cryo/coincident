@@ -3133,9 +3133,9 @@ packages:
   requires_python: '>=3.8'
 - kind: pypi
   name: coincident
-  version: 0.1.dev32+ge147cb5
+  version: 0.1.dev34+gd35fb3f.d20241101
   path: .
-  sha256: 144af2002bfff5ea2468d95487eeaafe1ea5f1f473c2660f2362a27d8a83aea5
+  sha256: a63116f47c1734a666e812f4002a1e91949d0229437b571ba9ae4e913c2c5a0b
   requires_dist:
   - cloudpathlib[s3]<0.21,>=0.20.0
   - geopandas<2,>=1.0.1

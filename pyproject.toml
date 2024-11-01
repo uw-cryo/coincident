@@ -192,7 +192,8 @@ messages_control.disable = [
   "missing-function-docstring",
   "wrong-import-position",
   "C0103", # Allow ALLCAPS variable names
-  "W0212", # Access to a protected member _...
+  "W0212", # Access to a protected member
+  "W0102", # Dangerous default value as argument []
 ]
 
 [tool.pixi.project]

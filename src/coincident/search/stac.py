@@ -17,14 +17,14 @@ import stac_geoparquet
 try:
     import maxar_platform
 except ImportError:
-    message = "'maxar-platform' package not found. Install for maxar functionality: https://pypi.org/project/maxar-platform/"
-    warnings.warn(message, stacklevel=2)
+    msg_notfound = "'maxar-platform' package not found. Install for maxar functionality: https://pypi.org/project/maxar-platform/"
+    warnings.warn(msg_notfound, stacklevel=2)
 
 try:
     import maxar_platform.discovery
 except maxar_platform.session.NoSessionCredentials:
-    message = "Unable to authenticate with Maxar API. Please set MAXAR_API_KEY environment variable."
-    warnings.warn(message, stacklevel=2)
+    msg_noauth = "Unable to authenticate with Maxar API. Please set MAXAR_API_KEY environment variable."
+    warnings.warn(msg_noauth, stacklevel=2)
 
 
 def to_geopandas(
