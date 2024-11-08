@@ -71,7 +71,7 @@ def subset_by_temporal_overlap(
         buffered_start, buffered_end, closed="both"
     )
     search_interval = gpd.pd.Interval(start_datetime, end_datetime, closed="both")
-    keep = results_intervals.overlaps(search_interval)
+    keep = results_intervals.overlaps(search_interval)  # pylint: disable=no-member
 
     return gf.loc[keep, :]
 

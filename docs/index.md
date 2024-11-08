@@ -5,17 +5,9 @@
 ```
 
 ```{toctree}
-:maxdepth: 2
 :hidden:
 
-installation
-introduction
-```
-
-```{toctree}
-:maxdepth: 2
-:hidden:
-:caption: API
-
-api
+user_guide/index.md
+examples/index.md
+api.rst
 ```

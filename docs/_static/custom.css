@@ -1,0 +1,4 @@
+/* Make default pandas table font smaller */
+div.cell_output table {
+  font-size: 0.8em;
+}

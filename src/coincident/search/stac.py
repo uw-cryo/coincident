@@ -4,6 +4,7 @@ STAC Search Functions
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import geopandas as gpd
@@ -12,22 +13,49 @@ import pystac
 import pystac_client
 import stac_geoparquet
 
-# Only needed if planetary_computer SDK is optional dependency...
-# try:
-#     import planetary_computer
-#     modifier = planetary_computer.sign_inplace
-# except ModuleNotFoundError as e:
-#     modifier = None
-#     message = f'{str(e)}: for authenticated requests install plantary_computer package (https://github.com/microsoft/planetary-computer-sdk-for-python)'
-#     warnings.warn(message)
+# Any import that requires auth to work will be optional
+try:
+    import maxar_platform
+except ImportError:
+    msg_notfound = "'maxar-platform' package not found. Install for maxar functionality: https://pypi.org/project/maxar-platform/"
+    warnings.warn(msg_notfound, stacklevel=2)
 
-# NOTE: add function to keep only single thumbnail in assets from NASA CMR searches?
+try:
+    import maxar_platform.discovery
+except maxar_platform.session.NoSessionCredentials:
+    msg_noauth = "Unable to authenticate with Maxar API. Please set MAXAR_API_KEY environment variable."
+    warnings.warn(msg_noauth, stacklevel=2)
 
 
 def to_geopandas(
     collection: pystac.item_collection.ItemCollection,
 ) -> gpd.GeoDataFrame:
-    """Convert returned from STAC API to geodataframe via arrow"""
+    """
+    Convert a STAC ItemCollection to a GeoDataFrame.
+    This function converts a given STAC ItemCollection to a GeoDataFrame using the
+    `stac_geoparquet.arrow.parse_stac_items_to_arrow` method. It also adds an additional
+    column 'dayofyear' for convenience.
+
+    Parameters
+    ----------
+    collection : pystac.item_collection.ItemCollection
+        The STAC ItemCollection to be converted.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        A GeoDataFrame containing the data from the STAC ItemCollection.
+
+    Raises
+    ------
+    ValueError
+        If the provided ItemCollection is empty.
+    """
+    # Catch if no items are passed
+    if len(collection) == 0:
+        message = "ItemCollection is empty, cannot convert to GeoDataFrame"
+        raise ValueError(message)
+
     record_batch_reader = stac_geoparquet.arrow.parse_stac_items_to_arrow(collection)
     gf = gpd.GeoDataFrame.from_arrow(record_batch_reader)  # doesn't keep arrow dtypes
 
@@ -62,6 +90,8 @@ def search(
     client: pystac_client.client.Client, **kwargs: dict[str, Any] | None
 ) -> pystac_client.item_search.ItemSearch:
     """Search any STAC API (e.g. https://github.com/nasa/cmr-stac)"""
+    # NOTE: add logging for kwargs?
+    # print(kwargs)
     results = client.search(
         **kwargs,
     )
@@ -69,8 +99,7 @@ def search(
 
 
 def configure_maxar_client(area_based_calc: bool = True) -> pystac_client.client.Client:
-    """ """
-    import maxar_platform.discovery  # automatically checks authentication
+    # automatically checks authentication
 
     client = maxar_platform.discovery.open_catalog(catalog="imagery")
     # Custom Maxar setting
@@ -80,10 +109,8 @@ def configure_maxar_client(area_based_calc: bool = True) -> pystac_client.client
 
 
 def configure_stac_client(url: str) -> pystac_client.client.Client:
-    """ """
     return pystac_client.Client.open(url=url)
 
 
 def configure_mspc_client(url: str) -> pystac_client.client.Client:
-    """ """
     return pystac_client.Client.open(url=url, modifier=planetary_computer.sign_inplace)

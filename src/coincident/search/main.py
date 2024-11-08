@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import geopandas as gpd
@@ -9,6 +10,7 @@ from pystac_client.item_search import ItemSearch as _ItemSearch
 
 from coincident.datasets import _alias_to_Dataset
 from coincident.datasets.general import Dataset
+from coincident.overlaps import subset_by_minimum_area
 from coincident.search import stac, wesm
 
 _pystac_client = _ItemSearch("no_url")
@@ -51,10 +53,10 @@ def search(
         try:
             dataset = _alias_to_Dataset[dataset]
         except KeyError as e:
-            message = (
+            msg_unsupported = (
                 f"{dataset} is not a supported dataset: {_alias_to_Dataset.keys()}"
             )
-            raise ValueError(message) from e
+            raise ValueError(msg_unsupported) from e
 
     # Validate Datetimes
     _validate_temporal_bounds(dataset, datetime)
@@ -81,6 +83,11 @@ def search(
             shapely_geometry = shapely_geometry.reverse()
         aoi = _pystac_client._format_intersects(shapely_geometry)  # to JSON geometry
     else:
+        if "bbox" not in kwargs:
+            msg_unconstrained = (
+                "Neither `bbox` nor `intersects` provided... search will be global"
+            )
+            warnings.warn(msg_unconstrained, stacklevel=2)
         aoi = None
 
     # STAC API Searches
@@ -94,8 +101,8 @@ def search(
         if dataset.provider == "maxar":
             # NOTE: not sure how to avoid incompatible type "str | None"; expected "str" for Dataset.attrs
             client = stac.configure_maxar_client(dataset.area_based_calc)  # type: ignore[attr-defined]
-            results = stac.search(client, **stac_api_kwargs)
-            gf = stac.to_geopandas(results)
+            item_collection = stac.search(client, **stac_api_kwargs)
+            gf = stac.to_geopandas(item_collection)
             # Client-side reduce to only acquisitions having stereo pairs
             gf = gf.loc[gf.stereo_pair_identifiers.str[0].dropna().index]
 
@@ -110,12 +117,30 @@ def search(
             # Generic STAC endpoint w/o additional config
             else:
                 client = stac.configure_stac_client(dataset.search)  # type: ignore[arg-type]
-            results = stac.search(client, **stac_api_kwargs)
-            gf = stac.to_geopandas(results)
+            item_collection = stac.search(client, **stac_api_kwargs)
+
+            # Per-dataset munging
+            # https://github.com/uw-cryo/coincident/issues/8#issuecomment-2449810481
+            if dataset.alias == "tdx":
+                # Drop columns with messy schema
+                dropcols = [
+                    "sceneInfo",
+                    "missionInfo",
+                    "previewInfo",
+                    "imageDataInfo",
+                    "generationInfo",
+                    "acquisitionInfo",
+                    "productVariantInfo",
+                ]
+                for item in item_collection:
+                    for col in dropcols:
+                        item.properties.pop(col)
+
+            gf = stac.to_geopandas(item_collection)
 
     # Non-STAC Searches
     elif dataset.alias == "3dep":
-        gf = wesm.search_convex_hulls(
+        gf = wesm.search_bboxes(
             intersects=intersects,
             search_start=search_start,
             search_end=search_end,
@@ -188,3 +213,76 @@ def _validate_spatial_bounds(
     if len(intersects) > 1:
         message = "GeoDataFrame contains multiple geometries, search requires a single geometry"
         raise ValueError(message)
+
+
+def cascading_search(
+    primary_dataset: gpd.GeoDataFrame,
+    secondary_datasets: list[tuple[str, int]] = [  # noqa: B006
+        ("maxar", 14),
+        ("icesat", 40),
+        ("gedi", 40),
+    ],
+    min_overlap_area: float = 20,
+) -> list[gpd.GeoDataFrame]:
+    """
+    Perform an cascading search to find overlapping datasets acquired within specific time ranges.
+
+    Secondary datasets are searched based only on spatial overlap areas with previous datasets. In other words, the overlapping area is progressively reduced.
+
+    Temporal buffer is applied as either (datetime-buffer <= acquisition <= datetime+buffer)
+     or (start_datetime-buffer <= acquisition <= end_datetime+buffer)
+
+    Parameters
+    ----------
+    primary_dataset : gpd.GeoDataFrame
+        The primary dataset having 'datetime' or 'start_dateteime' and 'end_datetime' columns.
+
+    secondary_datasets : list of tuple, optional
+        Each tuple contains the name of the secondary dataset and temporal buffer in days.
+
+    min_overlap_area : int, optional
+        The minimum overlap area in km^2. Default is 20.
+
+    Returns
+    -------
+    list of gpd.GeoDataFrame
+        A list of GeoDataFrames containing the search results for each secondary dataset.
+    """
+    # Do searches on simple geometry, but intersect results with original geometry
+    search_geometry = primary_dataset.simplify(0.01)  # or convex_hull?
+    detailed_geometry = primary_dataset[["geometry"]]
+
+    if "end_datetime" in primary_dataset.columns:
+        start = primary_dataset.start_datetime.iloc[0]
+        end = primary_dataset.end_datetime.iloc[0]
+    else:
+        start = end = primary_dataset.datetime.iloc[0]
+
+    results = []
+    for dataset, temporal_buffer in secondary_datasets:
+        pad = gpd.pd.Timedelta(days=temporal_buffer)
+        date_range = [start - pad, end + pad]
+
+        # Search secondary dataset
+        gfs = search(
+            dataset=dataset,
+            intersects=search_geometry,
+            datetime=date_range,
+        )
+
+        if dataset == "maxar":
+            gfs["stereo_pair_id"] = gfs.stereo_pair_identifiers.str[0]
+            gfs = gfs.dissolve(by="stereo_pair_id", as_index=False)
+
+        # Keep track of original footprints
+        gfs["original_geometry"] = gfs["geometry"]
+
+        gf_i = gfs.overlay(detailed_geometry, how="intersection")
+        gf_i = subset_by_minimum_area(gf_i, min_overlap_area)
+        results.append(gf_i)
+
+        # We've refined our search polygon again, so update search GeoDataFrame
+        detailed_geometry = gf_i.dissolve()[["geometry"]]
+        search_geometry = detailed_geometry.simplify(0.01)
+
+    return results
