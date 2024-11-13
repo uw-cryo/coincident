@@ -4,6 +4,7 @@ import warnings
 from typing import Any
 
 import geopandas as gpd
+from shapely.validation import make_valid
 
 # Used to access formatters
 from pystac_client.item_search import ItemSearch as _ItemSearch
@@ -249,7 +250,8 @@ def cascading_search(
         A list of GeoDataFrames containing the search results for each secondary dataset.
     """
     # Do searches on simple geometry, but intersect results with original geometry
-    search_geometry = primary_dataset.simplify(0.01)  # or convex_hull?
+    search_geometry = primary_dataset.simplify(0.01).apply(make_valid) 
+    #search_geometry = primary_dataset.geometry.apply(lambda geom: make_valid(geom.simplify(0.01)))
     detailed_geometry = primary_dataset[["geometry"]]
 
     if "end_datetime" in primary_dataset.columns:
