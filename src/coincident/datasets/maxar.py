@@ -79,7 +79,6 @@ async def download_item(
     return item  # noqa: RET504
 
 
-@depends_on_optional("matplotlib")
 def open_browse(item: pystac.Item, overview_level: int = 0) -> xr.DataArray:
     """
     Open a browse image from a STAC item using the specified overview level.

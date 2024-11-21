@@ -58,6 +58,8 @@ def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
         "collect_end": "end_datetime",
     }
     gf = gf.rename(columns=name_map)
+    # Add collection name to match STAC (used to identify geodataframe contents in other functions)
+    gf["collection"] = "3DEP"
     gf["start_datetime"] = pd.to_datetime(gf["start_datetime"])
     gf["end_datetime"] = pd.to_datetime(gf["end_datetime"])
     duration = gf.end_datetime - gf.start_datetime

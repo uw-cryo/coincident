@@ -27,6 +27,16 @@ except maxar_platform.session.NoSessionCredentials:
     warnings.warn(msg_noauth, stacklevel=2)
 
 
+def _filter_assets(assets: gpd.GeoDataFrame) -> dict[str, str]:
+    """Remove key:None pairs from assets"""
+    keep_keys = []
+    for k, v in assets.items():
+        if v is not None:
+            keep_keys.append(k)
+
+    return {key: assets[key] for key in keep_keys}
+
+
 def to_geopandas(
     collection: pystac.item_collection.ItemCollection,
 ) -> gpd.GeoDataFrame:
@@ -58,6 +68,9 @@ def to_geopandas(
 
     record_batch_reader = stac_geoparquet.arrow.parse_stac_items_to_arrow(collection)
     gf = gpd.GeoDataFrame.from_arrow(record_batch_reader)  # doesn't keep arrow dtypes
+
+    # Workaround stac-geoparquet limitation https://github.com/stac-utils/stac-geoparquet/issues/82
+    gf["assets"] = gf["assets"].apply(_filter_assets)
 
     # Additional columns for convenience
     # NOTE: these become entries under STAC properties
