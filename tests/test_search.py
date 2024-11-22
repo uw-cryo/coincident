@@ -11,10 +11,13 @@ network = pytest.mark.network
 
 try:
     import maxar_platform.discovery  # noqa: F401
+
+    not_authenticated = False
 except:  # noqa: E722
-    maxar_authenticated = pytest.mark.skip(
-        reason="unable to authenticate with maxar API"
-    )
+    not_authenticated = True
+maxar_authenticated = pytest.mark.skipif(
+    not_authenticated, reason="tests for linux only"
+)
 
 
 @pytest.fixture
@@ -35,7 +38,7 @@ def test_no_dataset_specified():
     with pytest.raises(
         TypeError, match="missing 1 required positional argument: 'dataset'"
     ):
-        coincident.search.search(intersects="-120, 40, -121, 41")  # type: ignore[call-arg]
+        coincident.search.search(intersects="-120, 40, -121, 41")
 
 
 def test_unknown_dataset_specified():
