@@ -63,6 +63,7 @@ docs = [
   "myst-nb",
   "myst_parser>=0.13",
   "pydata-sphinx-theme>=0.16.0,<0.17",
+  #"rpds-py>=0.21.0,<0.22",
   "sphinx>=7.0",
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
@@ -120,7 +121,7 @@ report.exclude_also = [
 ]
 
 [tool.codespell]
-skip="pixi.lock"
+skip="pixi.lock,docs/examples/sliderule.ipynb"
 
 [tool.mypy]
 files = ["src", "tests"]

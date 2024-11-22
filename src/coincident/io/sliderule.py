@@ -41,7 +41,7 @@ def _granule_from_assets(assets: gpd.GeoDataFrame) -> str:
     # NOTE: change to while loop in case tons of assets?
     for _k, v in assets.items():
         if v.get("roles") == "data":
-            granule = Path.name(v.get("href"))
+            granule = Path(v.get("href")).name
 
     return granule
 
