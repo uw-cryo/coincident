@@ -9,6 +9,13 @@ import coincident
 # Decorate tests requiring internet (slow & flaky)
 network = pytest.mark.network
 
+try:
+    import maxar_platform.discovery  # noqa: F401
+except:  # noqa: E722
+    maxar_authenticated = pytest.mark.skip(
+        reason="unable to authenticate with maxar API"
+    )
+
 
 @pytest.fixture
 def aoi():
@@ -75,6 +82,7 @@ def test_cascading_search(aoi):
 
 # TODO: add more assertions / tests for this section
 @network
+@maxar_authenticated
 @pytest.mark.filterwarnings("ignore:Server does not conform")
 def test_maxar_search(aoi):
     gf = coincident.search.search(
@@ -91,6 +99,7 @@ def test_maxar_search(aoi):
 
 
 @network
+@maxar_authenticated
 def test_maxar_large_aoi(large_aoi):
     gf = coincident.search.search(
         dataset="maxar",

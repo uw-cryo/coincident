@@ -25,6 +25,11 @@ try:
 except maxar_platform.session.NoSessionCredentials:
     msg_noauth = "Unable to authenticate with Maxar API. Please set MAXAR_API_KEY environment variable."
     warnings.warn(msg_noauth, stacklevel=2)
+except maxar_platform.exceptions.UnAuthorizedException:
+    msg_noauth = (
+        "Unable to authenticate with Maxar API. Please check MAXAR_API_KEY is valid."
+    )
+    warnings.warn(msg_noauth, stacklevel=2)
 
 
 def _filter_assets(assets: gpd.GeoDataFrame) -> dict[str, str]:

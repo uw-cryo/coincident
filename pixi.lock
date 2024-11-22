@@ -3407,7 +3407,7 @@ packages:
   requires_python: '>=3.8'
 - kind: pypi
   name: coincident
-  version: 0.1.dev33+g478116f.d20241103
+  version: 0.1.dev34+g878d275
   path: .
   sha256: 6633999f089774b476b998b82343a056f3e34bbdcd675946c74922e8a2b3a042
   requires_dist:
