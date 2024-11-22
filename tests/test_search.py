@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing
+
 import geopandas as gpd
 import pytest
 from geopandas.testing import assert_geodataframe_equal
@@ -34,6 +36,7 @@ def large_aoi():
     return gpd.read_file(aoi_url)
 
 
+@typing.no_type_check
 def test_no_dataset_specified():
     with pytest.raises(
         TypeError, match="missing 1 required positional argument: 'dataset'"
