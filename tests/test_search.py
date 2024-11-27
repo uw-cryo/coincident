@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import typing
+
 import geopandas as gpd
 import pytest
 from geopandas.testing import assert_geodataframe_equal
@@ -8,6 +10,16 @@ import coincident
 
 # Decorate tests requiring internet (slow & flaky)
 network = pytest.mark.network
+
+try:
+    import maxar_platform.discovery  # noqa: F401
+
+    not_authenticated = False
+except:  # noqa: E722
+    not_authenticated = True
+maxar_authenticated = pytest.mark.skipif(
+    not_authenticated, reason="tests for linux only"
+)
 
 
 @pytest.fixture
@@ -24,11 +36,12 @@ def large_aoi():
     return gpd.read_file(aoi_url)
 
 
+@typing.no_type_check
 def test_no_dataset_specified():
     with pytest.raises(
         TypeError, match="missing 1 required positional argument: 'dataset'"
     ):
-        coincident.search.search(intersects="-120, 40, -121, 41")  # type: ignore[call-arg]
+        coincident.search.search(intersects="-120, 40, -121, 41")
 
 
 def test_unknown_dataset_specified():
@@ -75,6 +88,7 @@ def test_cascading_search(aoi):
 
 # TODO: add more assertions / tests for this section
 @network
+@maxar_authenticated
 @pytest.mark.filterwarnings("ignore:Server does not conform")
 def test_maxar_search(aoi):
     gf = coincident.search.search(
@@ -91,6 +105,7 @@ def test_maxar_search(aoi):
 
 
 @network
+@maxar_authenticated
 def test_maxar_large_aoi(large_aoi):
     gf = coincident.search.search(
         dataset="maxar",

@@ -43,3 +43,16 @@ Datasets
    general.Dataset
    maxar.open_browse
    maxar.plot_browse
+
+
+IO
+--
+
+.. currentmodule:: coincident.io
+
+.. autosummary::
+   :toctree: generated/
+
+   sliderule.subset_gedi02a
+   sliderule.subset_atl06
+   sliderule.sample_3dep

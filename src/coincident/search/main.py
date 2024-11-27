@@ -148,6 +148,11 @@ def search(
             **kwargs,
         )
 
+    # Keep track of dataset alias in geodataframe metadata
+    # NOTE: attrs not always retrained and not saved to file
+    # https://github.com/geopandas/geopandas/issues/3320
+    gf.attrs["dataset"] = dataset.alias
+
     return gf
 
 

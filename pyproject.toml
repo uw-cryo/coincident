@@ -63,6 +63,7 @@ docs = [
   "myst-nb",
   "myst_parser>=0.13",
   "pydata-sphinx-theme>=0.16.0,<0.17",
+  #"rpds-py>=0.21.0,<0.22",
   "sphinx>=7.0",
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
@@ -120,7 +121,7 @@ report.exclude_also = [
 ]
 
 [tool.codespell]
-skip="pixi.lock"
+skip="pixi.lock,docs/examples/sliderule.ipynb"
 
 [tool.mypy]
 files = ["src", "tests"]
@@ -220,6 +221,7 @@ rioxarray = "*"
 #s3fs = "*"
 stac-geoparquet = "*"
 pyarrow = "*"
+jsonschema = ">=4.23.0,<5"
 #nbconvert = ">=7.16.4,<8"
 #cloudpathlib-s3 = ">=0.20.0,<0.21"
 #matplotlib-base = ">=3.9.2,<4"
@@ -236,6 +238,7 @@ mypy = "*"
 # Testing additional dependencies
 #rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
 #xvec = ">=0.3.0,<0.4"
+sliderule = ">=4.7.1,<5"
 
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = false }
