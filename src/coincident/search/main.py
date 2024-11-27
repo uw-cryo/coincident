@@ -4,10 +4,11 @@ import warnings
 from typing import Any
 
 import geopandas as gpd
-from shapely.validation import make_valid
+import odc.stac
 
 # Used to access formatters
 from pystac_client.item_search import ItemSearch as _ItemSearch
+from shapely.validation import make_valid
 
 from coincident.datasets import _alias_to_Dataset
 from coincident.datasets.general import Dataset
@@ -41,8 +42,11 @@ def search(
 
     Returns
     -------
-    gpd.GeoDataFrame
+    gpd.GeoDataFrame (for datasets excluding cop30 and worldcover)
         A GeoDataFrame containing the search results.
+
+    xarray.core.dataset.Dataset (only for cop30 and worldcover datasets)
+        An Xarray dataset containing the search results.
 
     Raises
     ------
@@ -138,6 +142,34 @@ def search(
                         item.properties.pop(col)
 
             gf = stac.to_geopandas(item_collection)
+
+            if dataset.alias == "cop30" or dataset.alias == "worldcover":
+                warnings.warn(
+                    "WARNING: searching large areas for COP30 and/or ESA WorldCover may take a while...",
+                    UserWarning,
+                )
+                # TODO: 1) improve loading speed
+                # tricky when no dates defined for ESA WorldCover as items returns both 2020 and 2021 data
+                # 2) is there a better way of getting search GDF/GeoSeries coordinates?
+                # given aoi = _pystac_client._format_intersects(shapely_geometry)  # to JSON geometry
+                coordinates = aoi["coordinates"][0]
+                total_bounds = (
+                    min(x for x, y in coordinates),
+                    min(y for x, y in coordinates),
+                    max(x for x, y in coordinates),
+                    max(y for x, y in coordinates),
+                )
+                items = stac.to_pystac_items(gf)
+                ds = odc.stac.load(
+                    items,
+                    bbox=total_bounds,
+                )
+                ds = ds.rename(
+                    {"data": "elevation"}
+                    if dataset.alias == "cop30"
+                    else {"map": "landcover"}
+                )
+                return ds
 
     # Non-STAC Searches
     elif dataset.alias == "3dep":
@@ -255,8 +287,8 @@ def cascading_search(
         A list of GeoDataFrames containing the search results for each secondary dataset.
     """
     # Do searches on simple geometry, but intersect results with original geometry
-    search_geometry = primary_dataset.simplify(0.01).apply(make_valid) 
-    #search_geometry = primary_dataset.geometry.apply(lambda geom: make_valid(geom.simplify(0.01)))
+    search_geometry = primary_dataset.simplify(0.01).apply(make_valid)
+    # search_geometry = primary_dataset.geometry.apply(lambda geom: make_valid(geom.simplify(0.01)))
     detailed_geometry = primary_dataset[["geometry"]]
 
     if "end_datetime" in primary_dataset.columns:
