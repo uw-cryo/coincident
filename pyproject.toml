@@ -44,6 +44,7 @@ dependencies = [
   "stac-asset>=0.4.3,<0.5",
   "stac-geoparquet>=0.6.0,<0.7",
   #"s3fs>=2024.9.0,<2025",
+  "odc-stac>=0.3.10,<0.4"
 ]
 
 [project.optional-dependencies]
@@ -222,6 +223,7 @@ rioxarray = "*"
 stac-geoparquet = "*"
 pyarrow = "*"
 jsonschema = ">=4.23.0,<5"
+odc-stac = "*"
 #nbconvert = ">=7.16.4,<8"
 #cloudpathlib-s3 = ">=0.20.0,<0.21"
 #matplotlib-base = ">=3.9.2,<4"
