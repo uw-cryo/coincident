@@ -4,7 +4,6 @@ STAC Search Functions
 
 from __future__ import annotations
 
-import tempfile
 import warnings
 from typing import Any
 
@@ -13,7 +12,6 @@ import planetary_computer
 import pystac
 import pystac_client
 import stac_geoparquet
-import xarray as xr
 
 # Any import that requires auth to work will be optional
 try:
@@ -104,46 +102,6 @@ def to_pystac_items(gf: gpd.GeoDataFrame) -> list[pystac.Item]:
     batch = stac_geoparquet.arrow.stac_table_to_items(gf.to_arrow())
 
     return [pystac.Item.from_dict(x) for x in batch]
-
-
-def to_xarray(
-    gf: gpd.GeoDataFrame,
-    asset: str = "data",
-    aoi: gpd.GeoDataFrame | None = None,
-    mask: bool = False,
-    **kwargs: dict[str, Any],
-) -> xr.DataArray:
-    """
-    Convert a GeoDataFrame to an xarray DataArray using STAC items.
-
-    Parameters
-    ----------
-    gf : gpd.GeoDataFrame
-        The GeoDataFrame containing the geospatial data.
-    asset : str, optional
-        The asset key to extract from the STAC items, by default "data".
-    **kwargs : dict
-        Additional keyword arguments passed to `xr.open_dataarray`.
-
-    Returns
-    -------
-    xr.DataArray
-        The resulting xarray DataArray containing mosaiced assets
-    """
-    # TODO: use GTI driver instead & save to parquet (require gdal>=3.10?)
-    items = to_pystac_items(gf)
-    ic = pystac.ItemCollection(items)
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
-        ic.save_object(tmp.name)
-    da = xr.open_dataarray(
-        f"STACIT:{tmp.name}:asset={asset}", engine="rasterio", **kwargs
-    )
-    if aoi is not None:
-        da = da.rio.clip_box(**aoi.bounds)
-    if mask:
-        da = da.rio.clip(aoi)
-    da.name = gf.iloc[0].collection
-    return da
 
 
 def search(
