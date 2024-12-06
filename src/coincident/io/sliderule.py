@@ -19,6 +19,7 @@ except ImportError:
         stacklevel=2,
     )
 from coincident._utils import depends_on_optional
+from coincident.datasets.planetary_computer import WorldCover
 from coincident.search.wesm import read_wesm_csv, stacify_column_names
 
 
@@ -47,12 +48,39 @@ def _granule_from_assets(assets: gpd.GeoDataFrame) -> str:
     return granule
 
 
+def _decode_worldcover(gf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    mapping = {
+        key: value["description"]
+        for (
+            key,
+            value,
+        ) in WorldCover().classmap.items()
+    }
+    return gf.replace({"worldcover.value": mapping})
+
+
+def _add_raster_samples(include_worldcover: bool, include_3dep: bool) -> dict[str, Any]:
+    samples = {}
+    if include_worldcover:
+        samples.update(
+            {"worldcover": {"asset": "esa-worldcover-10meter", "use_poi_time": True}}
+        )
+    if include_3dep:
+        # NOTE: use "substr" to restrict to specific WESM project?
+        # https://slideruleearth.io/web/rtd/user_guide/SlideRule.html#raster-sampling
+        # Warning: use_poi_time NOT using acquisition time here
+        # https://github.com/SlideRuleEarth/sliderule/issues/444
+        samples.update({"3dep": {"asset": "usgs3dep-1meter-dem", "use_poi_time": True}})
+    return samples
+
+
 @depends_on_optional("sliderule")
 def subset_gedi02a(
     gf: gpd.GeoDataFrame,
     aoi: gpd.GeoDataFrame = None,
-    # NOTE: investigate B006 best-practice
-    sliderule_params: dict[str, Any] = {},  # noqa: B006
+    include_worldcover: bool = False,
+    include_3dep: bool = False,
+    sliderule_params: dict[str, Any] | None = None,
 ) -> gpd.GeoDataFrame:
     """
     Subsets GEDI L2A data based on a given GeoDataFrame and optional area of interest (AOI).
@@ -64,9 +92,12 @@ def subset_gedi02a(
 
     aoi : gpd.GeoDataFrame, optional
         A GeoDataFrame with a POLYGON to subset. If not provided the union of geometries in gf is used.
-
+    include_worldcover : bool, optional
+        Whether to include WorldCover data in the processing. Default is False.
+    include_3dep : bool, optional
+        Whether to include 3DEP data in the processing. Default is False.
     sliderule_params : dict[Any], optional
-        A dictionary of additional parameters to be passed to the sliderule `gedi.gedi02ap`.
+        A dictionary of additional parameters to be passed to SlideRule `gedi.gedi02ap`.
 
     Returns
     -------
@@ -91,10 +122,17 @@ def subset_gedi02a(
         }
     )
 
-    # User-provided parameters take precedence
-    params.update(sliderule_params)
+    params["samples"] = _add_raster_samples(include_worldcover, include_3dep)
 
-    return gedi.gedi02ap(params, resources=granule_names)
+    if sliderule_params is not None:
+        params.update(sliderule_params)
+
+    gfsr = gedi.gedi02ap(params, resources=granule_names)
+
+    if include_worldcover:
+        gfsr = _decode_worldcover(gfsr)
+
+    return gfsr
 
 
 @depends_on_optional("sliderule")
@@ -102,29 +140,143 @@ def subset_atl06(
     gf: gpd.GeoDataFrame,
     aoi: gpd.GeoDataFrame = None,
     dropna: bool = True,
-    sliderule_params: dict[str, Any] = {},  # noqa: B006
+    include_worldcover: bool = False,
+    include_3dep: bool = False,
+    sliderule_params: dict[str, Any] | None = None,
 ) -> gpd.GeoDataFrame:
+    """
+    Subset ATL06 data using provided GeoDataFrame and optional parameters.
+
+    Parameters
+    ----------
+    gf : gpd.GeoDataFrame
+        GeoDataFrame containing the input data.
+    aoi : gpd.GeoDataFrame, optional
+        Area of interest as a GeoDataFrame to filter the data spatially, by default None.
+    dropna : bool, optional
+        Whether to drop rows with NaN values in the 'h_li' column, by default True.
+    include_worldcover : bool, optional
+        Whether to include WorldCover data in the processing. Default is False.
+    include_3dep : bool, optional
+        Whether to include 3DEP data in the processing. Default is False.
+    sliderule_params : dict[str, Any], optional
+        Additional parameters to pass to the SlideRule icesat2.atl06sp(), by default {}.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        GeoDataFrame with ATL06 standard product measurements.
+    """
     params = _gdf_to_sliderule_params(gf)
 
     # Note necessary but avoids another CMR search
+    granule_names = gf.assets.apply(_granule_from_assets).to_list()
+    granule_names = [x.replace("ATL03", "ATL06") for x in granule_names]
+
+    if aoi is not None:
+        params["poly"] = _gdf_to_sliderule_polygon(aoi)
+
+    params["samples"] = _add_raster_samples(include_worldcover, include_3dep)
+
+    # User-provided parameters take precedence
+    if sliderule_params is not None:
+        params.update(sliderule_params)
+
+    gfsr = icesat2.atl06sp(params, resources=granule_names)
+
+    # Drop poor-quality data
+    # https://github.com/orgs/SlideRuleEarth/discussions/441
+    gfsr = gfsr[gfsr.atl06_quality_summary == 0]
+
+    # NOTE: add server-side filtering for NaNs in sliderule.atl06sp?
+    if dropna:
+        return gfsr.dropna(subset=["h_li"])
+
+    if include_worldcover:
+        gfsr = _decode_worldcover(gfsr)
+
+    return gfsr
+
+
+@depends_on_optional("sliderule")
+def process_atl06sr(
+    gf: gpd.GeoDataFrame,
+    aoi: gpd.GeoDataFrame = None,
+    target_surface: str = "ground",
+    include_worldcover: bool = True,
+    include_3dep: bool = True,
+    sliderule_params: dict[str, Any] | None = None,
+) -> gpd.GeoDataFrame:
+    """
+    Generate Custom SlideRule ATL06 Product
+
+    Parameters
+    ----------
+    gf : gpd.GeoDataFrame
+        Input GeoDataFrame with ICESat-2 ATL03 Granule metadata
+    aoi : gpd.GeoDataFrame, optional
+        Area of interest as a GeoDataFrame. If provided, it will be used to filter the data.
+    target_surface : str, optional
+        Specify which ATL08 filters to apply. Must be either 'ground' or 'canopy'. Default is 'ground'.
+    include_worldcover : bool, optional
+        Whether to include WorldCover data in the processing. Default is True.
+    include_3dep : bool, optional
+        Whether to include 3DEP data in the processing. Default is True.
+    sliderule_params : dict[str, Any] or None, optional
+        Additional parameters for SlideRule processing. User-provided parameters take precedence over default settings.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Processed GeoDataFrame with the results from SlideRule.
+    """
+
+    # Time range and AOI from input GeoDataFrame
+    params = _gdf_to_sliderule_params(gf)
+    # Common default settings for sliderule processing
+    # https://github.com/SlideRuleEarth/sliderule/issues/448
+    params.update(
+        {
+            "cnf": 0,
+            "srt": -1,
+            "ats": 20.0,
+            "cnt": 5,
+            "len": 40.0,
+            "res": 20.0,
+            "maxi": 6,
+        }
+    )
+
+    if target_surface == "ground":
+        params.update({"atl08_class": ["atl08_ground"]})
+    elif target_surface == "canopy":
+        params.update({"atl08_class": ["atl08_top_of_canopy", "atl08_canopy"]})
+    else:
+        msg = f"Invalid target_suface={target_surface}. Must be 'ground' or 'canopy'."
+        raise ValueError(msg)
+
+    params["samples"] = _add_raster_samples(include_worldcover, include_3dep)
+
+    # Not necessary but avoids another CMR search!
     granule_names = gf.assets.apply(_granule_from_assets).to_list()
 
     if aoi is not None:
         params["poly"] = _gdf_to_sliderule_polygon(aoi)
 
     # User-provided parameters take precedence
-    params.update(sliderule_params)
+    if sliderule_params is not None:
+        params.update(sliderule_params)
+    # print(params)
 
-    data = icesat2.atl06sp(params, resources=granule_names)
+    gfsr = icesat2.atl06p(params, resources=granule_names)
 
-    # Drop poor-quality data
-    # https://github.com/orgs/SlideRuleEarth/discussions/441
-    data = data[data.atl06_quality_summary == 0]
+    # Drop columns we don't need?
+    # dropcols = ['worldcover.time','worldcover.flags','worldcover.file_id',
+    #            '3dep.time','3dep.flags']
+    if include_worldcover:
+        gfsr = _decode_worldcover(gfsr)
 
-    # NOTE: add server-side filtering for NaNs in sliderule.atl06sp?
-    if dropna:
-        return data.dropna(subset=["h_li"])
-    return data
+    return gfsr
 
 
 @depends_on_optional("sliderule")

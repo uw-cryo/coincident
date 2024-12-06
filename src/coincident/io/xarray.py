@@ -11,6 +11,7 @@ import geopandas as gpd
 import odc.stac
 
 # NOTE: must import for odc.stac outputs to have .rio accessor
+import rioxarray  # noqa: F401
 import xarray as xr
 
 from coincident._utils import depends_on_optional
@@ -71,7 +72,7 @@ def to_dataset(
 @depends_on_optional("matplotlib")
 def plot_esa_worldcover(ds: xr.Dataset) -> plt.Axes:
     """From https://planetarycomputer.microsoft.com/dataset/esa-worldcover#Example-Notebook"""
-    classmap = WorldCover.classmap
+    classmap = WorldCover().classmap
 
     colors = ["#000000" for r in range(256)]
     for key, value in classmap.items():

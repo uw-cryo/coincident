@@ -43,7 +43,7 @@ dependencies = [
   "rioxarray>=0.17.0,<0.18",
   "stac-asset>=0.4.3,<0.5",
   "stac-geoparquet>=0.6.0,<0.7",
-  #"s3fs>=2024.9.0,<2025",
+  "odc-stac>=0.3.10,<0.4",
 ]
 
 [project.optional-dependencies]
@@ -224,6 +224,7 @@ stac-geoparquet = "*"
 pyarrow = "*"
 jsonschema = ">=4.23.0,<5"
 libgdal-arrow-parquet = ">=3.10.0,<4"
+odc-stac = "*"
 #nbconvert = ">=7.16.4,<8"
 #cloudpathlib-s3 = ">=0.20.0,<0.21"
 #matplotlib-base = ">=3.9.2,<4"
@@ -241,7 +242,6 @@ mypy = "*"
 #rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
 #xvec = ">=0.3.0,<0.4"
 sliderule = ">=4.7.1,<5"
-odc-stac = "*"
 
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = false }
