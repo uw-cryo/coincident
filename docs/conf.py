@@ -88,4 +88,4 @@ nitpick_ignore = [
 always_document_param_types = True
 # autodoc_typehints = "none"
 nb_execution_mode = "auto"  # off, on
-nb_execution_excludepatterns = ["sliderule.ipynb"]
+nb_execution_excludepatterns = ["sliderule.ipynb", "contextual_data.ipynb"]

@@ -55,4 +55,7 @@ IO
 
    sliderule.subset_gedi02a
    sliderule.subset_atl06
+   sliderule.process_atl06sr
    sliderule.sample_3dep
+   xarray.to_dataset
+   xarray.plot_esa_worldcover
