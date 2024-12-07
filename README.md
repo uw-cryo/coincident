@@ -2,6 +2,7 @@
 
 [![Actions Status][actions-badge]][actions-link]
 [![Documentation Status][rtd-badge]][rtd-link]
+[![Available on pypi][pypi-version]][pypi-link]
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/uw-cryo/coincident)
 
