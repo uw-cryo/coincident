@@ -190,7 +190,7 @@ def subset_atl06(
 
     # NOTE: add server-side filtering for NaNs in sliderule.atl06sp?
     if dropna:
-        return gfsr.dropna(subset=["h_li"])
+        gfsr = gfsr.dropna(subset=["h_li"])
 
     if include_worldcover:
         gfsr = _decode_worldcover(gfsr)
