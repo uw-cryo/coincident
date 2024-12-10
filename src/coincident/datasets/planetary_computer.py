@@ -10,6 +10,7 @@ https://planetarycomputer.microsoft.com/docs/quickstarts/reading-stac/
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 from coincident.datasets.general import Dataset
 
@@ -42,3 +43,18 @@ class WorldCover(Dataset):
     end: str = "2021-12-31"
     type: str = "lulc"
     provider: str = "microsoft"
+    classmap: dict[int, Any] = field(
+        default_factory=lambda: {
+            10: {"hex": "#006400", "description": "Tree cover"},
+            20: {"hex": "#FFBB22", "description": "Shrubland"},
+            30: {"hex": "#FFFF4C", "description": "Grassland"},
+            40: {"hex": "#F096FF", "description": "Cropland"},
+            50: {"hex": "#FA0000", "description": "Built-up"},
+            60: {"hex": "#B4B4B4", "description": "Bare / sparse vegetation"},
+            70: {"hex": "#F0F0F0", "description": "Snow and ice"},
+            80: {"hex": "#0064C8", "description": "Permanent water bodies"},
+            90: {"hex": "#0096A0", "description": "Herbaceous wetland"},
+            95: {"hex": "#00CF75", "description": "Mangroves"},
+            100: {"hex": "#FAE6A0", "description": "Moss and lichen"},
+        }
+    )

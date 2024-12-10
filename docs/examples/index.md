@@ -9,4 +9,5 @@ This section contains Jupyter Notebooks with narrative workflows using the
 quickstart
 cascading_search
 sliderule
+contextual_data
 ```
