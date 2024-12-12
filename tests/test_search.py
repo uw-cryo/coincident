@@ -1,3 +1,7 @@
+# ruff: noqa: F401
+# ruff: noqa: F811
+# F401 for ruff deeming 'aoi' and 'large_aoi' being unused imports
+# F811 for ruff deeming 'aoi' and 'large_aoi' variables being undefined
 from __future__ import annotations
 
 import typing
@@ -7,12 +11,13 @@ import pytest
 from geopandas.testing import assert_geodataframe_equal
 
 import coincident
+from tests import aoi, large_aoi  # Importing the fixture from __init__.py
 
 # Decorate tests requiring internet (slow & flaky)
 network = pytest.mark.network
 
 try:
-    import maxar_platform.discovery  # noqa: F401
+    import maxar_platform.discovery
 
     not_authenticated = False
 except:  # noqa: E722
@@ -20,20 +25,6 @@ except:  # noqa: E722
 maxar_authenticated = pytest.mark.skipif(
     not_authenticated, reason="tests for linux only"
 )
-
-
-@pytest.fixture
-def aoi():
-    # 11 vertices, 1,361km^2
-    aoi_url = "https://raw.githubusercontent.com/SlideRuleEarth/sliderule-python/main/data/grandmesa.geojson"
-    return gpd.read_file(aoi_url)
-
-
-@pytest.fixture
-def large_aoi():
-    # 260 vertices, large area 269,590 km^2
-    aoi_url = "https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/CO/shape.geojson"
-    return gpd.read_file(aoi_url)
 
 
 @typing.no_type_check
