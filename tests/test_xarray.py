@@ -9,7 +9,6 @@ import pytest
 import xarray as xr
 
 import coincident
-from coincident._utils import depends_on_optional
 from coincident.io.xarray import plot_esa_worldcover, to_dataset
 from tests import aoi  # Importing the fixture from __init__.py
 
@@ -51,7 +50,6 @@ def test_to_dataset_with_worldcover(aoi):
     assert "map" in ds.data_vars, "Expected 'map' variable in the Dataset."
 
 
-@depends_on_optional("matplotlib")
 @network
 def test_plot_esa_worldcover_valid(aoi):
     """Test `plot_esa_worldcover` with valid WorldCover dataset."""
