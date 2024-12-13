@@ -12,6 +12,8 @@ import coincident
 network = pytest.mark.network
 
 try:
+    import maxar_platform.discovery  # noqa: F401
+
     not_authenticated = False
 except:  # noqa: E722
     not_authenticated = True
