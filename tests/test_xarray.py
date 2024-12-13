@@ -1,16 +1,10 @@
-# ruff: noqa: F401
-# ruff: noqa: F811
-# F401 for ruff deeming 'aoi' being unused import
-# F811 for ruff deeming 'aoi' variable being undefined
 from __future__ import annotations
 
-# import matplotlib as mpl  # because ruff
 import pytest
 import xarray as xr
 
 import coincident
 from coincident.io.xarray import plot_esa_worldcover, to_dataset
-from tests import aoi  # Importing the fixture from __init__.py
 
 # Decorate tests requiring internet (slow & flaky)
 network = pytest.mark.network
