@@ -19,15 +19,15 @@ STACAPI = "https://planetarycomputer.microsoft.com/api/stac/v1"
 
 @dataclass
 class COP30(Dataset):
-    """Essential metadata for Copernicus DEM"""
+    """Essential metadata and data access for Copernicus DEM"""
 
     alias: str = "cop30"
     has_stac_api: bool = True
     collections: list[str] = field(default_factory=lambda: ["cop-dem-glo-30"])
     search: str = STACAPI
-    start: str | None = None  # NOTE: has 'representative' datetime of 2021-04-22
+    start: str | None = None  # Copernicus DEM has 'representative' datetime: 2021-04-22
     end: str | None = None
-    type: str = "sar"
+    type: str = "dem"
     provider: str = "microsoft"
 
 

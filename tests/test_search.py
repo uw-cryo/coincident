@@ -18,22 +18,8 @@ try:
 except:  # noqa: E722
     not_authenticated = True
 maxar_authenticated = pytest.mark.skipif(
-    not_authenticated, reason="tests for linux only"
+    not_authenticated, reason="Not authenticated with Maxar API"
 )
-
-
-@pytest.fixture
-def aoi():
-    # 11 vertices, 1,361km^2
-    aoi_url = "https://raw.githubusercontent.com/SlideRuleEarth/sliderule-python/main/data/grandmesa.geojson"
-    return gpd.read_file(aoi_url)
-
-
-@pytest.fixture
-def large_aoi():
-    # 260 vertices, large area 269,590 km^2
-    aoi_url = "https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/CO/shape.geojson"
-    return gpd.read_file(aoi_url)
 
 
 @typing.no_type_check

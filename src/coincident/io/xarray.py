@@ -37,7 +37,7 @@ def to_dataset(
     bands: list[str] | None = None,
     aoi: gpd.GeoDataFrame | None = None,
     mask: bool = False,
-    **kwargs: dict[str, Any],
+    **kwargs: Any,
 ) -> xr.DataArray:
     """
     Convert a GeoDataFrame to an xarray DataArray using odc.stac
