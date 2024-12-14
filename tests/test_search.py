@@ -18,7 +18,7 @@ try:
 except:  # noqa: E722
     not_authenticated = True
 maxar_authenticated = pytest.mark.skipif(
-    not_authenticated, reason="tests for linux only"
+    not_authenticated, reason="Not authenticated with Maxar API"
 )
 
 
