@@ -72,7 +72,8 @@ def test_cascading_search(aoi):
     assert actual_max <= expected_max
 
 
-# TODO: add more assertions / tests for this section
+# MAXAR
+# =======
 @network
 @maxar_authenticated
 @pytest.mark.filterwarnings("ignore:Server does not conform")
@@ -101,6 +102,16 @@ def test_maxar_large_aoi(large_aoi):
         max_items=10,
     )
     assert len(gf) <= 10
+
+
+@network
+@maxar_authenticated
+def test_maxar_specific_ids():
+    gf = coincident.search.search(
+        dataset="maxar", ids=["102001008EC5AC00", "102001008BE9BB00"]
+    )
+    assert len(gf) == 2
+    assert set(gf.id) == {"102001008BE9BB00", "102001008EC5AC00"}
 
 
 # NASA
