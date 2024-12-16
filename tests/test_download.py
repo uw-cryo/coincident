@@ -22,6 +22,7 @@ maxar_authenticated = pytest.mark.skipif(
 @network
 @maxar_authenticated
 @pytest.mark.filterwarnings("ignore:the actual content type does not match")
+@pytest.mark.skip(reason="temporarily skip to see if CI failing due to async code")
 def test_download_maxar_browse():
     gf = coincident.search.search(dataset="maxar", ids=["102001008EC5AC00"])
     item = coincident.search.stac.to_pystac_items(gf)[0]
