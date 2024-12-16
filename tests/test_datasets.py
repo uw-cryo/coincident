@@ -20,7 +20,7 @@ def test_threedep_defaults():
     assert ds.alias == "3dep"
 
 
-def test_opentopo_deafults():
+def test_opentopo_defaults():
     ds_noaa = coincident.datasets.opentopo.NOAA()
     assert ds_noaa.alias == "noaa"
     ds_ncalm = coincident.datasets.opentopo.NCALM()

@@ -148,17 +148,11 @@ def search(
         )
 
     elif dataset.provider == "opentopography":
-        # TODO: remove ValueErrors and implement a catalog-wide search
-        # if intersects and/or datetime is None
-        if intersects is None:
-            msg_intersects = "For OpenTopography, the intersects parameter is required."
-            raise ValueError(msg_intersects)
-        if datetime is None:
-            msg_datetime = "For OpenTopography, the datetime parameter is required."
-            raise ValueError(msg_datetime)
-
         gf = opentopo_api.search_opentopo(
-            intersects=intersects, datetime=datetime, dataset=dataset.alias
+            intersects=intersects,
+            search_start=search_start,
+            search_end=search_end,
+            dataset=dataset.alias,
         )
 
     # Keep track of dataset alias in geodataframe metadata

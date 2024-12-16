@@ -10,15 +10,17 @@ from __future__ import annotations
 from datetime import datetime
 
 import geopandas as gpd
+import pandas as pd
 import requests
+from pandas import Timestamp
 from shapely.geometry import shape
 
 
 def search_ncalm_noaa(
     aoi: gpd.GeoDataFrame | gpd.GeoSeries,
-    start: str,
-    end: str,
-    dataset: str | None,  # Default dataset is noaa for now
+    search_start: Timestamp,
+    search_end: Timestamp,
+    dataset: str | None = None,
 ) -> gpd.GeoDataFrame:
     """
     Perform a search for geospatial data using OpenTopography API.
@@ -28,14 +30,12 @@ def search_ncalm_noaa(
     ----------
     aoi : gpd.GeoDataFrame | gpd.GeoSeries
         A GeoDataFrame or GeoSeries containing a geometry to restrict the search area.
-    start : str
-        The start datetime in ISO 8601 format (e.g., "2018-01-01").
-    end : str
-        The end datetime in ISO 8601 format (e.g., "2024-12-31").
+    search_start : Timestamp, optional
+        The start datetime for the search, by default None.
+    search_end : Timestamp, optional
+        The end datetime for the search, by default None.
     dataset : str
         The dataset type (either "noaa" or "ncalm").
-    **kwargs : Any
-        Additional keyword arguments to pass to the OpenTopography API.
 
     Returns
     -------
@@ -47,12 +47,32 @@ def search_ncalm_noaa(
     ValueError
         If no valid `aoi` is provided or the API request fails.
     """
-    # convex hull for search
-    # convex_hull works better than simplify for more-complex geometry (ie. Louisiana)
-    # https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/LA/shape.geojson
-    search_poly = aoi.to_crs(4326).union_all()
-    search_poly_chull = search_poly.convex_hull
-    coords = ",".join([f"{x},{y}" for x, y in search_poly_chull.exterior.coords])
+    # If `aoi` is None, set the entire world as the search area
+    if aoi is None:
+        search_poly = gpd.GeoSeries(
+            [
+                shape(
+                    {
+                        "type": "Polygon",
+                        "coordinates": [
+                            [
+                                [-180, -90],
+                                [180, -90],
+                                [180, 90],
+                                [-180, 90],
+                                [-180, -90],
+                            ]
+                        ],
+                    }
+                )
+            ]
+        )
+    else:
+        # convex_hull works better than simplify for more-complex geometry (ie. Louisiana)
+        # https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/LA/shape.geojson
+        search_poly = aoi.to_crs(4326).union_all()
+        search_poly_chull = search_poly.convex_hull
+        coords = ",".join([f"{x},{y}" for x, y in search_poly_chull.exterior.coords])
 
     # alter the API URL based on the dataset
     if dataset == "noaa":
@@ -74,12 +94,15 @@ def search_ncalm_noaa(
             ds
             for ds in catalog["Datasets"]
             if "NOAA" in ds["Dataset"]["identifier"]["propertyID"]
+            and ds["Dataset"]["temporalCoverage"] != ""
         ]
     else:
-        catalog = catalog["Datasets"]
+        catalog = [
+            ds for ds in catalog["Datasets"] if ds["Dataset"]["temporalCoverage"] != ""
+        ]
 
     # temporal filtering
-    start_dt, end_dt = datetime.fromisoformat(start), datetime.fromisoformat(end)
+    start_dt, end_dt = search_start.to_pydatetime(), search_end.to_pydatetime()
     filtered_catalog = [
         entry
         for entry in catalog
@@ -120,7 +143,8 @@ def search_ncalm_noaa(
 def search_opentopo(
     dataset: str | None,
     intersects: gpd.GeoDataFrame | gpd.GeoSeries,
-    datetime: list[str] | str,
+    search_start: Timestamp | None = None,
+    search_end: Timestamp | None = None,
 ) -> gpd.GeoDataFrame:
     """
     Integrate the OpenTopography dataset search into the main search function.
@@ -131,8 +155,10 @@ def search_opentopo(
         Dataset alias ('noaa' or 'ncalm').
     intersects : gpd.GeoDataFrame | gpd.GeoSeries
         The geometry to restrict the search.
-    datetime : list[str] | str
-        The datetime range for the search in ISO 8601 format.
+    search_start : Timestamp, optional
+        The start time for the temporal search, by default None.
+    search_end : Timestamp, optional
+        The end time for the temporal search, by default None.
     **kwargs : Any
         Additional parameters for the search.
 
@@ -141,8 +167,13 @@ def search_opentopo(
     gpd.GeoDataFrame
         A GeoDataFrame containing the search results from the OpenTopography API.
     """
-    # extract start and end dates
-    start, end = datetime if isinstance(datetime, list) else [datetime, datetime]
+    if search_start is None and search_end is None:
+        search_start = pd.Timestamp(
+            "1996-01-01"
+        )  # Starting from January 1, 1996 (first NOAAA dataset)
+        search_end = pd.Timestamp.today()  # Default to today's date
 
     # search using the OpenTopography API
-    return search_ncalm_noaa(intersects, start=start, end=end, dataset=dataset)
+    return search_ncalm_noaa(
+        intersects, search_start=search_start, search_end=search_end, dataset=dataset
+    )
