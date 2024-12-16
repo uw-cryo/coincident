@@ -1,7 +1,3 @@
-# ruff: noqa: F401
-# ruff: noqa: F811
-# F401 for ruff deeming 'aoi' and 'large_aoi' being unused imports
-# F811 for ruff deeming 'aoi' and 'large_aoi' variables being undefined
 from __future__ import annotations
 
 import typing
@@ -11,19 +7,18 @@ import pytest
 from geopandas.testing import assert_geodataframe_equal
 
 import coincident
-from tests import aoi, large_aoi  # Importing the fixture from __init__.py
 
 # Decorate tests requiring internet (slow & flaky)
 network = pytest.mark.network
 
 try:
-    import maxar_platform.discovery
+    import maxar_platform.discovery  # noqa: F401
 
     not_authenticated = False
 except:  # noqa: E722
     not_authenticated = True
 maxar_authenticated = pytest.mark.skipif(
-    not_authenticated, reason="tests for linux only"
+    not_authenticated, reason="Not authenticated with Maxar API"
 )
 
 

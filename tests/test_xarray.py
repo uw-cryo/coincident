@@ -1,16 +1,11 @@
-# ruff: noqa: F401
-# ruff: noqa: F811
-# F401 for ruff deeming 'aoi' being unused import
-# F811 for ruff deeming 'aoi' variable being undefined
 from __future__ import annotations
 
-# import matplotlib as mpl  # because ruff
 import pytest
 import xarray as xr
+from matplotlib.collections import QuadMesh
 
 import coincident
 from coincident.io.xarray import plot_esa_worldcover, to_dataset
-from tests import aoi  # Importing the fixture from __init__.py
 
 # Decorate tests requiring internet (slow & flaky)
 network = pytest.mark.network
@@ -53,7 +48,6 @@ def test_to_dataset_with_worldcover(aoi):
 @network
 def test_plot_esa_worldcover_valid(aoi):
     """Test `plot_esa_worldcover` with valid WorldCover dataset."""
-    import matplotlib.collections
 
     gf_wc = coincident.search.search(
         dataset="worldcover",
@@ -72,5 +66,5 @@ def test_plot_esa_worldcover_valid(aoi):
     # https://matplotlib.org/stable/users/prev_whats_new/whats_new_3.4.0.html
     # https://github.com/matplotlib/matplotlib/blob/main/lib/matplotlib/tests/test_contour.py#L146
     assert any(
-        isinstance(c, matplotlib.collections.QuadMesh) for c in ax.get_children()
+        isinstance(c, QuadMesh) for c in ax.get_children()
     ), "Expected at least one pcolormesh object in the plot."
