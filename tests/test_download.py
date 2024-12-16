@@ -26,7 +26,6 @@ def test_download_maxar_browse():
     gf = coincident.search.search(dataset="maxar", ids=["102001008EC5AC00"])
     item = coincident.search.stac.to_pystac_items(gf)[0]
     asyncio.run(coincident.io.download.download_item(item, config="maxar"))
-
     assert Path("/tmp/102001008EC5AC00.browse.tif").exists()
     assert Path("/tmp/102001008EC5AC00.json").exists()
 
