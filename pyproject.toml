@@ -54,6 +54,8 @@ dev = [
   "pytest >=6",
   "pytest-cov >=3",
   "sliderule>=4.7.1,<5",
+  "requests>=2.32.3,<3",
+  "types-requests>=2.32.0.20241016,<3"
 ]
 docs = [
   "folium", # comes w/ geopandas on conda-forge but not pypi
@@ -214,6 +216,7 @@ odc-stac = "*"
 planetary-computer = "*"
 pystac-client = "*"
 requests = "*"
+types-requests = "*"
 rioxarray = "*"
 # stac-asset = "*" # not on conda-forge
 stac-geoparquet = "*"

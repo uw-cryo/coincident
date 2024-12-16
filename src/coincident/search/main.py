@@ -11,7 +11,7 @@ from pystac_client.item_search import ItemSearch as _ItemSearch
 from coincident.datasets import _alias_to_Dataset
 from coincident.datasets.general import Dataset
 from coincident.overlaps import subset_by_minimum_area
-from coincident.search import stac, wesm
+from coincident.search import opentopo_api, stac, wesm
 
 _pystac_client = _ItemSearch("no_url")
 
@@ -145,6 +145,20 @@ def search(
             search_start=search_start,
             search_end=search_end,
             **kwargs,
+        )
+
+    elif dataset.provider == "opentopography":
+        # TODO: remove ValueErrors and implement a catalog-wide search
+        # if intersects and/or datetime is None
+        if intersects is None:
+            msg_intersects = "For OpenTopography, the intersects parameter is required."
+            raise ValueError(msg_intersects)
+        if datetime is None:
+            msg_datetime = "For OpenTopography, the datetime parameter is required."
+            raise ValueError(msg_datetime)
+
+        gf = opentopo_api.search_opentopo(
+            intersects=intersects, datetime=datetime, dataset=dataset.alias
         )
 
     # Keep track of dataset alias in geodataframe metadata

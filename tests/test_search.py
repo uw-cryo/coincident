@@ -183,3 +183,23 @@ def test_get_swath_polygon():
 def test_swath_polygon_not_found():
     with pytest.raises(ValueError, match="No swath polygons found for workunit="):
         coincident.search.wesm.get_swath_polygons("AL_SWCentral_1_B22")
+
+
+# opentopo (NCALM and NOAA)
+# =======
+# TODO: remove datetime argument constraint for opentopo search
+# also, smaller aois
+@network
+def test_noaa_search(bathy_aoi):
+    gf = coincident.search.search(
+        dataset="noaa", intersects=bathy_aoi, datetime=["2019-01-01", "2023-12-31"]
+    )
+    assert len(gf) == 2
+
+
+@network
+def test_ncalm_search(large_aoi):
+    gf = coincident.search.search(
+        dataset="ncalm", intersects=large_aoi, datetime=["2019-01-01", "2023-12-31"]
+    )
+    assert len(gf) == 6
