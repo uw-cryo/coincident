@@ -83,7 +83,7 @@ def search(
             shapely_geometry = shapely_geometry.reverse()
         aoi = _pystac_client._format_intersects(shapely_geometry)  # to JSON geometry
     else:
-        if "bbox" not in kwargs:
+        if "bbox" not in kwargs and "ids" not in kwargs:
             msg_unconstrained = (
                 "Neither `bbox` nor `intersects` provided... search will be global"
             )
