@@ -12,7 +12,15 @@ WESM:
 
 from __future__ import annotations
 
-from coincident.datasets import csda, maxar, nasa, opentopo, planetary_computer, usgs
+from coincident.datasets import (
+    csda,
+    maxar,
+    nasa,
+    neon,
+    opentopo,
+    planetary_computer,
+    usgs,
+)
 from coincident.datasets.general import Dataset
 
 # Convenience mapping of string aliases to supported dataset classes
@@ -26,6 +34,7 @@ _datasets = [
     csda.TDX(),
     opentopo.NOAA(),
     opentopo.NCALM(),
+    neon.NEON(),
 ]
 
 aliases = [x.alias for x in _datasets]

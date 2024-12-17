@@ -203,3 +203,17 @@ def test_ncalm_search(large_aoi):
         dataset="ncalm", intersects=large_aoi, datetime=["2019-01-01", "2023-12-31"]
     )
     assert len(gf) == 6
+
+
+# NEON
+# TODO: use a smaller aoi for search
+# i don't want to keep adding fixtures to conftest.py but i think the test takes way too long with CO
+# and no sites overlap with grandmesa
+# =======
+@network
+@pytest.mark.filterwarnings("ignore:Geometry is in a geographic CRS:UserWarning")
+def test_neon_search(large_aoi):
+    gf = coincident.search.search(
+        dataset="neon", intersects=large_aoi, datetime=["2022-01-01", "2022-12-31"]
+    )
+    assert len(gf) == 3

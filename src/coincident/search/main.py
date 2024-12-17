@@ -11,7 +11,7 @@ from pystac_client.item_search import ItemSearch as _ItemSearch
 from coincident.datasets import _alias_to_Dataset
 from coincident.datasets.general import Dataset
 from coincident.overlaps import subset_by_minimum_area
-from coincident.search import opentopo_api, stac, wesm
+from coincident.search import neon_api, opentopo_api, stac, wesm
 
 _pystac_client = _ItemSearch("no_url")
 
@@ -145,6 +145,13 @@ def search(
             search_start=search_start,
             search_end=search_end,
             **kwargs,
+        )
+
+    elif dataset.alias == "neon":
+        gf = neon_api.search_bboxes(
+            intersects=intersects,
+            search_start=search_start,
+            search_end=search_end,
         )
 
     elif dataset.provider == "opentopography":
