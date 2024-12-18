@@ -12,7 +12,15 @@ WESM:
 
 from __future__ import annotations
 
-from coincident.datasets import csda, maxar, nasa, planetary_computer, usgs
+from coincident.datasets import (
+    csda,
+    maxar,
+    nasa,
+    neon,
+    opentopo,
+    planetary_computer,
+    usgs,
+)
 from coincident.datasets.general import Dataset
 
 # Convenience mapping of string aliases to supported dataset classes
@@ -24,9 +32,12 @@ _datasets = [
     planetary_computer.COP30(),
     planetary_computer.WorldCover(),
     csda.TDX(),
+    opentopo.NOAA(),
+    opentopo.NCALM(),
+    neon.NEON(),
 ]
 
 aliases = [x.alias for x in _datasets]
 _alias_to_Dataset = dict(zip(aliases, _datasets, strict=False))
 
-__all__ = ["Dataset", "usgs", "maxar", "nasa", "planetary_computer", "csda"]
+__all__ = ["Dataset", "usgs", "maxar", "nasa", "planetary_computer", "csda", "opentopo"]

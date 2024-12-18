@@ -18,3 +18,15 @@ def test_maxar_defaults():
 def test_threedep_defaults():
     ds = coincident.datasets.usgs.ThreeDEP()
     assert ds.alias == "3dep"
+
+
+def test_opentopo_defaults():
+    ds_noaa = coincident.datasets.opentopo.NOAA()
+    assert ds_noaa.alias == "noaa"
+    ds_ncalm = coincident.datasets.opentopo.NCALM()
+    assert ds_ncalm.alias == "ncalm"
+
+
+def test_neon_defaults():
+    ds = coincident.datasets.neon.NEON()
+    assert ds.alias == "neon"

@@ -10,4 +10,5 @@ quickstart
 cascading_search
 sliderule
 contextual_data
+additional_lidar
 ```
