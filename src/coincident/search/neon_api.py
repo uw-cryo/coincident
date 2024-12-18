@@ -27,18 +27,12 @@ The process goes as follows:
 
 from __future__ import annotations
 
-import warnings
-
 import geopandas as gpd
 import pandas as pd
 import pyogrio
 import requests
 from pandas import Timestamp
 from shapely.geometry import Point
-
-warnings.filterwarnings(
-    "ignore", message=".*Geometry is in a geographic CRS.*", category=UserWarning
-)
 
 
 def build_neon_point_gf(sites_url: str) -> gpd.GeoDataFrame:
@@ -129,7 +123,7 @@ def temporal_filter_neon(
     ].reset_index(drop=True)
 
 
-def get_neon_bboxes(url: str | None, fallback_geometry: gpd.GeoSeries) -> gpd.GeoSeries:
+def get_neon_bboxes(url: str, fallback_geometry: gpd.GeoSeries) -> gpd.GeoSeries:
     """
     Fetch and return bounding boxes for NEON data products.
 
@@ -181,17 +175,17 @@ def search_bboxes(
     search_end: Timestamp,
 ) -> gpd.GeoDataFrame:
     """
-    Perform a search for NEON metadata and respective bbox footprints. Note that this search
+    Perform a search for NEON LiDAR metadata and respective bbox footprints. Note that this search
     will take a while if you denote a large aoi or a large time range.
 
     Parameters
     ----------
     intersects : gpd.GeoDataFrame | gpd.GeoSeries
-        The geometry to restrict the search.
+        The geometry to restrict the search. By default does a global search.
     search_start : pd.Timestamp
-        The start of the time range to filter by.
+        The start of the time range to filter by. By default searches all dates in the catalog (don't do this)
     search_end : pd.Timestamp
-        The end of the time range to filter by.
+        The end of the time range to filter by. By default searches all dates in the catalog (don't do this)
 
     Returns
     -------
@@ -200,7 +194,7 @@ def search_bboxes(
     """
     if search_start is None and search_end is None:
         search_start = pd.Timestamp(
-            "2005-06-01"
+            "2013-06-01"
         )  # Starting from June, 2005 (first NEON dataset)
         search_end = pd.Timestamp.today()  # Default to today's date
     # note that the above will result in the search taking a very long time

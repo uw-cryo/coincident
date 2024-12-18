@@ -23,17 +23,17 @@ def search_ncalm_noaa(
     dataset: str | None = None,
 ) -> gpd.GeoDataFrame:
     """
-    Perform a search for geospatial data using OpenTopography API.
-    This function dynamically adjusts the API URL based on the dataset.
+    Perform a search for NCALM LiDAR or NOAA Coastal LiDAR footprints and metadata via
+    the OpenTopography API.
 
     Parameters
     ----------
     aoi : gpd.GeoDataFrame | gpd.GeoSeries
-        A GeoDataFrame or GeoSeries containing a geometry to restrict the search area.
+        A GeoDataFrame or GeoSeries containing a geometry to restrict the search area, by default does a global search.
     search_start : Timestamp, optional
-        The start datetime for the search, by default None.
+        The start datetime for the search, by default searches the entire catalog defined by 'dataset'.
     search_end : Timestamp, optional
-        The end datetime for the search, by default None.
+        The end datetime for the search, by default searches the entire catalog defined by 'dataset'.
     dataset : str
         The dataset type (either "noaa" or "ncalm").
 
@@ -68,25 +68,30 @@ def search_ncalm_noaa(
             ]
         )
     else:
-        # convex_hull works better than simplify for more-complex geometry (ie. Louisiana)
+        # convex_hull works better than simplify for more-complex geometries (ie. Louisiana)
         # https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/LA/shape.geojson
         search_poly = aoi.to_crs(4326).union_all()
         search_poly_chull = search_poly.convex_hull
         coords = ",".join([f"{x},{y}" for x, y in search_poly_chull.exterior.coords])
 
-    # alter the API URL based on the dataset
-    if dataset == "noaa":
-        url = f"https://portal.opentopography.org/API/otCatalog?productFormat=PointCloud&polygon={coords}&detail=true&outputFormat=json&include_federated=true"
-    elif dataset == "ncalm":
-        url = f"https://portal.opentopography.org/API/otCatalog?productFormat=PointCloud&polygon={coords}&detail=true&outputFormat=json&include_federated=false"
-    else:
+    if dataset not in ["noaa", "ncalm"]:
         msg = f"Unsupported dataset: {dataset}"
         raise ValueError(msg)
 
-    response = requests.get(url)
+    # https://requests.readthedocs.io/en/latest/user/quickstart/#passing-parameters-in-urls
+    url_api_base = "https://portal.opentopography.org/API/otCatalog"
+    params_api = {
+        "productFormat": "PointCloud",
+        "detail": "true",
+        "outputFormat": "json",
+        "polygon": coords,
+        "include_federated": "true" if dataset == "noaa" else "false",
+    }
+
+    response = requests.get(url_api_base, params=params_api)
     if response.status_code != 200:
-        msg = f"Error querying OpenTopography API: {response.status_code}"
-        raise ValueError(msg)
+        msg_response = f"Error querying OpenTopography API: {response.status_code}"
+        raise ValueError(msg_response)
 
     catalog = response.json()
     if dataset == "noaa":
