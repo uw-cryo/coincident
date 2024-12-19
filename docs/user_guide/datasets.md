@@ -17,6 +17,8 @@ used by this library.
 | NOAA Coastal LiDAR | noaa       | LiDAR     | 1996-10-09 |            | US Territories | [NOAA](https://coast.noaa.gov/digitalcoast/data/coastallidar.html)          |
 | NCALM LiDAR        | ncalm      | LiDAR     | 2003-05-15 |            | US Territories | [NCALM](https://calm.geo.berkeley.edu/ncalm/dtc.html)                       |
 | NEON LiDAR         | neon       | LiDAR     | 2013-06-01 |            | US Territories | [NEON](https://data.neonscience.org/data-products/DP3.30024.001)            |
+| ABoVE LVIS L2      | ablvis2_1  | LiDAR     | 2017-06-29 | 2017-07-17 | AK and Canada  | [ABoVE LVIS L2](https://nsidc.org/data/ablvis2/versions/1)                  |
+| AfriSAR LVIS L2    | aflvis2_1  | LiDAR     | 2016-02-20 | 2016-03-08 | Gabon          | [AfriSAR LVIS L2](https://nsidc.org/data/aflvis2/versions/1)                |
 
 ## Other data sources
 
