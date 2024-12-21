@@ -35,7 +35,6 @@ dependencies = [
   "geopandas>=1.0.1,<2",
   "maxar-platform>=1.0.2,<2",
   "odc-stac>=0.3.10,<0.4",
-  "planetary-computer>=1.0.0,<2",
   "pyarrow>=18.0.0,<19",
   "pystac-client>=0.8.3,<0.9",
   "requests>=2.32.3,<3",
@@ -211,7 +210,6 @@ docs = { features = ["docs"], solve-group = "default" }
 python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
 geopandas = "*"
 odc-stac = "*"
-planetary-computer = "*"
 pystac-client = "*"
 requests = "*"
 rioxarray = "*"
@@ -221,6 +219,7 @@ pyarrow = "*"
 # Testing additional dependencies (not in pypi list
 jsonschema = ">=4.23.0,<5"
 libgdal-arrow-parquet = ">=3.10.0,<4"
+gdal = ">=3.10.0,<4"
 
 
 [tool.pixi.feature.dev.dependencies]
@@ -252,7 +251,7 @@ precommit = "pre-commit run --all"
 # NOTE: consider --output-format=github for github actions
 lint = "pylint src"
 test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
-networktest = "pytest --cov --cov-report=xml --cov-report=term"
+networktest = "pytest --cov --cov-report=xml --cov-report=term --durations=0"
 
 [tool.pixi.feature.docs.pypi-dependencies]
 coincident = { path = ".", editable = true }

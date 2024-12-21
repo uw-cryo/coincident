@@ -24,8 +24,9 @@ from coincident.search.wesm import read_wesm_csv, stacify_column_names
 
 
 def _gdf_to_sliderule_polygon(gf: gpd.GeoDataFrame) -> list[dict[str, float]]:
-    # Ignore type necessary I think b/c sliderule doesn't have type hints?
-    return toregion(gf[["geometry"]].dissolve())["poly"]  # type: ignore[no-any-return]
+    # NOTE: .union_all().convex_hull of 2 point geodataframe is LINESTRING
+    bounding_polygon = gpd.GeoDataFrame(geometry=gf[["geometry"]].dissolve().envelope)
+    return toregion(bounding_polygon)["poly"]  # type: ignore[no-any-return]
 
 
 def _gdf_to_sliderule_params(gf: gpd.GeoDataFrame) -> dict[str, Any]:
@@ -203,8 +204,8 @@ def process_atl06sr(
     gf: gpd.GeoDataFrame,
     aoi: gpd.GeoDataFrame = None,
     target_surface: str = "ground",
-    include_worldcover: bool = True,
-    include_3dep: bool = True,
+    include_worldcover: bool = False,
+    include_3dep: bool = False,
     sliderule_params: dict[str, Any] | None = None,
 ) -> gpd.GeoDataFrame:
     """
@@ -266,7 +267,6 @@ def process_atl06sr(
     # User-provided parameters take precedence
     if sliderule_params is not None:
         params.update(sliderule_params)
-    # print(params)
 
     gfsr = icesat2.atl06p(params, resources=granule_names)
 

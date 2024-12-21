@@ -3,7 +3,7 @@ from __future__ import annotations
 import geopandas as gpd
 import pytest
 
-import coincident as m
+import coincident.overlaps
 
 
 @pytest.fixture
@@ -38,13 +38,17 @@ def geodataframe():
 
 
 def test_geographic_area(geodataframe):
-    area = (m.overlaps.geographic_area(geodataframe) * 1e-6).to_numpy().astype(int)
+    area = (
+        (coincident.overlaps.geographic_area(geodataframe) * 1e-6)
+        .to_numpy()
+        .astype(int)
+    )
     assert area == 12309
 
 
 def test_subset_by_minimum_area(geodataframe):
-    big_enough = m.overlaps.subset_by_minimum_area(geodataframe)
-    too_small = m.overlaps.subset_by_minimum_area(geodataframe, 20100)
+    big_enough = coincident.overlaps.subset_by_minimum_area(geodataframe)
+    too_small = coincident.overlaps.subset_by_minimum_area(geodataframe, 20100)
     assert len(big_enough) == 1
     assert len(too_small) == 0
 
@@ -52,10 +56,10 @@ def test_subset_by_minimum_area(geodataframe):
 def test_subset_by_temporal_overlap(geodataframe):
     start = gpd.pd.Timestamp("2020-12-01")
     end = gpd.pd.Timestamp("2020-12-31")
-    nonoverlapping = m.overlaps.subset_by_temporal_overlap(
+    nonoverlapping = coincident.overlaps.subset_by_temporal_overlap(
         geodataframe, start_datetime=start, end_datetime=end, temporal_buffer=0
     )
-    overlapping = m.overlaps.subset_by_temporal_overlap(
+    overlapping = coincident.overlaps.subset_by_temporal_overlap(
         geodataframe, start_datetime=start, end_datetime=end, temporal_buffer=5
     )
     assert len(nonoverlapping) == 0

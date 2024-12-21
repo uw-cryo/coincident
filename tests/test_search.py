@@ -72,7 +72,8 @@ def test_cascading_search(aoi):
     assert actual_max <= expected_max
 
 
-# TODO: add more assertions / tests for this section
+# MAXAR
+# =======
 @network
 @maxar_authenticated
 @pytest.mark.filterwarnings("ignore:Server does not conform")
@@ -83,11 +84,15 @@ def test_maxar_search(aoi):
         datetime="2023",
         filter="eo:cloud_cover < 20",
     )
-    assert len(gf) == 10
+    assert gf.shape == (10, 63)
+    assert gf.iloc[0].stac_version == "1.0.0"
+    assert {"browse", "cloud-cover", "sample-point-set"}.issubset(
+        gf.iloc[0].assets.keys()
+    )
     assert isinstance(gf.datetime.iloc[0], gpd.pd.Timestamp)
-    # NOTE: add more comprehensive check of column names & schema?
-    assert "id" in gf.columns
-    assert "assets" in gf.columns
+    assert {"id", "dayofyear", "stereo_pair_identifiers", "platform"}.issubset(
+        set(gf.columns)
+    )
 
 
 @network
@@ -103,8 +108,35 @@ def test_maxar_large_aoi(large_aoi):
     assert len(gf) <= 10
 
 
+@network
+@maxar_authenticated
+def test_maxar_specific_ids():
+    gf = coincident.search.search(
+        dataset="maxar", ids=["102001008EC5AC00", "102001008BE9BB00"]
+    )
+    assert gf.shape == (2, 63)
+    assert set(gf.id) == {"102001008BE9BB00", "102001008EC5AC00"}
+
+
 # NASA
 # =======
+expected_nasa_columns = {
+    "assets",
+    "bbox",
+    "collection",
+    "geometry",
+    "id",
+    "links",
+    "stac_extensions",
+    "stac_version",
+    "type",
+    "datetime",
+    "end_datetime",
+    "start_datetime",
+    "dayofyear",
+}
+
+
 @network
 def test_icesat2_search(aoi):
     gf = coincident.search.search(
@@ -112,7 +144,16 @@ def test_icesat2_search(aoi):
         intersects=aoi,
         datetime="2023",
     )
-    assert len(gf) == 25
+    actual_columns = set(gf.columns)
+    data_assets = list(
+        filter(lambda x: x["roles"] == "data", gf.iloc[0].assets.values())
+    )
+    assert gf.iloc[0].stac_version == "1.0.0"
+    assert gf.shape == (25, 13)
+    assert actual_columns == expected_nasa_columns
+    assert "roles" in gf.iloc[0].assets["browse"]
+    assert len(data_assets) == 1
+    assert gf.iloc[0].collection.startswith("ATL03")
     assert isinstance(gf.start_datetime.iloc[0], gpd.pd.Timestamp)
 
 
@@ -123,16 +164,62 @@ def test_gedi_search(aoi):
         intersects=aoi,
         datetime="2022",
     )
-    assert len(gf) == 33
+    actual_columns = set(gf.columns)
+    data_assets = list(
+        filter(lambda x: x["roles"] == "data", gf.iloc[0].assets.values())
+    )
+    assert gf.iloc[0].stac_version == "1.0.0"
+    assert gf.shape == (33, 13)
+    assert actual_columns == expected_nasa_columns
+    assert "roles" in gf.iloc[0].assets["browse"]
+    assert len(data_assets) == 1
+    assert gf.iloc[0].collection.startswith("GEDI02_A")
+    assert isinstance(gf.start_datetime.iloc[0], gpd.pd.Timestamp)
 
 
+# NASA/CSDA
+# =======
 @network
 def test_tdx_search(aoi):
     gf = coincident.search.search(
         dataset="tdx", intersects=aoi, datetime=["2009", "2020"]
     )
-    assert len(gf) == 48
+    expected_columns = {
+        "assets",
+        "bbox",
+        "collection",
+        "geometry",
+        "id",
+        "links",
+        "stac_extensions",
+        "stac_version",
+        "type",
+        "constellation",
+        "datetime",
+        "end_datetime",
+        "platform",
+        "sar:center_frequency",
+        "sar:frequency_band",
+        "sar:instrument_mode",
+        "sar:looks_azimuth",
+        "sar:looks_range",
+        "sar:polarizations",
+        "sar:product_type",
+        "sar:resolution_azimuth",
+        "sar:resolution_range",
+        "start_datetime",
+        "dayofyear",
+    }
+    actual_columns = set(gf.columns)
+    # NOTE: I think technically assets should have 'roles' not 'role' key...
+    data_assets = list(
+        filter(lambda x: x["role"] == "data", gf.iloc[0].assets.values())
+    )
+    assert gf.iloc[0].stac_version == "1.0.0"
+    assert gf.shape == (48, 24)
+    assert actual_columns == expected_columns
     assert gf["sar:product_type"].unique() == "SSC"
+    assert len(data_assets) >= 1
 
 
 # MS PLANETARY COMPUTER
@@ -140,13 +227,69 @@ def test_tdx_search(aoi):
 @network
 def test_cop30_search(aoi):
     gf = coincident.search.search(dataset="cop30", intersects=aoi)
-    assert len(gf) == 4
+    expected_columns = {
+        "assets",
+        "bbox",
+        "collection",
+        "geometry",
+        "id",
+        "links",
+        "stac_extensions",
+        "stac_version",
+        "type",
+        "datetime",
+        "gsd",
+        "platform",
+        "proj:epsg",
+        "proj:shape",
+        "proj:transform",
+        "dayofyear",
+    }
+    actual_columns = set(gf.columns)
+    assert gf.iloc[0].stac_version == "1.0.0"
+    assert gf.shape == (4, 16)
+    assert actual_columns == expected_columns
+    assert "data" in gf.iloc[0].assets
+    # NOTE: technically this is the incorrect EPSG (should be 9518), also 'proj:epsg' deprecated for 'proj:code'
+    assert gf.iloc[0]["proj:epsg"] == 4326
 
 
 @network
 def test_worldcover_search(aoi):
     gf = coincident.search.search(dataset="worldcover", intersects=aoi, datetime="2020")
-    assert len(gf) == 4
+    # NOTE: could test these separately...
+    stac_columns = {
+        "assets",
+        "bbox",
+        "collection",
+        "geometry",
+        "id",
+        "links",
+        "stac_extensions",
+        "stac_version",
+        "type",
+        "datetime",
+    }
+    additional_columns = {
+        "created",
+        "description",
+        "end_datetime",
+        "esa_worldcover:product_tile",
+        "esa_worldcover:product_version",
+        "grid:code",
+        "instruments",
+        "mission",
+        "platform",
+        "proj:epsg",
+        "start_datetime",
+    }
+    coincident_columns = {"dayofyear"}
+    expected_columns = stac_columns | additional_columns | coincident_columns
+    actual_columns = set(gf.columns)
+    assert gf.iloc[0].stac_version == "1.0.0"
+    assert gf.shape == (4, 22)
+    assert actual_columns == expected_columns
+    assert "map" in gf.iloc[0].assets
 
 
 @network
@@ -166,16 +309,36 @@ def test_wesm_search(aoi):
         dataset="3dep",
         intersects=aoi,
     )
-    assert len(gf) == 5
+    expected_columns = {
+        "workunit",
+        "project",
+        "start_datetime",
+        "end_datetime",
+        "dayofyear",
+        "duration",
+        "p_method",
+    }
+    actual_columns = set(gf.columns)
+    assert gf.shape == (5, 37)
+    assert expected_columns.issubset(actual_columns)
 
 
-# NOTE ~10s on wifi
+# NOTE can take ~10s on wifi... maybe only run this on demand...
 @network
 def test_get_swath_polygon():
     gf = coincident.search.wesm.get_swath_polygons("CO_CameronPkFire_1_2021")
+    expected_columns = {
+        "start_datetime",
+        "end_datetime",
+        "collection",
+        "datetime",
+        "dayofyear",
+        "duration",
+    }
+    actual_columns = set(gf.columns)
     assert isinstance(gf, gpd.GeoDataFrame)
-    assert len(gf) == 51
-    assert "start_datetime" in gf.columns
+    assert gf.shape == (51, 16)
+    assert expected_columns.issubset(actual_columns)
     assert isinstance(gf.datetime.iloc[0], gpd.pd.Timestamp)
 
 

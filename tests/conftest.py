@@ -21,3 +21,9 @@ def large_aoi(scope="package"):
     # 260 vertices, large area 269,590 km^2
     aoi_url = "https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/CO/shape.geojson"
     return gpd.read_file(aoi_url)
+
+
+@pytest.fixture(scope="package")
+def tinyaoi():
+    # 4 vertices
+    return gpd.read_file("tests/data/tiny.geojson")
