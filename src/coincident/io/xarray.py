@@ -4,32 +4,22 @@ Subset and Sample using Xarray
 
 from __future__ import annotations
 
-import warnings
+import os
 from typing import Any
 
 import geopandas as gpd
 import odc.stac
+import pystac
+import rasterio
 
 # NOTE: must import for odc.stac outputs to have .rio accessor
 import rioxarray  # noqa: F401
 import xarray as xr
 
-from coincident._utils import depends_on_optional
-from coincident.datasets.planetary_computer import WorldCover
 from coincident.search.stac import to_pystac_items
 
-try:
-    import matplotlib.colors
-    import matplotlib.pyplot as plt
-    from matplotlib import cm
-except ImportError:
-    warnings.warn(
-        "'matplotlib' package not found. Install for plotting functions: https://matplotlib.org/stable/install/index.html",
-        stacklevel=2,
-    )
-
 # Sets GDAL_DISABLE_READDIR_ON_OPEN to 'EMPTY_DIR' etc.
-odc.stac.configure_rio(cloud_defaults=True)
+odc.stac.configure_rio(cloud_defaults=True, VSICURL_PC_URL_SIGNING="YES")
 
 
 def to_dataset(
@@ -69,36 +59,41 @@ def to_dataset(
     return ds
 
 
-@depends_on_optional("matplotlib")
-def plot_esa_worldcover(ds: xr.Dataset) -> plt.Axes:
-    """From https://planetarycomputer.microsoft.com/dataset/esa-worldcover#Example-Notebook"""
-    classmap = WorldCover().classmap
+# NOTE: make this more general to open any single STAC asset?
+def open_maxar_browse(item: pystac.Item, overview_level: int = 0) -> xr.DataArray:
+    """
+    Open a browse image from a STAC item using the specified overview level.
 
-    colors = ["#000000" for r in range(256)]
-    for key, value in classmap.items():
-        colors[int(key)] = value["hex"]
-    cmap = matplotlib.colors.ListedColormap(colors)
+    Parameters
+    ----------
+    item : pystac.Item
+        The STAC item containing the browse image asset.
+    overview_level : int, optional
+        The overview level to use when opening the image, by default 0.
 
-    # sequences needed for an informative colorbar
-    values = list(classmap)
-    boundaries = [(values[i + 1] + values[i]) / 2 for i in range(len(values) - 1)]
-    boundaries = [0, *boundaries, 255]
-    ticks = [
-        (boundaries[i + 1] + boundaries[i]) / 2 for i in range(len(boundaries) - 1)
-    ]
-    tick_labels = [value["description"] for value in classmap.values()]
+    Returns
+    -------
+    xr.DataArray
+        The opened browse image as an xarray DataArray.
 
-    fig, ax = plt.subplots()
-    normalizer = matplotlib.colors.Normalize(vmin=0, vmax=255)
+    Notes
+    -----
+    The function uses the `rasterio` engine to open the image and sets the
+    `GDAL_DISABLE_READDIR_ON_OPEN` and `GDAL_HTTP_HEADERS` environment variables
+    for optimized reading and authentication, respectively.
+    """
 
-    da = ds.to_dataarray().squeeze()
-    da.plot(ax=ax, cmap=cmap, norm=normalizer)
+    # href = item.assets['browse']['href'] # accessed via geopandas
+    href = item.assets["browse"].href  # accessed via pystac
 
-    colorbar = fig.colorbar(
-        cm.ScalarMappable(norm=normalizer, cmap=cmap),
-        boundaries=boundaries,
-        values=values,
-        cax=fig.axes[1].axes,
+    env = rasterio.Env(
+        GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+        GDAL_HTTP_HEADERS=f'MAXAR-API-KEY:{os.environ["MAXAR_API_KEY"]}',
     )
-    colorbar.set_ticks(ticks, labels=tick_labels)
-    return ax
+    with env:
+        return xr.open_dataarray(
+            href,
+            engine="rasterio",
+            mask_and_scale=False,  # otherwise uint8 -> float32!
+            backend_kwargs={"open_kwargs": {"overview_level": overview_level}},
+        )
