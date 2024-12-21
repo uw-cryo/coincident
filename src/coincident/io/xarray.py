@@ -19,7 +19,7 @@ import xarray as xr
 from coincident.search.stac import to_pystac_items
 
 # Sets GDAL_DISABLE_READDIR_ON_OPEN to 'EMPTY_DIR' etc.
-odc.stac.configure_rio(cloud_defaults=True)
+odc.stac.configure_rio(cloud_defaults=True, VSICURL_PC_URL_SIGNING="YES")
 
 
 def to_dataset(

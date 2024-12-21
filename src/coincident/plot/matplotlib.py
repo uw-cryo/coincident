@@ -69,6 +69,11 @@ def plot_esa_worldcover(ds: xr.Dataset) -> plt.Axes:
     da = ds.to_dataarray().squeeze()
     da.plot(ax=ax, cmap=cmap, norm=normalizer)
 
+    # set aspect ratio according to mid scene latitude
+    if ds.rio.crs.to_epsg() == 4326:
+        mid_lat = da.latitude[int(da.latitude.size / 2)].to_numpy()  # PD011
+        ax.set_aspect(aspect=1 / np.cos(np.deg2rad(mid_lat)))
+
     colorbar = fig.colorbar(
         cm.ScalarMappable(norm=normalizer, cmap=cmap),
         boundaries=boundaries,

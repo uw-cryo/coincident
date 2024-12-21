@@ -107,11 +107,8 @@ def search(
             gf = gf.loc[gf.stereo_pair_identifiers.str[0].dropna().index]
 
         else:
-            if dataset.provider == "microsoft":
-                client = stac.configure_mspc_client(dataset.search)  # type: ignore[arg-type]
-
-            # NOTE: NASA-CMR-STAC seems to require GET, but maxar prefers POST (errors for large polygons)?!
-            elif dataset.provider == "nasa":
+            # NOTE: NASA-CMR-STAC seems to require GET, but default is POST (maxar API w/ GET throws error for large polygons)
+            if dataset.provider == "nasa":
                 stac_api_kwargs["method"] = "GET"
                 client = stac.configure_stac_client(dataset.search)  # type: ignore[arg-type]
             # Generic STAC endpoint w/o additional config
