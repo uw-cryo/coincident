@@ -30,7 +30,7 @@ from __future__ import annotations
 import geopandas as gpd
 import pandas as pd
 import pyogrio
-import requests
+import requests  # type: ignore[import-untyped]
 from pandas import Timestamp
 from shapely.geometry import Point
 
@@ -51,7 +51,7 @@ def build_neon_point_gf(sites_url: str) -> gpd.GeoDataFrame:
         are the top left of the center-most tile for each NEON flight. Also note that there is no
         easy way to pull the flight footprint geometry from NEON.
     """
-    sites_request = requests.get(sites_url)
+    sites_request = requests.get(sites_url, timeout=30)
     sites_json = sites_request.json()
 
     df_neon = pd.concat(
@@ -139,7 +139,7 @@ def get_neon_bboxes(url: str, fallback_geometry: gpd.GeoSeries) -> gpd.GeoSeries
     gpd.GeoSeries
         The bounding box geometry for the NEON data product.
     """
-    response = requests.get(url)
+    response = requests.get(url, timeout=30)
     if response.status_code != 200:
         return fallback_geometry
     data = response.json().get("data", {})

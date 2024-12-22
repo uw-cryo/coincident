@@ -53,7 +53,6 @@ dev = [
   "pytest >=6",
   "pytest-cov >=3",
   "sliderule>=4.7.1,<5",
-  "types-requests>=2.32.0.20241016,<3"
 ]
 docs = [
   "folium", # comes w/ geopandas on conda-forge but not pypi
@@ -121,6 +120,7 @@ report.exclude_also = [
 [tool.codespell]
 # Ignore notebooks with output cells
 skip="pixi.lock,docs/examples/sliderule.ipynb,docs/examples/contextual_data.ipynb"
+ignore-words-list="ALOS"
 
 [tool.mypy]
 files = ["src", "tests"]
@@ -213,7 +213,6 @@ geopandas = "*"
 odc-stac = "*"
 pystac-client = "*"
 requests = "*"
-types-requests = "*"
 rioxarray = "*"
 # stac-asset = "*" # not on conda-forge
 stac-geoparquet = "*"

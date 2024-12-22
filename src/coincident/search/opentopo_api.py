@@ -11,7 +11,7 @@ from datetime import datetime
 
 import geopandas as gpd
 import pandas as pd
-import requests
+import requests  # type: ignore[import-untyped]
 from pandas import Timestamp
 from shapely.geometry import shape
 
@@ -49,23 +49,23 @@ def search_ncalm_noaa(
     """
     # If `aoi` is None, set the entire world as the search area
     if aoi is None:
-        search_poly = gpd.GeoSeries(
-            [
-                shape(
-                    {
-                        "type": "Polygon",
-                        "coordinates": [
-                            [
-                                [-180, -90],
-                                [180, -90],
-                                [180, 90],
-                                [-180, 90],
-                                [-180, -90],
-                            ]
-                        ],
-                    }
-                )
-            ]
+        globe = shape(
+            {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [-180, -90],
+                        [180, -90],
+                        [180, 90],
+                        [-180, 90],
+                        [-180, -90],
+                    ]
+                ],
+            }
+        )
+        search_poly = gpd.GeoSeries(globe, crs="EPSG:4326")
+        coords = ",".join(
+            [f"{x},{y}" for x, y in search_poly.geometry[0].exterior.coords]
         )
     else:
         # convex_hull works better than simplify for more-complex geometries (ie. Louisiana)
@@ -88,7 +88,7 @@ def search_ncalm_noaa(
         "include_federated": "true" if dataset == "noaa" else "false",
     }
 
-    response = requests.get(url_api_base, params=params_api)
+    response = requests.get(url_api_base, params=params_api, timeout=30)
     if response.status_code != 200:
         msg_response = f"Error querying OpenTopography API: {response.status_code}"
         raise ValueError(msg_response)

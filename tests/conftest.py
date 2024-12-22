@@ -22,6 +22,7 @@ def large_aoi(scope="package"):
     aoi_url = "https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/CO/shape.geojson"
     return gpd.read_file(aoi_url)
 
+
 # TODO: add a small geojson AOI for testing bathy sites
 @pytest.fixture
 def bathy_aoi(scope="package"):
@@ -29,8 +30,8 @@ def bathy_aoi(scope="package"):
     aoi_url = "https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/MA/shape.geojson"
     return gpd.read_file(aoi_url)
 
+
 @pytest.fixture(scope="package")
 def tinyaoi():
     # 4 vertices
     return gpd.read_file("tests/data/tiny.geojson")
-
