@@ -2995,8 +2995,8 @@ packages:
   timestamp: 1729059365471
 - pypi: .
   name: coincident
-  version: 0.1.2.dev7+gd8c663e.d20241219
-  sha256: 7f7f89904f54d98b1451dd1561e7f89dc0612a43c260af31cd026753338b03ef
+  version: 0.1.2.dev31+g361ab93.d20241222
+  sha256: 55772b26bdbaa4d7164536a67c33cba61020fb70fee0925d74928acf411ce827
   requires_dist:
   - cloudpathlib[s3]>=0.20.0,<0.21
   - geopandas>=1.0.1,<2

@@ -120,6 +120,7 @@ report.exclude_also = [
 [tool.codespell]
 # Ignore notebooks with output cells
 skip="pixi.lock,docs/examples/sliderule.ipynb,docs/examples/contextual_data.ipynb"
+ignore-words-list="ALOS"
 
 [tool.mypy]
 files = ["src", "tests"]

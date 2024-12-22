@@ -5,6 +5,7 @@ import typing
 import geopandas as gpd
 import pytest
 from geopandas.testing import assert_geodataframe_equal
+from shapely.geometry import Polygon
 
 import coincident
 
@@ -346,3 +347,58 @@ def test_get_swath_polygon():
 def test_swath_polygon_not_found():
     with pytest.raises(ValueError, match="No swath polygons found for workunit="):
         coincident.search.wesm.get_swath_polygons("AL_SWCentral_1_B22")
+
+
+# opentopo (NCALM and NOAA)
+# =======
+@network
+def test_noaa_search(bathy_aoi):
+    gf = coincident.search.search(
+        dataset="noaa", intersects=bathy_aoi, datetime=["2019-01-01", "2023-12-31"]
+    )
+    assert gf.shape == (2, 5)
+    assert all(
+        col in gf.columns
+        for col in ["id", "title", "start_datetime", "end_datetime", "geometry"]
+    )
+    assert all(isinstance(geom, Polygon) for geom in gf["geometry"])
+
+
+@network
+def test_ncalm_search(large_aoi):
+    gf = coincident.search.search(
+        dataset="ncalm", intersects=large_aoi, datetime=["2019-01-01", "2023-12-31"]
+    )
+    assert gf.shape == (6, 5)
+    assert all(
+        col in gf.columns
+        for col in ["id", "title", "start_datetime", "end_datetime", "geometry"]
+    )
+    assert all(isinstance(geom, Polygon) for geom in gf["geometry"])
+
+
+# NEON
+# TODO: add a test for provisional NEON datasets
+# =======
+@network
+@pytest.mark.filterwarnings("ignore:Geometry is in a geographic CRS:UserWarning")
+def test_neon_search():
+    intersects = gpd.read_file(
+        "https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/MA/shape.geojson"
+    )
+    gf = coincident.search.search(
+        dataset="neon", intersects=intersects, datetime=["2019"]
+    )
+    assert gf.shape == (2, 6)
+    assert all(
+        col in gf.columns
+        for col in [
+            "id",
+            "title",
+            "start_datetime",
+            "end_datetime",
+            "product_url",
+            "geometry",
+        ]
+    )
+    assert all(isinstance(geom, Polygon) for geom in gf["geometry"])
