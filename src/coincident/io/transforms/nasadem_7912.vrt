@@ -1,0 +1,39 @@
+<VRTDataset rasterXSize="1296001" rasterYSize="417601" subClass="VRTWarpedDataset">
+  <SRS dataAxisToSRSAxisMapping="2,1,3">GEOGCRS["ITRF2014",DYNAMIC[FRAMEEPOCH[2010]],DATUM["International Terrestrial Reference Frame 2014",ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1]]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],CS[ellipsoidal,3],AXIS["geodetic latitude (Lat)",north,ORDER[1],ANGLEUNIT["degree",0.0174532925199433]],AXIS["geodetic longitude (Lon)",east,ORDER[2],ANGLEUNIT["degree",0.0174532925199433]],AXIS["ellipsoidal height (h)",up,ORDER[3],LENGTHUNIT["metre",1]],USAGE[SCOPE["Geodesy."],AREA["World."],BBOX[-90,-180,90,180]],ID["EPSG",7912]]</SRS>
+  <GeoTransform> -1.8000013890000000e+02,  2.7777777779492454e-04,  0.0000000000000000e+00,  6.0000138900000003e+01,  0.0000000000000000e+00, -2.7777777783099178e-04</GeoTransform>
+  <VRTRasterBand dataType="Float32" band="1" subClass="VRTWarpedRasterBand" />
+  <BlockXSize>512</BlockXSize>
+  <BlockYSize>512</BlockYSize>
+  <GDALWarpOptions>
+    <WarpMemoryLimit>5.24288e+08</WarpMemoryLimit>
+    <ResampleAlg>Bilinear</ResampleAlg>
+    <WorkingDataType>Float32</WorkingDataType>
+    <Option name="INIT_DEST">0</Option>
+    <Option name="APPLY_VERTICAL_SHIFT">YES</Option>
+    <Option name="MULT_FACTOR_VERTICAL_SHIFT">1</Option>
+    <Option name="MULT_FACTOR_VERTICAL_SHIFT_PIPELINE">1</Option>
+    <Option name="ERROR_OUT_IF_EMPTY_SOURCE_WINDOW">FALSE</Option>
+    <SourceDataset relativeToVRT="1">nasadem.gti</SourceDataset>
+    <Transformer>
+      <GenImgProjTransformer>
+        <SrcGeoTransform>-180.0001388888889,0.00027777777777781459,0,60.000138888888891,0,-0.00027777777777781459</SrcGeoTransform>
+        <SrcInvGeoTransform>648000.4999999142,3599.999999999523,0,216000.49999997139,0,-3599.999999999523</SrcInvGeoTransform>
+        <DstGeoTransform>-180.0001389,0.00027777777779492454,0,60.000138900000003,0,-0.00027777777783099178</DstGeoTransform>
+        <DstInvGeoTransform>648000.5,3599.9999997777777,0,216000.49999862071,0,-3599.9999993103465</DstInvGeoTransform>
+        <ReprojectTransformer>
+          <ReprojectionTransformer>
+            <SourceSRS>COMPD_CS["WGS 84 + EGM96 height",GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AXIS["Latitude",NORTH],AXIS["Longitude",EAST],AUTHORITY["EPSG","4326"]],VERT_CS["EGM96 height",VERT_DATUM["EGM96 geoid",2005,AUTHORITY["EPSG","5171"]],UNIT["metre",1,AUTHORITY["EPSG","9001"]],AXIS["Gravity-related height",UP],AUTHORITY["EPSG","5773"]],AUTHORITY["EPSG","9707"]]</SourceSRS>
+            <TargetSRS>GEOGCRS["ITRF2014",DYNAMIC[FRAMEEPOCH[2010]],DATUM["International Terrestrial Reference Frame 2014",ELLIPSOID["GRS 1980",6378137,298.257222101,LENGTHUNIT["metre",1]]],PRIMEM["Greenwich",0,ANGLEUNIT["degree",0.0174532925199433]],CS[ellipsoidal,3],AXIS["geodetic latitude (Lat)",north,ORDER[1],ANGLEUNIT["degree",0.0174532925199433]],AXIS["geodetic longitude (Lon)",east,ORDER[2],ANGLEUNIT["degree",0.0174532925199433]],AXIS["ellipsoidal height (h)",up,ORDER[3],LENGTHUNIT["metre",1]],USAGE[SCOPE["Geodesy."],AREA["World."],BBOX[-90,-180,90,180]],ID["EPSG",7912]]</TargetSRS>
+            <Options>
+              <Option key="CENTER_LONG">2.38458e-11</Option>
+              <Option key="COORDINATE_OPERATION">+proj=pipeline +step +proj=axisswap +order=2,1 +step +proj=unitconvert +xy_in=deg +xy_out=rad +step +proj=vgridshift +grids=us_nga_egm96_15.tif +multiplier=1 +step +proj=cart +ellps=GRS80 +step +inv +proj=helmert +x=1.0053 +y=-1.90921 +z=-0.54157 +rx=0.02678138 +ry=-0.00042027 +rz=0.01093206 +s=0.00036891 +dx=0.00079 +dy=-0.0006 +dz=-0.00144 +drx=6.667e-05 +dry=-0.00075744 +drz=-5.133e-05 +ds=-7.201e-05 +t_epoch=2010 +convention=coordinate_frame +step +inv +proj=cart +ellps=GRS80 +step +proj=unitconvert +xy_in=rad +xy_out=deg +step +proj=axisswap +order=2,1</Option>
+            </Options>
+          </ReprojectionTransformer>
+        </ReprojectTransformer>
+      </GenImgProjTransformer>
+    </Transformer>
+    <BandList>
+      <BandMapping src="1" dst="1" />
+    </BandList>
+  </GDALWarpOptions>
+</VRTDataset>

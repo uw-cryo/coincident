@@ -221,7 +221,8 @@ pyarrow = "*"
 jsonschema = ">=4.23.0,<5"
 libgdal-arrow-parquet = ">=3.10.0,<4"
 gdal = ">=3.10.0,<4"
-
+contextily = ">=1.6.2,<2"
+matplotlib-scalebar = ">=0.8.1,<0.9"
 
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
@@ -233,19 +234,22 @@ pre-commit = "<4"
 pylint = "*"
 pytest = "*"
 sliderule = "*"
-
 # NOTE: test new dependencies locally by adding below
 #rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
 #xvec = ">=0.3.0,<0.4"
-#sliderule = ">=4.7.1,<5"
-#matplotlib = ">=3.9.4,<4"
+#adlfs = ">=2024.7.0,<2025"
+#planetary-computer = "*"
 
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = false }
+
+#[dependency-groups]
+#dev = ["aiohttp"]
 #cloudpathlib = { version = "0.20.0,<0.21", extras = ["s3"]}
 
 [tool.pixi.feature.dev.pypi-dependencies]
 coincident = { path = ".", editable = true }
+#aiohttp = ">=3.11.11,<4"
 
 [tool.pixi.feature.dev.tasks]
 precommit = "pre-commit run --all"

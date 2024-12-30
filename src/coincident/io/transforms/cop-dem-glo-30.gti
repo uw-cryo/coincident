@@ -1,0 +1,11 @@
+<GDALTileIndexDataset>
+    <IndexDataset>/vsiaz/items/cop-dem-glo-30.parquet</IndexDataset>
+    <LocationField>assets.data.href</LocationField>
+    <GeoTransform>-1.8000013890000000e+02,2.7777777777777778e-04,0.0000000000000000e+00,8.4000138899999996e+01,0.0000000000000000e+00,-2.7777777777777778e-04</GeoTransform>     <!-- optional -->
+    <XSize>1296001</XSize>
+    <YSize>626401</YSize>
+    <BlockXSize>1024</BlockXSize>
+    <BlockYSize>1024</BlockYSize>
+    <BandCount>1</BandCount>
+    <DataType>Float32</DataType>
+</GDALTileIndexDataset>
