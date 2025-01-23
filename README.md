@@ -8,6 +8,8 @@
 
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/uw-cryo/coincident)
 
+[![Open in Codeanywhere](https://codeanywhere.com/img/open-in-codeanywhere-btn.svg)](https://app.codeanywhere.com/#https://github.com/uw-cryo/coincident)
+
 <!-- SPHINX-START -->
 
 <!-- prettier-ignore-start -->
