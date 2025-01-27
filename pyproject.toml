@@ -35,10 +35,10 @@ dependencies = [
   "geopandas>=1.0.1,<2",
   "maxar-platform>=1.0.2,<2",
   "odc-stac>=0.3.10,<0.4",
-  "pyarrow>=18.0.0,<19",
+  "pyarrow>=18.0.0,<=19",
   "pystac-client>=0.8.3,<0.9",
   "requests>=2.32.3,<3",
-  "rioxarray>=0.17.0,<0.18",
+  "rioxarray>=0.17.0,<0.19",
   "stac-asset>=0.4.3,<0.5",
   "stac-geoparquet>=0.6.0,<0.7",
 ]
