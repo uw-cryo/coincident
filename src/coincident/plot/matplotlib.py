@@ -210,35 +210,46 @@ def plot_maxar_browse(item: pystac.Item, overview_level: int = 0) -> plt.Axes:
 
 
 # NOTE: xdem.DEM.hillshade method expects the same x and y resolution
-# TODO: make this easier so user can just call dem['hillshade']=coincident.plot.create_hillshade()
-# rather than dsm_lidar['hillshade'] = (('y','x'), coincident.plot.create_hillshade(dsm_lidar.elevation.squeeze()))
 @depends_on_optional("matplotlib")
-def create_hillshade(da: xr.DataArray, azi: int = 45, alt: int = 45) -> np.ndarray:
+def hillshade(
+    da: xr.DataArray, azi: int = 45, alt: int = 45
+) -> tuple[tuple[str, ...], np.ndarray]:
     """
-    Create hillshade array from DEM
+    Create hillshade array from DEM.
+    Pass with dem['hillshade'] = coincident.plot.create_hillshade(dem.elevation)
 
     Parameters
     ----------
     da: xarray.DataArray
         Dataarray containing elevation values
+    azi: int
+        The shading azimuth in degrees (0-360°) going clockwise, starting from north.
+    alt: int
+        The shading altitude in degrees (0-90°). 90° is straight from above.
 
     Returns
     -------
-    Hillshade array type uint8
+    tuple
+        (dims, data) tuple where dims are dimension names and data is uint8 array
     """
+    # Ensure 2D array by squeezing extra dimensions
+    da = da.squeeze()
+
     x, y = np.gradient(da)
     slope = np.pi / 2.0 - np.arctan(np.sqrt(x * x + y * y))
     aspect = np.arctan2(-x, y)
     azimuth = 360.0 - azi
     azimuthrad = azimuth * np.pi / 180.0
     altituderad = alt * np.pi / 180.0
+
     shaded = np.sin(altituderad) * np.sin(slope) + np.cos(altituderad) * np.cos(
         slope
     ) * np.cos(azimuthrad - aspect)
+
     data = 255 * (shaded + 1) / 2
     data[data < 0] = 0  # set hillshade values to min of 0.
 
-    return data.astype(np.uint8)
+    return da.dims, data.astype(np.uint8)
 
 
 @depends_on_optional("matplotlib")
@@ -258,6 +269,8 @@ def clear_labels(ax: matplotlib.axes.Axes) -> None:
     """
     ax.xaxis.set_major_formatter(plt.NullFormatter())
     ax.yaxis.set_major_formatter(plt.NullFormatter())
+    ax.set_xlabel("")
+    ax.set_ylabel("")
 
 
 @depends_on_optional("matplotlib")
@@ -267,13 +280,12 @@ def plot_dem(
     cmap: str = "inferno",
     title: str = "",
     da_hillshade: xr.DataArray | None = None,
-    cmin: float | None = None,
-    cmax: float | None = None,
     **kwargs: Any,
 ) -> plt.Axes:
     """
-    Plots a DEM with an option to plot a hillshade underneath.
-    DEM alpha is set to 0.5 and hillshade alpha is set to 1.0.
+    Plots a DEM with an option to plot a hillshade underneath
+    NOTE: set kwarg alpha=0.5 if you pass in a hillshade.
+        hillshade alpha is set to 1.0, and nee to thus set overlaying DEM alpha to 0.5
 
     Parameters
     ----------
@@ -306,7 +318,7 @@ def plot_dem(
         )
         ax.set_aspect("equal")
     # plot the DEM with alpha=0.5
-    da.plot.imshow(ax=ax, cmap=cmap, alpha=0.5, vmin=cmin, vmax=cmax, **kwargs)
+    da.plot.imshow(ax=ax, cmap=cmap, **kwargs)
     ax.set_title(title)
     ax.set_aspect("equal")
     clear_labels(ax)
@@ -324,14 +336,12 @@ def plot_altimeter_points(
     cmap: str = "inferno",
     title: str = "",
     da_hillshade: xr.DataArray | None = None,
-    cmin: float | None = None,
-    cmax: float | None = None,
-    p_alpha: float | None = 0.5,
     **kwargs: Any,
 ) -> plt.Axes:
     """
     Plots laser altimeter point data with an optional hillshade background.
-    Points alpha is default to 0.5 and hillshade alpha is set to 1.0.
+    NOTE: set kwarg alpha=0.5 if you pass in a hillshade.
+        hillshade alpha is set to 1.0, and nee to thus set overlaying DEM alpha to 0.5
 
     Parameters
     ----------
@@ -369,9 +379,7 @@ def plot_altimeter_points(
             ax=ax, cmap="gray", alpha=1.0, add_colorbar=False, add_labels=False
         )
     # Plot the altimeter data with overlay
-    gf.plot(
-        ax=ax, column=column, cmap=cmap, vmin=cmin, vmax=cmax, alpha=p_alpha, **kwargs
-    )
+    gf.plot(ax=ax, column=column, cmap=cmap, **kwargs)
     ax.set_title(title)
     ax.set_aspect("equal")
     clear_labels(ax)
@@ -468,20 +476,23 @@ def plot_diff_hist(
     med = np.nanmedian(da)
     mean = np.nanmean(da)
     ax.axvline(0, color="k", lw=1)
+    # NOTE: hardcoded unit label of meters
     ax.axvline(med, label=f"med: {med:.2f}m", color="cyan", lw=0.5)
     ax.axvline(mean, label=f"mean: {mean:.2f}m", color="magenta", lw=0.5)
-    ax.set_title("")
+    ax.set_xlabel("Elevation Difference (m)")
+    ax.set_ylabel("Frequency")
     ax.legend(loc="best", fontsize="small")
+    ax.grid(False)
     return ax
 
 
-# TODO: make hillshade optional for this
 @depends_on_optional("matplotlib")
 def compare_dems(
     dem_list: list[xr.Dataset],
     gdf_dict: dict[str, tuple[gpd.GeoDataFrame, str]] | None = None,
     ds_wc: xr.Dataset | None = None,
     elevation_cmap: str = "inferno",
+    hillshade: bool = True,
     diff_cmap: str = "RdBu",
     elevation_clim: tuple[float, float] | None = None,
     diff_clim: tuple[float, float] = (-10, 10),
@@ -490,8 +501,8 @@ def compare_dems(
 ) -> plt.Axes:
     """
     Generalized function to create a standard panel comparing DEMs and altimetry points.
-    Where the first row shows elevation maps over hillshades
-        altimetry points will be plotted over the hillshade of the first DEM
+    Where the first row shows elevation maps over hillshades (if hillshade is True)
+        altimetry points will be plotted over the hillshade of the first DEM (if hillshade is True)
     The second row shows elevation differences, with the first plot being the Landcover of the scene
         First DEM provided will be the 'source' DEM where all other elevations will be compared to
     The third row shows the histograms of these differences
@@ -499,7 +510,7 @@ def compare_dems(
     NOTE: This figure changes dynamically based on the number of DEMs and GeoDataFrames provided.
     This function requires:
         * All inputs to have the same CRS and to be aligned
-        * All DEMs to have variables 'elevation' and 'hillshade'
+        * All DEMs to have variable 'elevation'
         * There is a minimum requirement of 2 DEMs to be passed
         * There is a maximum of 5 total datasets (DEMs + GeoDataFrames) to be passed
 
@@ -519,6 +530,9 @@ def compare_dems(
         the same CRS and aligned with your other inputs
     elevation_cmap: Optional str
         Colormap for elevation. Default inferno
+    hillshade: Optional bool
+        Whether to plot hillshades under your DEMs. Default True.
+        If True, your DEMs should have a .hillshade attribute
     diff_cmap: Optional str
         Colormap for elevation differences. Default RdBu
     elevation_clim: Optional Tuple[float, float]
@@ -593,6 +607,7 @@ def compare_dems(
                 resolution=0.00081,  # ~90m
             )
         except Exception:
+            # mask=True will fail on very small aois (e.g.20mx20m)
             ds_wc = to_dataset(
                 gf_wc,
                 bands=["map"],
@@ -610,19 +625,17 @@ def compare_dems(
             dem.elevation.squeeze(),
             axd[dem_key],
             elevation_cmap,
-            da_hillshade=dem.hillshade,
+            da_hillshade=dem.hillshade if hillshade else None,
             add_colorbar=False,
-            cmin=(elevation_clim[0] if elevation_clim else None),
-            cmax=(elevation_clim[1] if elevation_clim else None),
+            vmin=(elevation_clim[0] if elevation_clim else None),
+            vmax=(elevation_clim[1] if elevation_clim else None),
             title=dem_key,
+            alpha=0.5 if hillshade else 1.0,
         )
         style_ax(axd[dem_key])
         if i == n_columns - 1:  # Add colorbar to the last GeoDataFrame plot
             # images[1] since [0] would be the hillshade
             plt.colorbar(axd[dem_key].images[1], ax=axd[dem_key], label="Elevation (m)")
-        # TODO: add this to the style_ax func
-        axd[dem_key].set_xlabel("")
-        axd[dem_key].set_ylabel("")
 
     # point elevs
     # need this for MyPy to handle the chance the gdf_dict is None
@@ -635,10 +648,12 @@ def compare_dems(
                 axd[key],
                 column=column,
                 title=key,
-                da_hillshade=dem_list[0].hillshade,
-                cmin=(elevation_clim[0] if elevation_clim else None),
-                cmax=(elevation_clim[1] if elevation_clim else None),
-                s=0.6,  # TODO: make this a parameter
+                da_hillshade=dem_list[0].hillshade if hillshade else None,
+                vmin=(elevation_clim[0] if elevation_clim else None),
+                vmax=(elevation_clim[1] if elevation_clim else None),
+                alpha=0.5 if hillshade else 1.0,
+                s=(figsize[0] * figsize[1])
+                / n_columns**2,  # Dynamic sizing based on figure dimensions
             )
             style_ax(axd[key])
             if key == list(gdf_dict.keys())[-1]:  # Add colorbar to the last gdf plot
@@ -690,11 +705,12 @@ def compare_dems(
                 axd[diff_key],
                 "elev_diff",
                 cmap=diff_cmap,
-                cmin=diff_clim[0],
-                cmax=diff_clim[1],
-                p_alpha=1.0,
+                vmin=diff_clim[0],
+                vmax=diff_clim[1],
+                alpha=1.0,
                 title=f"{column} minus dem_0",
-                s=0.6,  # TODO: make this a parameter
+                s=(figsize[0] * figsize[1])
+                / n_columns**2,  # Dynamic sizing based on figure dimensions
             )
             style_ax(axd[diff_key], facecolor="black")
             if key == list(gdf_dict.keys())[-1]:  # Add colorbar to the last gdf plot
@@ -712,14 +728,14 @@ def compare_dems(
     for i, dem in enumerate(dem_list[1:], start=1):
         hist_key = f"hist_{i}"
         plot_diff_hist(get_elev_diff(dem, dem_list[0]).elev_diff, ax=axd[hist_key])
-        axd[hist_key].set_xlabel("Elevation difference (m)")
+        axd[hist_key].set_title("")
 
     # gdf hists
     for _i, (key, (gdf, column)) in enumerate(gdf_dict.items() if gdf_dict else []):
         hist_key = f"hist_{key}"
         diff = get_elev_diff(gdf, dem_list[0], source_col=column)
         plot_diff_hist(diff.elev_diff, ax=axd[hist_key])
-        axd[hist_key].set_xlabel("Elevation difference (m)")
+        axd[hist_key].set_title("")
 
     if show:
         plt.show()

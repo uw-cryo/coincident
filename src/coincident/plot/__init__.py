@@ -7,8 +7,8 @@ from __future__ import annotations
 from coincident.plot.matplotlib import (
     clear_labels,
     compare_dems,
-    create_hillshade,
     get_elev_diff,
+    hillshade,
     plot_altimeter_points,
     plot_dem,
     plot_diff_hist,
@@ -20,7 +20,7 @@ from coincident.plot.matplotlib import (
 __all__ = [
     "plot_esa_worldcover",
     "plot_maxar_browse",
-    "create_hillshade",
+    "hillshade",
     "clear_labels",
     "plot_dem",
     "plot_altimeter_points",

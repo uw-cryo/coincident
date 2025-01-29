@@ -39,24 +39,28 @@ def test_plot_esa_worldcover_valid(aoi):
     ), "Expected at least one pcolormesh object in the plot."
 
 
-def test_create_hillshade_tiny(dem_tiny):
-    """Test 'create_hillshade' with a tiny DEM (10x10 cop30)"""
+def test_hillshade_tiny(dem_tiny):
+    """Test 'hillshade' with a tiny DEM (10x10 cop30)"""
 
-    data_elev = dem_tiny.elevation.squeeze()
     # Test cases with different azimuth and altitude combinations
     test_params = [
         (45, 45),  # default values
         (90, 30),
     ]
     for azi, alt in test_params:
-        hillshade = coincident.plot.create_hillshade(data_elev, azi=azi, alt=alt)
-        assert hillshade.shape == (10, 10), f"Shape incorrect for azi={azi}, alt={alt}"
+        hillshade = coincident.plot.hillshade(dem_tiny.elevation, azi=azi, alt=alt)
+        assert hillshade[0][0] == "y", f"Incorrect y coords for azi={azi}, alt={alt}"
+        assert hillshade[0][1] == "x", f"Incorrect x coords for azi={azi}, alt={alt}"
+        assert hillshade[1].shape == (
+            10,
+            10,
+        ), f"Incorrect shape for azi={azi}, alt={alt}"
         assert not np.isnan(
-            hillshade
+            hillshade[1]
         ).any(), f"NaN values found for azi={azi}, alt={alt}"
-        assert hillshade.dtype == np.uint8, f"Wrong dtype for azi={azi}, alt={alt}"
-        assert hillshade.min() >= 0, f"Values < 0 found for azi={azi}, alt={alt}"
-        assert hillshade.max() <= 255, f"Values > 255 found for azi={azi}, alt={alt}"
+        assert hillshade[1].dtype == np.uint8, f"Wrong dtype for azi={azi}, alt={alt}"
+        assert hillshade[1].min() >= 0, f"Values < 0 found for azi={azi}, alt={alt}"
+        assert hillshade[1].max() <= 255, f"Values > 255 found for azi={azi}, alt={alt}"
 
 
 def test_clear_labels():
@@ -79,7 +83,6 @@ def test_plot_dem_no_hillshade(dem_tiny):
     ax = coincident.plot.plot_dem(dem_tiny.elevation.squeeze(), ax, title="Test DEM")
     # Check basic plot properties
     assert ax.get_title() == "Test DEM", "Plot title does not match expected value"
-    assert ax.images[0].get_alpha() == 0.5, "DEM layer alpha should be 0.5"
     assert isinstance(
         ax.xaxis.get_major_formatter(), plt.NullFormatter
     ), "x-axis abels not cleared"
@@ -92,10 +95,14 @@ def test_plot_dem_no_hillshade(dem_tiny):
 def test_plot_dem_with_hillshade(dem_tiny):
     """Test plot_dem with tiny DEM input with hillshade"""
 
-    data_elev = dem_tiny.elevation.squeeze()
-    dem_tiny["hillshade"] = (("y", "x"), coincident.plot.create_hillshade(data_elev))
+    dem_tiny["hillshade"] = coincident.plot.hillshade(dem_tiny.elevation)
     fig, ax = plt.subplots()
-    coincident.plot.plot_dem(data_elev, ax, da_hillshade=dem_tiny.hillshade.squeeze())
+    coincident.plot.plot_dem(
+        dem_tiny.elevation.squeeze(),
+        ax,
+        da_hillshade=dem_tiny.hillshade.squeeze(),
+        alpha=0.5,
+    )
     # Check that both hillshade and DEM layers are present
     assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
     assert len(ax.images) == 2, "Plot should contain exactly 2 image layers"
@@ -113,7 +120,6 @@ def test_plot_altimeter_points_no_hillshade(points_tiny):
 
     assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
     assert ax.get_title() == "Test Points", "Plot title does not match expected value"
-    assert ax.collections[0].get_alpha() == 0.5, "Points layer alpha should be 0.5"
     assert isinstance(
         ax.xaxis.get_major_formatter(), plt.NullFormatter
     ), "x-axis labels not cleared"
@@ -124,14 +130,11 @@ def test_plot_altimeter_points_no_hillshade(points_tiny):
 
 def test_plot_altimeter_points_with_hillshade(dem_tiny, points_tiny):
     """Test plot_altimeter_points with point data and hillshade background"""
-    dem_tiny["hillshade"] = (
-        ("y", "x"),
-        coincident.plot.create_hillshade(dem_tiny.elevation.squeeze()),
-    )
+    dem_tiny["hillshade"] = coincident.plot.hillshade(dem_tiny.elevation)
 
     fig, ax = plt.subplots()
     ax = coincident.plot.plot_altimeter_points(
-        points_tiny, ax, column="h_li", da_hillshade=dem_tiny.hillshade
+        points_tiny, ax, column="h_li", da_hillshade=dem_tiny.hillshade, alpha=0.5
     )
     assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
     assert len(ax.images) == 1, "Plot should contain exactly 1 hillshade layer"
@@ -202,10 +205,7 @@ def test_compare_dems(dem_tiny, points_tiny):
     """Test compare_dems with permutations of different numbers of DEMs and point gfs"""
     # Takes ~8secs to run
     # Create multiple DEMs
-    dem_tiny["hillshade"] = (
-        ("y", "x"),
-        coincident.plot.create_hillshade(dem_tiny.elevation.squeeze()),
-    )
+    dem_tiny["hillshade"] = coincident.plot.hillshade(dem_tiny.elevation)
     dem_tiny_2 = dem_tiny.copy()
     dem_tiny_3 = dem_tiny.copy()
 
