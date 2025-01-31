@@ -740,3 +740,180 @@ def compare_dems(
     if show:
         plt.show()
     return axd
+
+
+@depends_on_optional("matplotlib")
+def boxplot_terrain_diff(
+    dem_list: list[xr.Dataset | gpd.GeoDataFrame],
+    terrain_v: str = "slope",
+    terrain_groups: np.ndarray | None = None,
+    ylims: list[float] | None = None,
+    title: str = "Elevation Differences (m) by Terrain",
+    xlabel: str = "Terrain Groups",
+    elev_col: str | None = None,
+    show: bool = True,
+) -> plt.Axes:
+    """
+    Plots boxplots of elevation differences by terrain group for two input elevation datasets.
+    (e.g. boxplots for elevation differences over varying slopes for two DEMs)
+    This also plots the counts of the grouped elevation differences
+
+    NOTE:
+        - This function assumes that the datasets in dem_list are in the same CRS and aligned
+        - This function can also work with point geometry GeoDataFrames (e.g. ICESat-2 points)
+            - If using a GeoDataFrame, you must also provide the elev_col parameter
+            which is the column name containing elevation values you wish to compare
+        - This function requires there to be EXACTLY 2 datasets in the dem_list.
+        - The first dataset in dem_list MUST be a xr.Dataset with an 'elevation' variable
+        and the corresponding terrain_v variable (e.g. 'slope')
+
+    Parameters
+    ----------
+    dem_list : list[xr.Dataset | gpd.GeoDataFrame]
+        List containing exactly two elevation datasets to compare. The first
+        dataset must be a xr.Dataset with an 'elevation' variable and a variable
+        corresponding to the terrain_v variable (e.g. 'slope').
+    terrain_v : str
+        Terrain variable of interest (e.g. 'slope') that exists in first DEM. This
+        is what your elevation differences will be grouped by
+    terrain_groups : np.ndarray
+        Array defining the edges of terrain groups.
+    ylims : list
+        The y-axis limits for the plot. If None, then the y-axis limits will be
+        automatically adjusted to fit the whiskers of each boxplot
+    title : str
+        The title of the plot.
+    xlabel : str
+        The label for the x-axis.
+    elev_col : str
+        The name of the column containing elevation values to difference in
+        the GeoDataFrame if a GeoDataFrame is provided
+    show: bool
+        Whether to display the plot. Implemented for testing purposes
+        Set False for tests so plots don't display
+    Returns
+    -------
+    plt.Axes
+        The matplotlib axes object containing the plot.
+    """
+    if len(dem_list) != 2:
+        msg_len = "dem_list must contain exactly two datasets"
+        raise ValueError(msg_len)
+    # ruff B008 if default is set to np.arange(0, 46, 1)
+    if terrain_groups is None:
+        terrain_groups = np.arange(0, 46, 1)
+    # difference (second - first) based on type (xr.dataset vs gdf)
+    if isinstance(dem_list[1], gpd.GeoDataFrame):
+        if elev_col is None:
+            msg_col_arg = "elev_col must be provided when using point data"
+            raise ValueError(msg_col_arg)
+        da_points = dem_list[1].get_coordinates().to_xarray()
+        samples = (
+            dem_list[0]
+            .interp(da_points)
+            .drop_vars(["band", "spatial_ref"])
+            .to_dataframe()
+        )
+        dem_list[1]["elev_diff"] = (
+            dem_list[1][elev_col].to_numpy() - samples["elevation"].to_numpy()
+        )
+        dem_list[1][terrain_v] = samples[terrain_v].to_numpy()
+        diff_data = dem_list[1]["elev_diff"]
+    else:
+        diff_data = dem_list[1]["elevation"] - dem_list[0]["elevation"]
+    fig, ax = plt.subplots(figsize=(14, 6))
+    box_data = []  # difference data per group
+    box_labels = []  # xtick labels for box groups
+    counts = []  # group observation counts
+    # loop over terrain groups and extract differences by group
+    for i in range(len(terrain_groups) - 1):
+        b1, b2 = terrain_groups[i], terrain_groups[i + 1]
+
+        if isinstance(dem_list[1], gpd.GeoDataFrame):
+            mask = (dem_list[1][terrain_v] > b1) & (dem_list[1][terrain_v] <= b2)
+            data = dem_list[1].loc[mask, "elev_diff"].dropna()
+        else:
+            mask = (dem_list[0][terrain_v] > b1) & (dem_list[0][terrain_v] <= b2)
+            data = diff_data.where(mask).to_numpy()
+            data = data[~np.isnan(data)]
+
+        # minimum 30 observations per group
+        if len(data) >= 30:
+            box_data.append(data)
+            box_labels.append(f"{b1}-{b2}")
+            counts.append(len(data))
+
+    if len(box_data) == 0:
+        msg_counts = "No groups satisfied the minimum 30 observation count threshold."
+        raise ValueError(msg_counts)
+
+    ax.boxplot(
+        box_data,
+        orientation="vertical",
+        patch_artist=True,
+        showfliers=True,
+        boxprops={"facecolor": "lightgray", "color": "black"},
+        flierprops={"marker": "x", "color": "black", "markersize": 5, "alpha": 0.6},
+        medianprops={"color": "black"},
+        positions=np.arange(len(box_data)),
+    )
+
+    # second axis for observation counts
+    ax2 = ax.twinx()
+    ax2.plot(np.arange(len(counts)), counts, "o", color="orange", alpha=0.6)
+    # dynamic y-ticks for observation counts
+    magnitude = 10 ** np.floor(np.log10(max(counts)))
+    min_count = np.floor(min(counts) / magnitude) * magnitude
+    max_count = np.ceil(max(counts) / magnitude) * magnitude
+    ticks = np.linspace(min_count, max_count, 11)
+    ax2.set_yticks(ticks)
+    ax2.spines["right"].set_color("orange")
+    ax2.tick_params(axis="y", colors="orange")
+    ax2.set_ylabel("Count", color="orange", fontsize=12)
+
+    # original axis elements
+    ax.axhline(0, color="black", linestyle="dashed", linewidth=0.7)
+    global_median = np.nanmedian(diff_data.to_numpy())
+    ax.axhline(
+        global_median,
+        color="magenta",
+        linestyle="dashed",
+        linewidth=0.7,
+        label=f"Global Med: {global_median:.2f}m",
+        alpha=0.8,
+    )
+    # Dynamic ylims for the elevation differences
+    # Zooms into whiskers extent
+    if ylims is None:
+        # get whiskers to fit the ylims of the plot
+        data_concat = np.concatenate(box_data)
+        q1, q3 = np.percentile(data_concat, [25, 75])
+        iqr = q3 - q1
+        ymin = np.floor(q1 - 1.5 * iqr)
+        ymax = np.ceil(q3 + 1.5 * iqr)
+        # force include 0 in y axis
+        ymin = min(ymin, 0)
+        ymax = max(ymax, 0)
+        n_ticks = 11
+        spacing = max(abs(ymin), abs(ymax)) * 2 / (n_ticks - 1)
+        spacing = np.ceil(spacing)
+        ymin = np.floor(ymin / spacing) * spacing
+        ymax = np.ceil(ymax / spacing) * spacing
+        yticks = np.arange(ymin, ymax + spacing, spacing)
+        ylims = [ymin, ymax]
+        ax.set_yticks(yticks)
+    ax.set_ylim(ylims)
+    ax.set_xticks(np.arange(len(box_labels)))
+    ax.set_xticklabels(box_labels, rotation=45, fontsize=10)
+    ax.set_ylabel("Elevation Difference (m)", fontsize=12)
+    ax.set_xlabel(xlabel, fontsize=12)
+    ax.set_title(title, fontsize=14)
+
+    lines1, labels1 = ax.get_legend_handles_labels()
+    ax.legend(lines1, labels1, loc="best", fontsize=10)
+
+    if show:
+        plt.tight_layout()
+        plt.show()
+
+    return ax
