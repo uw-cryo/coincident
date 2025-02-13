@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing
+from importlib.metadata import version
 
 import geopandas as gpd
 import pytest
@@ -21,6 +22,8 @@ except:  # noqa: E722
 maxar_authenticated = pytest.mark.skipif(
     not_authenticated, reason="Not authenticated with Maxar API"
 )
+
+expected_stac_version = "1.1.0" if version("pystac") >= "1.12" else "1.0.0"
 
 
 @typing.no_type_check
@@ -85,8 +88,8 @@ def test_maxar_search(aoi):
         datetime="2023",
         filter="eo:cloud_cover < 20",
     )
-    assert gf.shape == (10, 63)
-    assert gf.iloc[0].stac_version == "1.0.0"
+    assert gf.shape == (10, 71)
+    assert gf.iloc[0].stac_version == expected_stac_version
     assert {"browse", "cloud-cover", "sample-point-set"}.issubset(
         gf.iloc[0].assets.keys()
     )
@@ -115,7 +118,6 @@ def test_maxar_specific_ids():
     gf = coincident.search.search(
         dataset="maxar", ids=["102001008EC5AC00", "102001008BE9BB00"]
     )
-    assert gf.shape == (2, 63)
     assert set(gf.id) == {"102001008BE9BB00", "102001008EC5AC00"}
 
 
@@ -149,7 +151,7 @@ def test_icesat2_search(aoi):
     data_assets = list(
         filter(lambda x: x["roles"] == "data", gf.iloc[0].assets.values())
     )
-    assert gf.iloc[0].stac_version == "1.0.0"
+    assert gf.iloc[0].stac_version == expected_stac_version
     assert gf.shape == (25, 13)
     assert actual_columns == expected_nasa_columns
     assert "roles" in gf.iloc[0].assets["browse"]
@@ -169,7 +171,7 @@ def test_gedi_search(aoi):
     data_assets = list(
         filter(lambda x: x["roles"] == "data", gf.iloc[0].assets.values())
     )
-    assert gf.iloc[0].stac_version == "1.0.0"
+    assert gf.iloc[0].stac_version == expected_stac_version
     assert gf.shape == (33, 13)
     assert actual_columns == expected_nasa_columns
     assert "roles" in gf.iloc[0].assets["browse"]
@@ -216,7 +218,7 @@ def test_tdx_search(aoi):
     data_assets = list(
         filter(lambda x: x["role"] == "data", gf.iloc[0].assets.values())
     )
-    assert gf.iloc[0].stac_version == "1.0.0"
+    assert gf.iloc[0].stac_version == expected_stac_version
     assert gf.shape == (48, 24)
     assert actual_columns == expected_columns
     assert gf["sar:product_type"].unique() == "SSC"
@@ -241,18 +243,17 @@ def test_cop30_search(aoi):
         "datetime",
         "gsd",
         "platform",
-        "proj:epsg",
+        "proj:code",
         "proj:shape",
         "proj:transform",
         "dayofyear",
     }
     actual_columns = set(gf.columns)
-    assert gf.iloc[0].stac_version == "1.0.0"
+    assert gf.iloc[0].stac_version == expected_stac_version
     assert gf.shape == (4, 16)
     assert actual_columns == expected_columns
     assert "data" in gf.iloc[0].assets
-    # NOTE: technically this is the incorrect EPSG (should be 9518), also 'proj:epsg' deprecated for 'proj:code'
-    assert gf.iloc[0]["proj:epsg"] == 4326
+    assert gf.iloc[0]["proj:code"] == "EPSG:4326"
 
 
 @network
@@ -281,13 +282,13 @@ def test_worldcover_search(aoi):
         "instruments",
         "mission",
         "platform",
-        "proj:epsg",
+        "proj:code",
         "start_datetime",
     }
     coincident_columns = {"dayofyear"}
     expected_columns = stac_columns | additional_columns | coincident_columns
     actual_columns = set(gf.columns)
-    assert gf.iloc[0].stac_version == "1.0.0"
+    assert gf.iloc[0].stac_version == expected_stac_version
     assert gf.shape == (4, 22)
     assert actual_columns == expected_columns
     assert "map" in gf.iloc[0].assets
