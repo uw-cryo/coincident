@@ -1,10 +1,9 @@
 # Installation
 
-If you'd like to install into an existing environment we recommend installing
-coincident directly from GitHub:
+The latest release of `coincident` can be installed from PyPi:
 
 ```bash
-pip install git+https://github.com/uw-cryo/coincident.git@main
+pip install coincident
 ```
 
 Alternatively, you can install a fresh locked environment using the
@@ -27,11 +26,10 @@ following Environment Variables defined:
 export EARTHDATA_USERNAME=aaaaa
 export EARTHDATA_PASSWORD=bbbbb
 export MAXAR_API_KEY=ccccc
-export PC_SDK_SUBSCRIPTION_KEY=ddddd
 ```
 
 Sign up for credentials at the following webpages:
 
-- https://urs.earthdata.nasa.gov
-- https://developers.maxar.com/docs/authentication/guides/api-key
-- https://planetarycomputer.developer.azure-api.net
+- <https://urs.earthdata.nasa.gov>
+- <https://developers.maxar.com/docs/authentication/guides/api-key>
+- <https://planetarycomputer.developer.azure-api.net>
