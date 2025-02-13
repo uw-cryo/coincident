@@ -60,8 +60,12 @@ def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
     gf = gf.rename(columns=name_map)
     # Add collection name to match STAC (used to identify geodataframe contents in other functions)
     gf["collection"] = "3DEP"
-    gf["start_datetime"] = pd.to_datetime(gf["start_datetime"])
-    gf["end_datetime"] = pd.to_datetime(gf["end_datetime"])
+    gf["start_datetime"] = pd.to_datetime(
+        gf["start_datetime"], format="ISO8601", errors="coerce"
+    )
+    gf["end_datetime"] = pd.to_datetime(
+        gf["end_datetime"], format="ISO8601", errors="coerce"
+    )
     duration = gf.end_datetime - gf.start_datetime
     gf["datetime"] = gf.start_datetime + duration / 2
     gf["dayofyear"] = gf.datetime.dt.dayofyear

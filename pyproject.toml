@@ -30,17 +30,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 
-dependencies = [
-  "cloudpathlib[s3]>=0.20.0,<0.21",
-  "geopandas>=1.0.1,<2",
-  "maxar-platform>=1.0.2,<2",
-  "odc-stac>=0.3.10,<0.4",
-  "pyarrow>=18.0.0,<19",
-  "pystac-client>=0.8.3,<0.9",
-  "requests>=2.32.3,<3",
-  "rioxarray>=0.17.0,<0.18",
-  "stac-asset>=0.4.3,<0.5",
-  "stac-geoparquet>=0.6.0,<0.7",
+dependencies = [ "geopandas", "odc-stac", "pyarrow", "pystac-client", "requests", "rioxarray", "stac-geoparquet", "cloudpathlib[s3]>=0.20.0,<0.21", "maxar-platform>=1.0.6,<2", "stac-asset>=0.4.6,<0.5",
 ]
 
 [project.optional-dependencies]
@@ -209,18 +199,16 @@ docs = { features = ["docs"], solve-group = "default" }
 # If a package is listed in project.dependencies but not repeated here, it is installed from pypi
 [tool.pixi.dependencies]
 python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
-geopandas = "*"
-odc-stac = "*"
-pystac-client = "*"
-requests = "*"
-rioxarray = "*"
-# stac-asset = "*" # not on conda-forge
-stac-geoparquet = "*"
-pyarrow = "*"
-# Testing additional dependencies (not in pypi list
+geopandas = ">=1.0.1,<2"
+odc-stac = ">=0.3.11,<0.4"
+pystac-client = ">=0.8.6,<0.9"
+requests = ">=2.32.3,<3"
+rioxarray = ">=0.18.2,<0.19"
+stac-geoparquet = ">=0.6.0,<0.7"
+pyarrow = ">=19.0.0,<20"
 jsonschema = ">=4.23.0,<5"
-libgdal-arrow-parquet = ">=3.10.0,<4"
-gdal = ">=3.10.0,<4"
+libgdal-arrow-parquet = ">=3.10.1,<4"
+gdal = ">=3.10.1,<4"
 
 
 [tool.pixi.feature.dev.dependencies]
