@@ -154,12 +154,6 @@ def plot_worldcover_custom_ax(
     da.plot(
         ax=ax, cmap=cmap, norm=normalizer, add_labels=add_labels, add_colorbar=False
     )
-    ax.set_title("")
-
-    # set aspect ratio according to mid scene latitude
-    if ds.rio.crs.to_epsg() == 4326:
-        mid_lat = da.latitude[int(da.latitude.size / 2)].to_numpy()  # PD011
-        ax.set_aspect(aspect=1 / np.cos(np.deg2rad(mid_lat)))
 
     if add_colorbar:
         # Override standard xarray colorbar with custom one
@@ -175,7 +169,7 @@ def plot_worldcover_custom_ax(
             # cax=cax,
             orientation="horizontal",
             # location='top'
-            pad=-1.3,  # hack to get colorbar in subplot mosaic in the right place
+            pad=-1.1,  # hack to get colorbar in subplot mosaic in the right place
         )
         colorbar.set_ticks(ticks, labels=tick_labels, rotation=90)
 
@@ -325,9 +319,6 @@ def plot_dem(
     return ax
 
 
-# TODO: fix kwargs implementation
-# I was having issues controlling the alpha and vmin/vmax with kwargs
-# so I made them their own separate args
 @depends_on_optional("matplotlib")
 def plot_altimeter_points(
     gf: gpd.GeoDataFrame,
@@ -486,6 +477,7 @@ def plot_diff_hist(
     return ax
 
 
+# TODO: if hilshade = False, create a hillshade for the user
 @depends_on_optional("matplotlib")
 def compare_dems(
     dem_list: list[xr.Dataset],
@@ -571,6 +563,11 @@ def compare_dems(
     fig, axd = plt.subplot_mosaic(
         mosaic, gridspec_kw=gs_kw, figsize=figsize, layout="constrained"
     )
+    reference_ax = axd["dem_0"]
+    for key in axd:
+        if not key.startswith("hist") and not key.startswith("wc"):
+            axd[key].sharex(reference_ax)
+            axd[key].sharey(reference_ax)
 
     def style_ax(
         ax: matplotlib.axes.Axes,
@@ -589,7 +586,7 @@ def compare_dems(
     if ds_wc is None:
         bounds = dem_list[0].rio.bounds()
         gf_search = gpd.GeoDataFrame(
-            geometry=[box(bounds[0], bounds[1], bounds[2], bounds[3])],
+            geometry=[box(*bounds)],
             crs=dem_list[0].rio.crs,
         )
         gf_search = gf_search.to_crs(epsg=4326)
@@ -604,7 +601,7 @@ def compare_dems(
                 bands=["map"],
                 aoi=gf_search,
                 mask=True,
-                resolution=0.00081,  # ~90m
+                # resolution=0.00081,  # ~90m
             )
         except Exception:
             # mask=True will fail on very small aois (e.g.20mx20m)
@@ -612,9 +609,10 @@ def compare_dems(
                 gf_wc,
                 bands=["map"],
                 aoi=gf_search,
-                resolution=0.00081,  # ~90m
+                # resolution=0.00081,  # ~90m
             )
         ds_wc = ds_wc.rio.reproject(dem_list[0].rio.crs)
+        ds_wc = ds_wc.rio.reproject_match(dem_list[0])
 
     # TOP ROW: Elevation maps
     # ---------------------------
@@ -632,7 +630,7 @@ def compare_dems(
             title=dem_key,
             alpha=0.5 if hillshade else 1.0,
         )
-        style_ax(axd[dem_key])
+        style_ax(axd[dem_key], aspect="equal")
         if i == n_columns - 1:  # Add colorbar to the last GeoDataFrame plot
             # images[1] since [0] would be the hillshade
             plt.colorbar(axd[dem_key].images[1], ax=axd[dem_key], label="Elevation (m)")
@@ -655,7 +653,7 @@ def compare_dems(
                 s=(figsize[0] * figsize[1])
                 / n_columns**2,  # Dynamic sizing based on figure dimensions
             )
-            style_ax(axd[key])
+            style_ax(axd[key], aspect="equal")
             if key == list(gdf_dict.keys())[-1]:  # Add colorbar to the last gdf plot
                 plt.colorbar(
                     axd[key].collections[0], ax=axd[key], label="Elevation (m)"
@@ -677,6 +675,14 @@ def compare_dems(
     for i, dem in enumerate(dem_list[1:], start=1):
         diff = get_elev_diff(dem, dem_list[0])
         diff_key = f"diff_{i}"
+        if hillshade:
+            dem_list[0].hillshade.plot.imshow(
+                ax=axd[diff_key],
+                cmap="gray",
+                alpha=1.0,
+                add_colorbar=False,
+                add_labels=False,
+            )
         diff.elev_diff.squeeze().plot.imshow(
             ax=axd[diff_key],
             cmap=diff_cmap,
@@ -684,12 +690,13 @@ def compare_dems(
             add_labels=False,
             vmin=diff_clim[0],
             vmax=diff_clim[1],
+            alpha=0.5 if hillshade else 1.0,
         )
         style_ax(axd[diff_key], facecolor="black", aspect="equal")
         axd[diff_key].set_title(f"dem_{i} minus dem_0")
         if i == n_columns - 1:  # Add colorbar to the last gdf plot
             plt.colorbar(
-                axd[diff_key].images[0],
+                axd[diff_key].images[1] if hillshade else axd[diff_key].images[0],
                 ax=axd[diff_key],
                 label="Elevation Difference (m)",
             )
@@ -699,6 +706,14 @@ def compare_dems(
     if gdf_dict:
         for _i, (key, (gdf, column)) in enumerate(gdf_dict.items() if gdf_dict else []):
             diff_key = f"diff_{key}"
+            if hillshade:
+                dem_list[0].hillshade.plot.imshow(
+                    ax=axd[diff_key],
+                    cmap="gray",
+                    alpha=1.0,
+                    add_colorbar=False,
+                    add_labels=False,
+                )
             gf_diff = get_elev_diff(gdf, dem_list[0], source_col=column)
             plot_altimeter_points(
                 gf_diff,
@@ -707,12 +722,12 @@ def compare_dems(
                 cmap=diff_cmap,
                 vmin=diff_clim[0],
                 vmax=diff_clim[1],
-                alpha=1.0,
+                alpha=0.5 if hillshade else 1.0,
                 title=f"{column} minus dem_0",
                 s=(figsize[0] * figsize[1])
                 / n_columns**2,  # Dynamic sizing based on figure dimensions
             )
-            style_ax(axd[diff_key], facecolor="black")
+            style_ax(axd[diff_key], facecolor="black", aspect="equal")
             if key == list(gdf_dict.keys())[-1]:  # Add colorbar to the last gdf plot
                 plt.colorbar(
                     axd[diff_key].collections[0],
