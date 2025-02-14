@@ -21,6 +21,73 @@ from coincident.search.stac import to_pystac_items
 # Sets GDAL_DISABLE_READDIR_ON_OPEN to 'EMPTY_DIR' etc.
 odc.stac.configure_rio(cloud_defaults=True, VSICURL_PC_URL_SIGNING="YES")
 
+# TODO: investigate performance of GTI versus VRT
+cop_to_7912 = "https://raw.githubusercontent.com/uw-cryo/3D_CRS_Transformation_Resources/refs/heads/main/globaldems/COP30_hh_7912.vrt"
+nasadem_to_7912 = "https://raw.githubusercontent.com/uw-cryo/3D_CRS_Transformation_Resources/refs/heads/main/globaldems/nasadem_7912.vrt"
+threedep_to_7912 = "https://raw.githubusercontent.com/uw-cryo/3D_CRS_Transformation_Resources/refs/heads/main/3dep/USGS_Seamless_DEM_13_7912.vrt"
+
+
+def load_dem_7912(dataset: str, aoi: gpd.GeoDataFrame) -> xr.DataArray:
+    """
+    Load a Digital Elevation Model (DEM) dataset and clip it to the area of interest (AOI).
+    Reprojection-on-reading to EPSG:7912 is performed by GDAL.
+
+    Parameters
+    ----------
+    dataset : str
+        The name of the DEM dataset to load. Must be one of 'cop30', 'nasadem', or '3dep'.
+    aoi : gpd.GeoDataFrame
+        Polygon with lon,lat coordinates to which the DEM will be clipped.
+
+    Returns
+    -------
+    xr.DataArray
+        The clipped DEM data as an xarray DataArray.
+
+    Notes
+    -----
+    - This function currently eagerly pulls all data into memory, so may fail if aoi is large
+    """
+    # NOTE: Currently only getting data from OpenTopography VRTs, but leaving this in for future
+    # if dataset in ["cop30", "nasadem"]:
+    #     r = requests.get(
+    #         "https://planetarycomputer.microsoft.com/api/sas/v1/token/pcstacitems/items",
+    #         timeout=10,
+    #     )
+    #     token = r.json()["token"]
+    #     if dataset == "cop30":
+    #         uri = cop_to_7912
+    #     elif dataset == "nasadem":
+    #         uri = nasadem_to_7912
+    #     ENV = rasterio.Env(
+    #         GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+    #         AZURE_STORAGE_ACCOUNT="pcstacitems",
+    #         AZURE_STORAGE_SAS_TOKEN=token,
+    #         VSICURL_PC_URL_SIGNING="YES",
+    #     )
+    if dataset == "cop30":
+        uri = cop_to_7912
+    elif dataset == "nasadem":
+        uri = nasadem_to_7912
+    elif dataset == "3dep":
+        uri = threedep_to_7912
+    else:
+        msg = f"Unknown dataset: {dataset}, must be 'cop30', 'nasadem', or '3dep'"
+        raise ValueError(msg)
+
+    ENV = rasterio.Env(
+        GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR", AWS_NO_SIGN_REQUEST="YES"
+    )
+
+    # Pull all data into memory
+    with ENV:
+        return (
+            xr.open_dataarray(uri, engine="rasterio")
+            .rio.clip_box(**aoi.bounds)
+            .squeeze()
+            .load()
+        )
+
 
 def to_dataset(
     gf: gpd.GeoDataFrame,
