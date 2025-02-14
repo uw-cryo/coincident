@@ -6,7 +6,7 @@ The latest release of `coincident` can be installed from PyPi:
 pip install coincident
 ```
 
-Alternatively, you can install a fresh locked environment using the
+Alternatively, you can install the latest development version using the
 [GitHub CLI](https://cli.github.com) and [pixi.sh](https://pixi.sh/latest/):
 
 ```bash

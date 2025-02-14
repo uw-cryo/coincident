@@ -11,10 +11,14 @@ Search
 .. currentmodule:: coincident.search
 
 .. autosummary::
+   :nosignatures:
    :toctree: generated/
 
    search
+   cascading_search
    to_pystac_items
+   to_geopandas
+   wesm.read_wesm_csv
    wesm.load_by_fid
    wesm.get_swath_polygons
 
@@ -25,25 +29,13 @@ Overlaps
 .. currentmodule:: coincident.overlaps
 
 .. autosummary::
+   :nosignatures:
    :toctree: generated/
 
    geographic_area
    subset_by_minimum_area
    subset_by_temporal_overlap
-
-
-Datasets
---------
-
-.. currentmodule:: coincident.datasets
-
-.. autosummary::
-   :toctree: generated/
-
-   general.Dataset
-   maxar.open_browse
-   maxar.plot_browse
-
+   subset_by_maximum_duration
 
 IO
 --
@@ -51,6 +43,7 @@ IO
 .. currentmodule:: coincident.io
 
 .. autosummary::
+   :nosignatures:
    :toctree: generated/
 
    sliderule.subset_gedi02a
@@ -58,4 +51,28 @@ IO
    sliderule.process_atl06sr
    sliderule.sample_3dep
    xarray.to_dataset
-   xarray.plot_esa_worldcover
+   xarray.open_maxar_browse
+   download.download_item
+
+Plot
+----
+
+.. currentmodule:: coincident.plot
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
+   plot_maxar_browse
+   plot_esa_worldcover
+
+Datasets
+--------
+
+.. currentmodule:: coincident.datasets
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated/
+
+   general.Dataset

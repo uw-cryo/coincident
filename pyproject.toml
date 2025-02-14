@@ -30,35 +30,42 @@ classifiers = [
 ]
 dynamic = ["version"]
 
-dependencies = [ "geopandas", "odc-stac", "pyarrow", "pystac-client", "requests", "rioxarray", "stac-geoparquet", "cloudpathlib[s3]>=0.20.0,<0.21", "maxar-platform>=1.0.6,<2", "stac-asset>=0.4.6,<0.5",
+dependencies = [
+  "geopandas>=1.0.1,<2",
+"odc-stac>=0.3.11,<0.4",
+"pyarrow>=19.0.0,<20",
+"pystac-client>=0.8.6,<0.9",
+"requests>=2.32.3,<3",
+"rioxarray>=0.18.2,<0.19",
+  "cloudpathlib[s3]>=0.20.0,<0.21",
+  "matplotlib>=3.9.4,<4",
+  "maxar-platform>=1.0.6,<2",
+  "stac-geoparquet",
+  "sliderule>=4.7.1,<5",
+  "stac-asset>=0.4.6,<0.5",
 ]
 
 [project.optional-dependencies]
 dev = [
   "ipykernel>=6.29.5,<7",
-  "matplotlib>=3.9.4,<4",
   "mypy>=1.11.2,<2",
   "pre-commit>=3.8.0,<4",
   "pylint>=3.3.1,<4",
   "pytest >=6",
   "pytest-cov >=3",
-  "sliderule>=4.7.1,<5",
 ]
+
 docs = [
   "folium", # comes w/ geopandas on conda-forge but not pypi
   "mapclassify",
-  "matplotlib",
   "myst-nb",
   "myst_parser>=0.13",
   "pydata-sphinx-theme>=0.16.0,<0.17",
   "sphinx>=7.0",
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
+  "sphinx_design",
 ]
-# all = [
-#   "matplotlib-base>=3.9.2,<4",
-#   "sliderule>=4.7.1,<5"
-# ]
 
 [project.urls]
 Homepage = "https://github.com/uw-cryo/coincident"
@@ -108,9 +115,8 @@ report.exclude_also = [
 ]
 
 [tool.codespell]
-# Ignore notebooks with output cells
-skip="pixi.lock,docs/examples/sliderule.ipynb,docs/examples/contextual_data.ipynb"
 ignore-words-list="ALOS"
+skip="pixi.lock"
 
 [tool.mypy]
 files = ["src", "tests"]
@@ -208,8 +214,6 @@ stac-geoparquet = ">=0.6.0,<0.7"
 pyarrow = ">=19.0.0,<20"
 jsonschema = ">=4.23.0,<5"
 libgdal-arrow-parquet = ">=3.10.1,<4"
-gdal = ">=3.10.1,<4"
-
 
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
@@ -221,12 +225,6 @@ pre-commit = "<4"
 pylint = "*"
 pytest = "*"
 sliderule = "*"
-
-# NOTE: test new dependencies locally by adding below
-#rich = ">=13.8.1,<14" # Optional. convenient for rich.print(dataset)
-#xvec = ">=0.3.0,<0.4"
-#sliderule = ">=4.7.1,<5"
-#matplotlib = ">=3.9.4,<4"
 
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = false }

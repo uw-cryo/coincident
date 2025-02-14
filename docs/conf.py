@@ -7,6 +7,7 @@ copyright = "2025, UW TACO Lab"
 author = "Scott Henderson"
 version = release = importlib.metadata.version("coincident")
 
+# NOTE: it seems order of extensions matters if one depends on another
 extensions = [
     # "myst_parser",
     "myst_nb",
@@ -17,6 +18,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx_copybutton",
+    "sphinx_design",
 ]
 
 source_suffix = {
@@ -35,6 +37,9 @@ exclude_patterns = [
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+
+# Other API docs using this theme for inspiration:
+# https://virtualizarr.readthedocs.io
 
 html_theme = "pydata_sphinx_theme"
 html_theme_options = {
@@ -66,6 +71,8 @@ html_static_path = ["_static"]
 # NOTE: consider adding back in once for distinct sections (user guide, examples, API reference)
 # https://pydata-sphinx-theme.readthedocs.io/en/stable/user_guide/layout.html#primary-sidebar-left
 # html_sidebars = {"**": []}
+# Remove primary sidebar from just API autodoc page
+html_sidebars = {"api": []}
 
 myst_enable_extensions = [
     "colon_fence",
@@ -88,4 +95,3 @@ nitpick_ignore = [
 always_document_param_types = True
 # autodoc_typehints = "none"
 nb_execution_mode = "auto"  # off, on
-nb_execution_excludepatterns = ["sliderule.ipynb", "contextual_data.ipynb"]
