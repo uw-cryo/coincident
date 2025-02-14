@@ -5,6 +5,9 @@ selection of useful plots with matplotlib
 from __future__ import annotations
 
 from coincident.plot.matplotlib import (
+    boxplot_aspect,
+    boxplot_elevation,
+    boxplot_slope,
     boxplot_terrain_diff,
     clear_labels,
     compare_dems,
@@ -30,4 +33,7 @@ __all__ = [
     "plot_worldcover_custom_ax",
     "compare_dems",
     "boxplot_terrain_diff",
+    "boxplot_slope",
+    "boxplot_elevation",
+    "boxplot_aspect",
 ]

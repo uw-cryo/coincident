@@ -742,6 +742,8 @@ def compare_dems(
     return axd
 
 
+# TODO: wrap with a slope, aspect, landcover boxplot function
+# elevation^
 @depends_on_optional("matplotlib")
 def boxplot_terrain_diff(
     dem_list: list[xr.Dataset | gpd.GeoDataFrame],
@@ -749,7 +751,7 @@ def boxplot_terrain_diff(
     terrain_groups: np.ndarray | None = None,
     ylims: list[float] | None = None,
     title: str = "Elevation Differences (m) by Terrain",
-    xlabel: str = "Terrain Groups",
+    ylabel: str = "Elevation Difference (m)",
     elev_col: str | None = None,
     show: bool = True,
 ) -> plt.Axes:
@@ -777,14 +779,15 @@ def boxplot_terrain_diff(
         Terrain variable of interest (e.g. 'slope') that exists in first DEM. This
         is what your elevation differences will be grouped by
     terrain_groups : np.ndarray
-        Array defining the edges of terrain groups.
+        Array defining the edges of terrain groups. e.g. if set to np.arange(0, 46, 1),
+        the groups will be [0, 1, 2, ..., 45]
     ylims : list
         The y-axis limits for the plot. If None, then the y-axis limits will be
         automatically adjusted to fit the whiskers of each boxplot
     title : str
-        The title of the plot.
-    xlabel : str
-        The label for the x-axis.
+        The title of the plot. Default is 'Elevation Differences (m) by Terrain'
+    ylabel : str
+        The yabel of the plot. Default is 'Elevation Difference (m)'
     elev_col : str
         The name of the column containing elevation values to difference in
         the GeoDataFrame if a GeoDataFrame is provided
@@ -801,7 +804,8 @@ def boxplot_terrain_diff(
         raise ValueError(msg_len)
     # ruff B008 if default is set to np.arange(0, 46, 1)
     if terrain_groups is None:
-        terrain_groups = np.arange(0, 46, 1)
+        msg_groups = "terrain_groups is undefined"
+        raise ValueError(msg_groups)
     # difference (second - first) based on type (xr.dataset vs gdf)
     if isinstance(dem_list[1], gpd.GeoDataFrame):
         if elev_col is None:
@@ -905,8 +909,8 @@ def boxplot_terrain_diff(
     ax.set_ylim(ylims)
     ax.set_xticks(np.arange(len(box_labels)))
     ax.set_xticklabels(box_labels, rotation=45, fontsize=10)
-    ax.set_ylabel("Elevation Difference (m)", fontsize=12)
-    ax.set_xlabel(xlabel, fontsize=12)
+    ax.set_ylabel(ylabel, fontsize=12)
+    ax.set_xlabel(terrain_v, fontsize=12)
     ax.set_title(title, fontsize=14)
 
     lines1, labels1 = ax.get_legend_handles_labels()
@@ -917,3 +921,175 @@ def boxplot_terrain_diff(
         plt.show()
 
     return ax
+
+
+# slope wrapper for boxplot_terrain_diff()
+@depends_on_optional("matplotlib")
+def boxplot_slope(
+    dem_list: list[xr.Dataset | gpd.GeoDataFrame],
+    slope_bins: np.ndarray | None = None,
+    ylims: list[float] | None = None,
+    title: str = "Elevation Differences (m) by Slope",
+    ylabel: str = "Elevation Difference (m)",
+    elev_col: str | None = None,
+    show: bool = True,
+) -> plt.Axes:
+    """
+    THIS FUNCTION ASSUMES YOUR SOURCE DEM HAS VARIABLE 'slope'
+
+    Plots boxplots of elevation differences grouped by slope values.
+    This is a wrapper around boxplot_terrain_diff() specifically for slope analysis
+    with groups from 0-45 degrees in 1 degree increments.
+
+    Parameters
+    ----------
+    dem_list : list[xr.Dataset | gpd.GeoDataFrame]
+        List containing exactly two elevation datasets to compare
+    slope_bins : np.ndarray
+        Array defining the edges of terrain groups. e.g. if set to np.arange(0, 46, 1),
+        the groups will be [0, 1, 2, ..., 45]
+        Default is np.arange(0, 46, 1)
+    ylims : list[float] | None
+        The y-axis limits for the plot
+    title : str
+        The title of the plot
+    ylabel : str
+        The ylabel of the plot
+    elev_col : str | None
+        Column name containing elevation values if using GeoDataFrame
+    show : bool
+        Whether to display the plot
+
+    Returns
+    -------
+    plt.Axes
+        The matplotlib axes object containing the plot
+    """
+    if slope_bins is None:
+        slope_bins = np.arange(0, 46, 1)
+    return boxplot_terrain_diff(
+        dem_list=dem_list,
+        terrain_v="slope",
+        terrain_groups=np.arange(0, 46, 1),
+        ylims=ylims,
+        title=title,
+        ylabel=ylabel,
+        elev_col=elev_col,
+        show=show,
+    )
+
+
+@depends_on_optional("matplotlib")
+def boxplot_elevation(
+    dem_list: list[xr.Dataset | gpd.GeoDataFrame],
+    elevation_bins: np.ndarray | None = None,
+    ylims: list[float] | None = None,
+    title: str = "Elevation Differences (m) by Source Elevation",
+    ylabel: str = "Elevation Difference (m)",
+    elev_col: str | None = None,
+    show: bool = True,
+) -> plt.Axes:
+    """
+    THIS FUNCTION ASSUMES YOUR SOURCE DEM HAS VARIABLE 'elevation'
+
+    Plots boxplots of elevation differences grouped by elevation values.
+    Grouped on the 'source' elevation, or the first dem in dem_list.
+    This is a wrapper around boxplot_terrain_diff() specifically for elevation analysis
+    with groups defined by elevation_bins. If elevation_bins is None, bins are created
+    from the min/max elevations of the first DEM in steps of 300m.
+
+    Parameters
+    ----------
+    dem_list : list[xr.Dataset | gpd.GeoDataFrame]
+        List containing exactly two elevation datasets to compare
+    elevation_bins : np.ndarray | None
+        Array defining the edges of elevation groups
+        If None, bins are created from min/max of source DEM in 300m steps
+    ylims : list[float] | None
+        The y-axis limits for the plot
+    title : str
+        The title of the plot
+    ylabel : str
+        The ylabel of the plot
+    elev_col : str | None
+        Column name containing elevation values if using GeoDataFrame
+    show : bool
+        Whether to display the plot
+
+    Returns
+    -------
+    plt.Axes
+        The matplotlib axes object containing the plot
+    """
+    if elevation_bins is None:
+        elev_min = np.floor(np.nanmin(dem_list[0].elevation) / 100) * 100
+        elev_max = np.ceil(np.nanmax(dem_list[0].elevation) / 100) * 100
+        elevation_bins = np.arange(elev_min, elev_max + 300, 300)
+
+    return boxplot_terrain_diff(
+        dem_list=dem_list,
+        terrain_v="elevation",
+        terrain_groups=elevation_bins,
+        ylims=ylims,
+        title=title,
+        ylabel=ylabel,
+        elev_col=elev_col,
+        show=show,
+    )
+
+
+@depends_on_optional("matplotlib")
+def boxplot_aspect(
+    dem_list: list[xr.Dataset | gpd.GeoDataFrame],
+    aspect_bins: np.ndarray | None = None,
+    ylims: list[float] | None = None,
+    title: str = "Elevation Differences (m) by Source Aspect",
+    ylabel: str = "Elevation Difference (m)",
+    elev_col: str | None = None,
+    show: bool = True,
+) -> plt.Axes:
+    """
+    THIS FUNCTION ASSUMES YOUR SOURCE DEM HAS VARIABLE 'aspect'
+
+    Plots boxplots of elevation differences grouped by aspect values.
+    Grouped on the 'source' aspect, or the first dem in dem_list.
+    This is a wrapper around boxplot_terrain_diff() specifically for aspect analysis
+    with groups defined by aspect_bins. If aspect_bins is None, bins are created
+    from 0-360 degrees in steps of 10 degrees.
+
+    Parameters
+    ----------
+    dem_list : list[xr.Dataset | gpd.GeoDataFrame]
+        List containing exactly two elevation datasets to compare
+    aspect_bins : np.ndarray | None
+        Array defining the edges of aspect groups
+        If None, bins are created from 0-360 in steps of 10 degrees
+    ylims : list[float] | None
+        The y-axis limits for the plot
+    title : str
+        The title of the plot
+    ylabel : str
+        The ylabel of the plot
+    elev_col : str | None
+        Column name containing elevation values if using GeoDataFrame
+    show : bool
+        Whether to display the plot
+
+    Returns
+    -------
+    plt.Axes
+        The matplotlib axes object containing the plot
+    """
+    if aspect_bins is None:
+        aspect_bins = np.arange(0, 370, 10)
+
+    return boxplot_terrain_diff(
+        dem_list=dem_list,
+        terrain_v="aspect",
+        terrain_groups=aspect_bins,
+        ylims=ylims,
+        title=title,
+        ylabel=ylabel,
+        elev_col=elev_col,
+        show=show,
+    )

@@ -286,10 +286,10 @@ def test_compare_dems(dem_tiny, points_tiny):
 
 
 def test_boxplot_raster_diff(dem_tiny):
-    """Test boxplot_terrain_diff with raster data sources"""
+    """Test boxplot_slope with raster data sources"""
     # create random slope values
     # make sure that counts of values of 5 and values of 40 are greater than 30
-    # as boxplot_terrain_diff() will only plot groups with counts >= 30
+    # as boxplot_slope() will only plot groups with counts >= 30
     slope = np.concatenate(([5] * 35, [40] * 40, [1] * 25)).reshape(10, 10)
     dem_tiny["slope"] = xr.DataArray(slope, dims=["y", "x"])
 
@@ -297,7 +297,7 @@ def test_boxplot_raster_diff(dem_tiny):
     random_elevations = np.random.uniform(2935, 2965, size=(1, 10, 10))  # noqa: NPY002
     dem_tiny_2["elevation"] = (("band", "y", "x"), random_elevations)
 
-    axd = coincident.plot.boxplot_terrain_diff([dem_tiny, dem_tiny_2], show=False)
+    axd = coincident.plot.boxplot_slope([dem_tiny, dem_tiny_2], show=False)
     assert isinstance(axd, plt.Axes), "Return value should be a matplotlib Axes object"
     assert len(axd.get_children()) > 0, "Figure should exist"
     assert (
@@ -316,21 +316,20 @@ def test_boxplot_raster_diff(dem_tiny):
 
 
 def test_boxplot_point_diff(dem_tiny, points_tiny):
-    """Test boxplot_terrain_diff with point geodataframe reference"""
+    """Test boxplot_slope with point geodataframe reference"""
     # create random slope values
     # same as test_boxplot_raster_diff()
     slope = np.concatenate(([5] * 35, [40] * 40, [1] * 25)).reshape(10, 10)
     dem_tiny["slope"] = xr.DataArray(slope, dims=["y", "x"])
 
     # duplicate points to make sure counts are > 30
-    # gf = pd.concat([gf] * 30, ignore_index=True) <- better but don't want to import pandas
     points_tiny = gpd.GeoDataFrame(
         np.tile(points_tiny.values, (20, 1)),
         columns=points_tiny.columns,
         geometry="geometry",
     )
 
-    axd = coincident.plot.boxplot_terrain_diff(
+    axd = coincident.plot.boxplot_slope(
         [dem_tiny, points_tiny], elev_col="h_li", show=False
     )
     assert isinstance(axd, plt.Axes), "Return value should be a matplotlib Axes object"
