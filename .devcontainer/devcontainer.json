@@ -1,5 +1,5 @@
 {
-  "image": "ghcr.io/prefix-dev/pixi:0.30.0-jammy",
+  "image": "ghcr.io/prefix-dev/pixi:latest",
   "postCreateCommand": {
     // Run *after* source code with pyproject.toml is pulled to CWD
     "pixi-install": "pixi install"
@@ -23,19 +23,15 @@
   },
   "secrets": {
     "MAXAR_API_KEY": {
-      "description": "Maxar platform api key",
+      "description": "Maxar Platform API Key",
       "documentationUrl": "https://developers.maxar.com/docs/authentication/guides/api-key"
     },
-    "PC_SDK_SUBSCRIPTION_KEY": {
-      "description": "Microsoft planetary computer subscription key",
-      "documentationUrl": "https://github.com/microsoft/planetary-computer-sdk-for-python"
-    },
     "EARTHDATA_USERNAME": {
-      "description": "NASA Earthdata username",
+      "description": "NASA Earthdata Username",
       "documentationUrl": "https://earthaccess.readthedocs.io/en/latest/howto/authenticate/#authenticate-with-earthdata-login"
     },
     "EARTHDATA_PASSWORD": {
-      "description": "NASA Earthdata password"
+      "description": "NASA Earthdata Password"
     }
   }
 }
