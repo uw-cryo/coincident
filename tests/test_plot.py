@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import geopandas as gpd
-import matplotlib.patches
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
@@ -11,6 +11,7 @@ from matplotlib.collections import QuadMesh
 import coincident.io.xarray
 import coincident.plot
 import coincident.search
+from tests.test_plot_helpers import assert_boxplot  # noqa: F401
 
 network = pytest.mark.network
 
@@ -285,65 +286,115 @@ def test_compare_dems(dem_tiny, points_tiny):
         ), f"hist_{key} should have histogram bars"
 
 
-def test_boxplot_raster_diff(dem_tiny):
-    """Test boxplot_slope with raster data sources"""
-    # create random slope values
-    # make sure that counts of values of 5 and values of 40 are greater than 30
-    # as boxplot_slope() will only plot groups with counts >= 30
+@pytest.mark.parametrize(
+    ("plot_func", "expected_boxes"),
+    [
+        (coincident.plot.boxplot_slope, 2),
+        (coincident.plot.boxplot_elevation, 2),
+        (coincident.plot.boxplot_aspect, 2),
+    ],
+)
+def test_boxplot_raster(dem_tiny, assert_boxplot, plot_func, expected_boxes):  # noqa: F811
+    """Test boxplot functions with raster data sources"""
     slope = np.concatenate(([5] * 35, [40] * 40, [1] * 25)).reshape(10, 10)
     dem_tiny["slope"] = xr.DataArray(slope, dims=["y", "x"])
+    dem_tiny["aspect"] = xr.DataArray(slope, dims=["y", "x"])
 
     dem_tiny_2 = dem_tiny.copy()
     random_elevations = np.random.uniform(2935, 2965, size=(1, 10, 10))  # noqa: NPY002
     dem_tiny_2["elevation"] = (("band", "y", "x"), random_elevations)
 
-    axd = coincident.plot.boxplot_slope([dem_tiny, dem_tiny_2], show=False)
-    assert isinstance(axd, plt.Axes), "Return value should be a matplotlib Axes object"
-    assert len(axd.get_children()) > 0, "Figure should exist"
-    assert (
-        len(
-            [
-                child
-                for child in axd.get_children()
-                if isinstance(child, matplotlib.patches.PathPatch)
-            ]
-        )
-        == 2
-    ), "Should have two boxplot boxes"
-    assert axd.get_legend() is not None, "Legend should exist"
-    assert len(axd.figure.axes) == 2, "Should have two y-axes"
-    assert axd.figure.axes[1].get_ylabel() == "Count", "Second y-axis should be 'Count'"
+    kwargs = {}
+    if plot_func == coincident.plot.boxplot_elevation:
+        kwargs["elevation_bins"] = np.linspace(2935, 2965, 11)
+
+    axd = plot_func([dem_tiny, dem_tiny_2], show=False, **kwargs)
+    assert_boxplot(axd, expected_boxes)
 
 
-def test_boxplot_point_diff(dem_tiny, points_tiny):
-    """Test boxplot_slope with point geodataframe reference"""
-    # create random slope values
-    # same as test_boxplot_raster_diff()
+@pytest.mark.parametrize(
+    ("plot_func", "expected_boxes"),
+    [
+        (coincident.plot.boxplot_slope, 2),
+        (coincident.plot.boxplot_elevation, 3),
+        (coincident.plot.boxplot_aspect, 3),
+    ],
+)
+def test_boxplot_gdf(dem_tiny, points_tiny, assert_boxplot, plot_func, expected_boxes):  # noqa: F811
+    """Test boxplot functions with point geodataframe reference"""
     slope = np.concatenate(([5] * 35, [40] * 40, [1] * 25)).reshape(10, 10)
     dem_tiny["slope"] = xr.DataArray(slope, dims=["y", "x"])
+    dem_tiny["aspect"] = xr.DataArray(slope, dims=["y", "x"])
 
-    # duplicate points to make sure counts are > 30
     points_tiny = gpd.GeoDataFrame(
         np.tile(points_tiny.values, (20, 1)),
         columns=points_tiny.columns,
         geometry="geometry",
     )
 
-    axd = coincident.plot.boxplot_slope(
-        [dem_tiny, points_tiny], elev_col="h_li", show=False
+    kwargs = {"elev_col": "h_li", "show": False}
+    if plot_func == coincident.plot.boxplot_elevation:
+        kwargs["elevation_bins"] = np.linspace(2935, 2965, 11)
+
+    axd = plot_func([dem_tiny, points_tiny], **kwargs)
+    assert_boxplot(axd, expected_boxes)
+
+
+@network
+def test_esa_hist(dem_tiny, points_tiny):
+    dem_tiny_2 = dem_tiny.copy()
+    random_elevations = np.random.uniform(2935, 2965, size=(1, 10, 10))  # noqa: NPY002
+    dem_tiny_2["elevation"] = (("band", "y", "x"), random_elevations)
+
+    points_tiny = gpd.GeoDataFrame(
+        np.tile(points_tiny.values, (20, 1)),
+        columns=points_tiny.columns,
+        geometry="geometry",
     )
-    assert isinstance(axd, plt.Axes), "Return value should be a matplotlib Axes object"
-    assert len(axd.get_children()) > 0, "Figure should exist"
+
+    axd = coincident.plot.hist_esa(
+        [dem_tiny, dem_tiny_2],
+        show=False,
+    )[0]  # since hist_esa returns a numpy array
+    assert isinstance(
+        axd, plt.Axes
+    ), "Return value should be a matplotlib Axes object (raster test)"
+    assert len(axd.get_children()) > 0, "Figure should exist (raster test)"
     assert (
         len(
             [
                 child
                 for child in axd.get_children()
-                if isinstance(child, matplotlib.patches.PathPatch)
+                if isinstance(child, mpl.patches.Rectangle)
             ]
         )
-        == 2
-    ), "Should have two boxplot boxes"
-    assert axd.get_legend() is not None, "Legend should exist"
-    assert len(axd.figure.axes) == 2, "Should have two y-axes"
-    assert axd.figure.axes[1].get_ylabel() == "Count", "Second y-axis should be 'Count'"
+        == 241
+    ), "Should have 241 rectangles histograms (raster test)"
+    assert axd.get_legend() is not None, "Legend should exist (raster test)"
+    assert (
+        axd.title.get_text() == "Grassland"
+    ), "Plot title should be 'Grassland' (raster test)"
+
+    axd = coincident.plot.hist_esa(
+        [dem_tiny, points_tiny],
+        elev_col="h_li",
+        show=False,
+    )[0]  # since hist_esa returns a numpy array
+    assert isinstance(
+        axd, plt.Axes
+    ), "Return value should be a matplotlib Axes object (gdf test)"
+    assert len(axd.get_children()) > 0, "Figure should exist (gdf test)"
+    assert (
+        len(
+            [
+                child
+                for child in axd.get_children()
+                if isinstance(child, mpl.patches.Rectangle)
+            ]
+        )
+        == 257
+    ), "Should have 257 rectangles (gdf test)"
+    assert axd.get_legend() is not None, "Legend should exist (gdf test)"
+    assert (
+        axd.title.get_text() == "Grassland"
+    ), "Plot title should be 'Grassland' (gdf test)"

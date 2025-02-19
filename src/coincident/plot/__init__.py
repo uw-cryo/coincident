@@ -11,8 +11,10 @@ from coincident.plot.matplotlib import (
     boxplot_terrain_diff,
     clear_labels,
     compare_dems,
+    create_stats_legend,
     get_elev_diff,
     hillshade,
+    hist_esa,
     plot_altimeter_points,
     plot_dem,
     plot_diff_hist,
@@ -36,4 +38,6 @@ __all__ = [
     "boxplot_slope",
     "boxplot_elevation",
     "boxplot_aspect",
+    "create_stats_legend",
+    "hist_esa",
 ]

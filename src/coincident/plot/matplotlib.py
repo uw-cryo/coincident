@@ -13,6 +13,8 @@ import numpy as np
 import pandas as pd
 import pystac
 import xarray as xr
+from matplotlib_scalebar.scalebar import ScaleBar
+from scipy import stats
 from shapely.geometry import box
 
 try:
@@ -634,6 +636,19 @@ def compare_dems(
         if i == n_columns - 1:  # Add colorbar to the last GeoDataFrame plot
             # images[1] since [0] would be the hillshade
             plt.colorbar(axd[dem_key].images[1], ax=axd[dem_key], label="Elevation (m)")
+        elif i == 0:
+            dx = dem.rio.resolution()[0]
+            scalebar = ScaleBar(
+                dx,  # meters per pixel from resolution
+                "m",
+                length_fraction=0.25,
+                location="lower right",
+                box_alpha=0.5,
+                box_color="white",
+                color="black",
+                pad=0.5,
+            )
+            axd[dem_key].add_artist(scalebar)
 
     # point elevs
     # need this for MyPy to handle the chance the gdf_dict is None
@@ -757,8 +772,6 @@ def compare_dems(
     return axd
 
 
-# TODO: wrap with a slope, aspect, landcover boxplot function
-# elevation^
 @depends_on_optional("matplotlib")
 def boxplot_terrain_diff(
     dem_list: list[xr.Dataset | gpd.GeoDataFrame],
@@ -1108,3 +1121,260 @@ def boxplot_aspect(
         elev_col=elev_col,
         show=show,
     )
+
+
+@depends_on_optional("matplotlib")
+def create_stats_legend(
+    ax: plt.Axes, stats_dict: dict[str, float], color_dict: dict[str, str]
+) -> None:
+    """
+    Helper function for hist_esa. Create a unified legend with statistics for elevation difference plots.
+
+    Parameters
+    ----------
+    ax : plt.Axes
+        The matplotlib axes object to add the legend to
+    stats_dict : dict[str, float]
+        Dictionary containing statistics to display
+    color_dict : dict[str, str]
+        Dictionary mapping statistic names to colors
+
+    Returns
+    -------
+    None
+        Modifies the input axes object directly
+    """
+    legend_elements = []
+
+    for label in ["Mean", "Med"]:
+        color = color_dict.get(label, "black")
+        legend_elements.append(
+            plt.Line2D([0], [0], color=color, label=f"{label}: {stats_dict[label]:.2f}")
+        )
+
+    for label in ["Std", "NMAD"]:
+        legend_elements.append(
+            plt.Line2D(
+                [0], [0], color="none", label=f"{label}: {stats_dict[label]:.2f}"
+            )
+        )
+
+    legend_elements.append(
+        plt.Line2D([0], [0], color="none", label=f"Count: {int(stats_dict['Count'])}")
+    )
+
+    legend = ax.legend(
+        handles=legend_elements,
+        loc="upper right",
+        bbox_to_anchor=(0.98, 0.98),
+        fontsize=10,
+        facecolor="lightgray",
+        edgecolor="none",
+    )
+    legend.get_frame().set_alpha(0.5)
+
+
+@depends_on_optional("matplotlib")
+def hist_esa(
+    dem_list: list[xr.Dataset | gpd.GeoDataFrame],
+    elev_col: str | None = None,
+    min_count: int = 30,
+    show: bool = True,
+    color_dict: dict[str, str] | None = None,
+) -> plt.Figure:
+    """
+    Plot elevation differences between DEMs or point data, grouped by ESA World Cover 2020 land cover class.
+
+    Parameters
+    ----------
+    dem_list : list[xr.Dataset | gpd.GeoDataFrame]
+        List containing two elevation datasets to compare
+    elev_col : str | None
+        Column name containing elevation values if using point data
+    min_count : int
+        Minimum number of points required for a land cover class to be included
+    show : bool
+        Whether to display the plot (implemented for testing)
+    color_dict : dict[str, str]
+        Dictionary mapping statistics to colors for plotting
+
+    Returns
+    -------
+    np.array
+        An array containing the matplotlib axes objects
+    """
+    if len(dem_list) != 2:
+        msg_len = "dem_list must contain exactly two datasets"
+        raise ValueError(msg_len)
+    if color_dict is None:
+        color_dict = {
+            "Mean": "magenta",
+            "Med": "deepskyblue",
+            "Std": "black",
+            "NMAD": "black",
+            "Count": "black",
+        }
+    # calculate elevation differences if second dataset is a GDF
+    if isinstance(dem_list[1], gpd.GeoDataFrame):
+        if elev_col is None:
+            col_msg = "elev_col must be provided when using point data"
+            raise ValueError(col_msg)
+
+        da_points = dem_list[1].get_coordinates().to_xarray()
+        samples = (
+            dem_list[0]
+            .interp(da_points)
+            .drop_vars(["band", "spatial_ref"])
+            .to_dataframe()
+        )
+        dem_list[1]["elev_diff"] = (
+            dem_list[1][elev_col].to_numpy() - samples["elevation"].to_numpy()
+        )
+        diff_data = dem_list[1]
+    else:  # Both are rasters
+        diff_data = dem_list[1]["elevation"] - dem_list[0]["elevation"]
+
+    classmap = WorldCover().classmap
+
+    # Get WorldCover dataset
+    bounds = dem_list[0].rio.bounds()
+    gf_search = gpd.GeoDataFrame(
+        geometry=[box(*bounds)], crs=dem_list[0].rio.crs
+    ).to_crs(epsg=4326)
+    gf_wc = search(dataset="worldcover", intersects=gf_search, datetime=["2020"])
+
+    try:
+        ds_wc = to_dataset(gf_wc, bands=["map"], aoi=gf_search, mask=True)
+    except Exception:
+        ds_wc = to_dataset(gf_wc, bands=["map"], aoi=gf_search)
+
+    ds_wc = ds_wc.rio.reproject(dem_list[0].rio.crs).rio.reproject_match(dem_list[0])
+
+    # plotting logic for raster data (xarray)
+    if isinstance(diff_data, xr.DataArray):
+        bin_width = 0.25
+        bins = np.arange(-30, 30 + bin_width, bin_width)
+        filtered_classes = []
+
+        for class_value, class_info in classmap.items():
+            class_mask = ds_wc.isel(time=0)["map"].to_numpy() == class_value
+            class_mask_da = xr.DataArray(
+                class_mask, coords=[diff_data.y, diff_data.x], dims=["y", "x"]
+            )
+            class_data = diff_data.where(class_mask_da, drop=True)
+            class_data_flat = class_data.to_numpy().flatten()
+            class_data_flat = class_data_flat[~np.isnan(class_data_flat)]
+
+            if len(class_data_flat) >= min_count:
+                filtered_classes.append((class_value, class_info, class_data_flat))
+
+        num_classes = len(filtered_classes)
+        ncols, nrows = 2, (num_classes + 1) // 2
+        fig, axes = plt.subplots(
+            nrows,
+            ncols,
+            figsize=(12, 4 * nrows),
+            constrained_layout=True,
+            sharex=True,
+            sharey=True,
+        )
+
+        for idx, (ax, (_class_value, class_info, class_data_flat)) in enumerate(
+            zip(axes.ravel(), filtered_classes, strict=False)
+        ):
+            ax.hist(
+                class_data_flat, bins=bins, alpha=0.5, color=class_info["hex"], log=True
+            )
+            ax.set_title(class_info["description"], fontsize=12)
+            ax.axvline(0, color="k", linestyle="dashed", linewidth=1)
+            ax.set_xlim(-20, 20)
+            # only set ylabel if axis is in first column
+            if idx % ncols == 0:
+                ax.set_ylabel("Log(Count)")
+            else:
+                ax.set_ylabel("")
+
+            # calculate statistics
+            stats_dict = {
+                "Mean": np.mean(class_data_flat),
+                "Med": np.median(class_data_flat),
+                "Std": np.std(class_data_flat),
+                "NMAD": stats.median_abs_deviation(class_data_flat, scale="normal"),
+                "Count": len(class_data_flat),
+            }
+
+            create_stats_legend(ax, stats_dict, color_dict)
+
+            # vertical lines for med and mean
+            ax.axvline(stats_dict["Med"], color="deepskyblue", lw=0.5)
+            ax.axvline(stats_dict["Mean"], color="magenta", lw=0.5)
+
+        plt.suptitle(
+            "Elevation Differences by Land Cover (ESA World Cover 2020)", fontsize=14
+        )
+
+    # plotting logic if second dataset is a GDF
+    elif isinstance(diff_data, gpd.GeoDataFrame):
+        # sample worldcover values at points
+        land_cover = ds_wc.isel(time=0)["map"].interp(
+            x=("points", diff_data.geometry.x.to_numpy()),
+            y=("points", diff_data.geometry.y.to_numpy()),
+            method="nearest",
+        )
+        diff_data["land_cover_class"] = land_cover.to_numpy()
+
+        groups = diff_data.groupby("land_cover_class")
+        # filter out groups with less than min_count points
+        filtered_groups = [
+            (label, group) for label, group in groups if len(group) >= min_count
+        ]
+
+        num_groups = len(filtered_groups)
+        ncols, nrows = 2, (num_groups + 1) // 2
+        fig, axes = plt.subplots(
+            nrows,
+            ncols,
+            figsize=(12, 4 * nrows),
+            constrained_layout=True,
+            sharex=True,
+            sharey=True,
+        )
+
+        for idx, (ax, (label, group)) in enumerate(
+            zip(axes.ravel(), filtered_groups, strict=False)
+        ):
+            color = classmap.get(label, {}).get("hex", "#cccccc")
+            ax.hist(
+                group["elev_diff"].dropna(), bins=256, alpha=0.5, color=color, log=True
+            )
+            ax.axvline(0, color="k", linestyle="dashed", linewidth=1)
+            ax.set_title(classmap.get(label, {}).get("description", ""), fontsize=12)
+            ax.set_xlim(-20, 20)
+            # only set ylabel if axis is in first column
+            if idx % ncols == 0:
+                ax.set_ylabel("Log(Count)")
+            else:
+                ax.set_ylabel("")
+
+            group_no_nan = group["elev_diff"].dropna()
+            stats_dict = {
+                "Mean": np.mean(group_no_nan),
+                "Med": np.median(group_no_nan),
+                "Std": np.std(group_no_nan),
+                "NMAD": stats.median_abs_deviation(group_no_nan, scale="normal"),
+                "Count": len(group_no_nan),
+            }
+
+            create_stats_legend(ax, stats_dict, color_dict)
+
+            # vertical lines for med and mean
+            ax.axvline(stats_dict["Med"], color="deepskyblue", lw=0.5)
+            ax.axvline(stats_dict["Mean"], color="magenta", lw=0.5)
+
+        plt.suptitle(
+            "Elevation Differences by Land Cover (ESA World Cover 2020)", fontsize=14
+        )
+
+    if show:
+        plt.show()
+    return axes
