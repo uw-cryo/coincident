@@ -1,9 +1,0 @@
-<GDALTileIndexDataset>
-    <IndexDataset>/vsiaz/items/nasadem.parquet</IndexDataset>
-    <LocationField>assets.elevation.href</LocationField>
-    <GeoTransform>-1.8000013888888890e+02,2.7777777777781459e-04,0.0000000000000000e+00,6.0000138888888891e+01,0.0000000000000000e+00,-2.7777777777781459e-04</GeoTransform>
-    <XSize>1296001</XSize>
-    <YSize>417601</YSize>
-    <BandCount>1</BandCount>
-    <DataType>Int16</DataType>
-</GDALTileIndexDataset>

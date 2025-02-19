@@ -34,8 +34,6 @@ scientific analysis.
 See here for more information:
 <https://science.nasa.gov/earth-science/decadal-surveys/decadal-stv/coincident-datasets>
 
-**This tool is under active development, there are no stable releases yet!**
-
 ## Acknowledgements
 
 - Python packaging template provided by
