@@ -95,3 +95,4 @@ nitpick_ignore = [
 always_document_param_types = True
 # autodoc_typehints = "none"
 nb_execution_mode = "auto"  # off, on
+nb_execution_excludepatterns = ["elevation_plotting.ipynb"]
