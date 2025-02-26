@@ -20,7 +20,6 @@ from coincident.plot.matplotlib import (
     plot_diff_hist,
     plot_esa_worldcover,
     plot_maxar_browse,
-    plot_worldcover_custom_ax,
 )
 
 __all__ = [
@@ -32,7 +31,6 @@ __all__ = [
     "plot_altimeter_points",
     "get_elev_diff",
     "plot_diff_hist",
-    "plot_worldcover_custom_ax",
     "compare_dems",
     "boxplot_terrain_diff",
     "boxplot_slope",

@@ -35,7 +35,13 @@ from coincident.search import search
 
 
 @depends_on_optional("matplotlib")
-def plot_esa_worldcover(ds: xr.Dataset) -> plt.Axes:
+def plot_esa_worldcover(
+    ds: xr.Dataset,
+    ax: plt.Axes | None = None,
+    cax: plt.Axes | None = None,
+    add_colorbar: bool = True,
+    add_labels: bool = True,
+) -> plt.Axes:
     """
     Plots ESA WorldCover data using Matplotlib.
 
@@ -51,70 +57,6 @@ def plot_esa_worldcover(ds: xr.Dataset) -> plt.Axes:
     -------
     plt.Axes
         The Matplotlib Axes object with the plot.
-
-    References
-    ----------
-    https://planetarycomputer.microsoft.com/dataset/esa-worldcover#Example-Notebook
-    """
-    classmap = WorldCover().classmap
-
-    colors = ["#000000" for r in range(256)]
-    for key, value in classmap.items():
-        colors[int(key)] = value["hex"]
-    cmap = matplotlib.colors.ListedColormap(colors)
-
-    # sequences needed for an informative colorbar
-    values = list(classmap)
-    boundaries = [(values[i + 1] + values[i]) / 2 for i in range(len(values) - 1)]
-    boundaries = [0, *boundaries, 255]
-    ticks = [
-        (boundaries[i + 1] + boundaries[i]) / 2 for i in range(len(boundaries) - 1)
-    ]
-    tick_labels = [value["description"] for value in classmap.values()]
-
-    fig, ax = plt.subplots()
-    normalizer = matplotlib.colors.Normalize(vmin=0, vmax=255)
-
-    da = ds.to_dataarray().squeeze()
-    da.plot(ax=ax, cmap=cmap, norm=normalizer)
-
-    # set aspect ratio according to mid scene latitude
-    if ds.rio.crs.to_epsg() == 4326:
-        mid_lat = da.latitude[int(da.latitude.size / 2)].to_numpy()  # PD011
-        ax.set_aspect(aspect=1 / np.cos(np.deg2rad(mid_lat)))
-
-    colorbar = fig.colorbar(
-        cm.ScalarMappable(norm=normalizer, cmap=cmap),
-        boundaries=boundaries,
-        values=values,
-        cax=fig.axes[1].axes,  # hard to get right w/ subplot_mosaic panel...
-    )
-    colorbar.set_ticks(ticks, labels=tick_labels)
-    return ax
-
-
-# NOTE: below is a temporary function
-# this function is only used in the compare_dem function to make the
-# horizontal colorbar and such easier
-# hoping to merge this with plot_esa_worldcover to make a more-dynamic function
-@depends_on_optional("matplotlib")
-def plot_worldcover_custom_ax(
-    ds: xr.Dataset,
-    ax: plt.Axes,
-    cax: plt.Axes,
-    add_colorbar: bool = True,
-    add_labels: bool = True,
-) -> plt.Axes:
-    """
-    Plots ESA WorldCover data on a custom Matplotlib Axes.
-    THIS FUNCTION IS PURELY TO MAKE compare_dems() EASIER
-    DUE TO DIFFICULTIES OF MAKING plot_esa_worldcover() INCLUDE
-    AN OPTION TO PLOT A HORIZONTAL CBAR BELOW THE AXIS OF INTEREST
-
-    Parameters
-    ----------
-    ds : xr.Dataset
-        An xarray Dataset containing the ESA WorldCover data.
     ax : plt.Axes
         The Matplotlib Axes on which the plot will be drawn.
     cax : plt.Axes
@@ -124,24 +66,17 @@ def plot_worldcover_custom_ax(
     add_labels : bool, optional
         Whether to add labels to the plot, by default True.
 
-    Returns
-    -------
-    plt.Axes
-        The Matplotlib Axes object with the plot.
-
     References
     ----------
     https://planetarycomputer.microsoft.com/dataset/esa-worldcover#Example-Notebook
     """
-    # Map class values to colors and descriptions
+    # Custom categorical colormap for ESA WorldCover
     classmap = WorldCover().classmap
 
     colors = ["#000000" for r in range(256)]
     for key, value in classmap.items():
         colors[int(key)] = value["hex"]
     cmap = matplotlib.colors.ListedColormap(colors)
-
-    # sequences needed for an informative colorbar
     values = list(classmap)
     boundaries = [(values[i + 1] + values[i]) / 2 for i in range(len(values) - 1)]
     boundaries = [0, *boundaries, 255]
@@ -149,31 +84,45 @@ def plot_worldcover_custom_ax(
         (boundaries[i + 1] + boundaries[i]) / 2 for i in range(len(boundaries) - 1)
     ]
     tick_labels = [value["description"] for value in classmap.values()]
-
     normalizer = matplotlib.colors.Normalize(vmin=0, vmax=255)
 
+    # 2D DataArray
     da = ds.to_dataarray().squeeze()
+
+    if ax is None:
+        fig, ax = plt.subplots()
+        # set aspect ratio according to mid scene latitude
+        if da.rio.crs.to_epsg() == 4326:
+            mid_lat = da.latitude[int(da.latitude.size / 2)].to_numpy()  # PD011
+            ax.set_aspect(aspect=1 / np.cos(np.deg2rad(mid_lat)))
+    else:
+        fig = ax.get_figure()
+
     da.plot(
         ax=ax, cmap=cmap, norm=normalizer, add_labels=add_labels, add_colorbar=False
     )
 
     if add_colorbar:
-        # Override standard xarray colorbar with custom one
-        fig = ax.get_figure()
-        # if cax==None:
-        #    cax=ax.inset_axes([0, -0.35, 1, 0.1])
-        colorbar = fig.colorbar(
-            matplotlib.cm.ScalarMappable(norm=normalizer, cmap=cmap),
-            boundaries=boundaries,
-            values=values,
-            # cax=fig.axes[1].axes, # hard to get right w/ subplot_mosaic panel...
-            ax=cax,
-            # cax=cax,
-            orientation="horizontal",
-            # location='top'
-            pad=-1.1,  # hack to get colorbar in subplot mosaic in the right place
-        )
-        colorbar.set_ticks(ticks, labels=tick_labels, rotation=90)
+        # Specific to panel_plots, so rather than cax, add_to_panel=True boolean?
+        if cax is not None:
+            # Override standard xarray colorbar with custom one
+            colorbar = fig.colorbar(
+                cm.ScalarMappable(norm=normalizer, cmap=cmap),
+                boundaries=boundaries,
+                values=values,
+                ax=cax,
+                orientation="horizontal",
+                pad=-1.1,  # hack to get colorbar in subplot mosaic in the right place
+            )
+            colorbar.set_ticks(ticks, labels=tick_labels, rotation=90)
+        else:
+            colorbar = fig.colorbar(
+                cm.ScalarMappable(norm=normalizer, cmap=cmap),
+                boundaries=boundaries,
+                values=values,
+                ax=ax,
+            )
+            colorbar.set_ticks(ticks, labels=tick_labels)
 
     return ax
 
@@ -519,7 +468,7 @@ def compare_dems(
         Where column_name denotes the column name that contains elevation values of interest
             (e.g. h_li for ICESat-2 ATL06)
     ds_wc: Optional xr.Dataset
-        WorldCover dataset to plot. If this is not provided, plot_worldcover_custom_ax
+        WorldCover dataset to plot. If this is not provided, plot_esa_worldcover
         will be called to create a ESA WorldCover raster. If provided, this should be
         the same CRS and aligned with your other inputs
     elevation_cmap: Optional str
@@ -676,7 +625,7 @@ def compare_dems(
 
     # MIDDLE ROW: Differences
     # ---------------------------
-    plot_worldcover_custom_ax(
+    plot_esa_worldcover(
         ds_wc.isel(time=0),
         ax=axd["worldcover"],
         cax=axd["wc_legend"],
