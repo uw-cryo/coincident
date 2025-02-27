@@ -67,6 +67,7 @@ docs = [
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
   "sphinx_design",
+  "xdem>=0.1.0,<0.2",
 ]
 
 [project.urls]
@@ -218,6 +219,7 @@ jsonschema = ">=4.23.0,<5"
 libgdal-arrow-parquet = ">=3.10.1,<4"
 matplotlib-scalebar = ">=0.9.0,<0.10"
 sliderule = "*"
+xdem = "*"
 
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
@@ -228,7 +230,6 @@ mypy = "*"
 pre-commit = "<4"
 pylint = "*"
 pytest = "*"
-xdem = "*"
 
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = false }
@@ -247,5 +248,8 @@ networktest = "pytest --cov --cov-report=xml --cov-report=term --durations=0"
 [tool.pixi.feature.docs.pypi-dependencies]
 coincident = { path = ".", editable = true }
 
+
 [tool.pixi.feature.docs.tasks]
 docs = "python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
+# NOTE: use https://jupyter-cache.readthedocs.io ?
+rebuild_docs = "rm -rf docs/_build ; python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
