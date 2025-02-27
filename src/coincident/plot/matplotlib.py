@@ -363,10 +363,8 @@ def compare_dems(
     """
     Create a panel figure comparing DEM and altimetry elevations.
 
-    Where the first row shows elevation maps over hillshades (if add_hillshade is True)
-        altimetry points will be plotted over the hillshade of the first DEM (if add_hillshade is True)
-    The second row shows elevation differences, with the first plot being the Landcover of the scene
-        First DEM provided will be the 'source' DEM where all other elevations will be compared to
+    Where the first row shows elevation maps over hillshades (if add_hillshade is True) altimetry points will be plotted over the hillshade of the first DEM (if add_hillshade is True)
+    The second row shows elevation differences, with the first plot being the Landcover of the scene First DEM provided will be the 'source' DEM where all other elevations will be compared to
     The third row shows the histograms of these differences
 
     Parameters
@@ -677,11 +675,9 @@ def boxplot_terrain_diff(
     -----
     This function assumes that the datasets in dem_list are in the same CRS and aligned
     This function can also work with point geometry GeoDataFrames (e.g. ICESat-2 points)
-    If using a GeoDataFrame, you must also provide the elev_col parameter
-        which is the column name containing elevation values you wish to compare
+    If using a GeoDataFrame, you must also provide the elev_col parameter which is the column name containing elevation values you wish to compare
     This function requires there to be EXACTLY 2 datasets in the dem_list.
-    The first dataset in dem_list MUST be a xr.Dataset with an 'elevation' variable
-        and the corresponding terrain_v variable (e.g. 'slope')
+    The first dataset in dem_list MUST be a xr.Dataset with an 'elevation' variable and the corresponding terrain_v variable (e.g. 'slope')
     """
     if len(dem_list) != 2:
         msg_len = "dem_list must contain exactly two datasets"
