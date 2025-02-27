@@ -1423,7 +1423,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/freetype-2.12.1-h267a509_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/freexl-2.0.0-h9dce30a_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fsspec-2025.2.0-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/gdal-3.10.1-py312hc55c449_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-1.0.1-pyhd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-base-1.0.1-pyha770c72_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/geos-3.13.0-h5888daf_0.conda
@@ -1779,7 +1778,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/freetype-2.12.1-hadb7bae_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/freexl-2.0.0-h3ab3353_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fsspec-2025.2.0-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/gdal-3.10.1-py312h1afea5f_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-1.0.1-pyhd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-base-1.0.1-pyha770c72_3.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/geos-3.13.0-hf9b8971_0.conda
@@ -3353,8 +3351,8 @@ packages:
   timestamp: 1736947650712
 - pypi: .
   name: coincident
-  version: 0.1.2.dev28+gf267307.d20250227
-  sha256: bae66d5f42c36dd4c9c58f7576c50d775d13c1d3edf30e6e6abed7371cd017e2
+  version: 0.1.2.dev29+g5d735b5.d20250227
+  sha256: 83b4c2fd1975e975ded530634b78468b63d50a3bc44da42125793a51b01febc4
   requires_dist:
   - cloudpathlib[s3]>=0.20.0,<0.21
   - geopandas>=1.0.1,<2
@@ -3377,7 +3375,6 @@ packages:
   - pytest>=6 ; extra == 'dev'
   - xdem>=0.1.0,<0.2 ; extra == 'dev'
   - folium ; extra == 'docs'
-  - gdal>=3.10.1,<4 ; extra == 'docs'
   - mapclassify ; extra == 'docs'
   - myst-nb ; extra == 'docs'
   - myst-parser>=0.13 ; extra == 'docs'
@@ -4031,46 +4028,6 @@ packages:
   - pkg:pypi/fsspec?source=hash-mapping
   size: 138186
   timestamp: 1738501352608
-- conda: https://conda.anaconda.org/conda-forge/linux-64/gdal-3.10.1-py312hc55c449_2.conda
-  sha256: 82878874b63fe7528ab665f0392c300394d90e58298d82eb6ff38a5aaef1af4f
-  md5: 38c62a77a51b4851ac05ca6b100005df
-  depends:
-  - __glibc >=2.17,<3.0.a0
-  - libgcc >=13
-  - libgdal-core 3.10.1.*
-  - libkml >=1.3.0,<1.4.0a0
-  - liblzma >=5.6.3,<6.0a0
-  - libstdcxx >=13
-  - libxml2 >=2.13.5,<3.0a0
-  - numpy >=1.19,<3
-  - python >=3.12,<3.13.0a0
-  - python_abi 3.12.* *_cp312
-  license: MIT
-  license_family: MIT
-  purls:
-  - pkg:pypi/gdal?source=hash-mapping
-  size: 1703207
-  timestamp: 1737610810762
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/gdal-3.10.1-py312h1afea5f_2.conda
-  sha256: db13033b6bacf55a4d1b8f964e5b156d0bdb6f2bc81b0eb1746de2ae5be75155
-  md5: 955bf5ea321e423f16a94655b893cd98
-  depends:
-  - __osx >=11.0
-  - libcxx >=18
-  - libgdal-core 3.10.1.*
-  - libkml >=1.3.0,<1.4.0a0
-  - liblzma >=5.6.3,<6.0a0
-  - libxml2 >=2.13.5,<3.0a0
-  - numpy >=1.19,<3
-  - python >=3.12,<3.13.0a0
-  - python >=3.12,<3.13.0a0 *_cpython
-  - python_abi 3.12.* *_cp312
-  license: MIT
-  license_family: MIT
-  purls:
-  - pkg:pypi/gdal?source=hash-mapping
-  size: 1667630
-  timestamp: 1737610863982
 - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-1.0.1-pyhd8ed1ab_3.conda
   sha256: 04f7e616ebbf6352ff852b53c57901e43f14e2b3c92411f99b5547f106bc192e
   md5: 1baca589eb35814a392eaad6d152447e
