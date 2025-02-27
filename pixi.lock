@@ -3351,8 +3351,8 @@ packages:
   timestamp: 1736947650712
 - pypi: .
   name: coincident
-  version: 0.1.2.dev26+g863c803.d20250227
-  sha256: 00c3aee809b05b06082b81acf56c6723ab9d00e72ffc6cda98017b8bafa8a9c4
+  version: 0.1.2.dev27+g71babc7.d20250227
+  sha256: 83b4c2fd1975e975ded530634b78468b63d50a3bc44da42125793a51b01febc4
   requires_dist:
   - cloudpathlib[s3]>=0.20.0,<0.21
   - geopandas>=1.0.1,<2
@@ -3379,6 +3379,7 @@ packages:
   - myst-nb ; extra == 'docs'
   - myst-parser>=0.13 ; extra == 'docs'
   - pydata-sphinx-theme>=0.16.0,<0.17 ; extra == 'docs'
+  - setuptools ; extra == 'docs'
   - sphinx-autodoc-typehints ; extra == 'docs'
   - sphinx-copybutton ; extra == 'docs'
   - sphinx-design ; extra == 'docs'

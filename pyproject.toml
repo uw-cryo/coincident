@@ -68,6 +68,8 @@ docs = [
   "sphinx_copybutton",
   "sphinx_design",
   "xdem>=0.1.0,<0.2",
+  # TODO: not sure why, but RTD can't import xdem w/o this...
+  "setuptools", # ModuleNotFoundError: No module named 'distutils'
 ]
 
 [project.urls]
@@ -247,7 +249,6 @@ networktest = "pytest --cov --cov-report=xml --cov-report=term --durations=0"
 
 [tool.pixi.feature.docs.pypi-dependencies]
 coincident = { path = ".", editable = true }
-
 
 [tool.pixi.feature.docs.tasks]
 docs = "python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
