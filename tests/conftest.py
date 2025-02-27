@@ -40,7 +40,7 @@ def tinyaoi():
 
 @pytest.fixture(scope="package")
 def dem_tiny():
-    # 10x10 random cop30 slice from CO PCD site
+    # from CO PCD site
     ds_cop30 = xr.open_dataset("tests/data/dem_tiny.tif")
     return ds_cop30.rename({"band_data": "elevation"})
 
@@ -51,3 +51,14 @@ def points_tiny():
     # has cols h_li, elevation_lm, and elevation_hr
     # ^ random elevation values
     return gpd.read_file("tests/data/points_tiny.gpkg")
+
+
+@pytest.fixture(scope="package")
+def dem_tiny_utm():
+    ds_cop30 = xr.open_dataset("tests/data/dem_tiny_utm.tif")
+    return ds_cop30.rename({"band_data": "elevation"})
+
+
+@pytest.fixture(scope="package")
+def points_tiny_utm():
+    return gpd.read_file("tests/data/points_tiny_utm.gpkg")
