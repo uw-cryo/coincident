@@ -68,6 +68,7 @@ docs = [
   "sphinx_copybutton",
   "sphinx_design",
   "xdem>=0.1.0,<0.2",
+  "gdal>=3.10.1,<4",
   # TODO: not sure why, but RTD can't import xdem w/o this...
   "setuptools", # ModuleNotFoundError: No module named 'distutils'
 ]
