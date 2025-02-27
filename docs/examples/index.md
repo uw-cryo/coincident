@@ -52,6 +52,15 @@ Load and plot landcover and global elevation data for an area of interest
 Search for NOAA Coastal, NCALM and NEON LiDAR datasets
 ```
 
+```{grid-item-card}
+:link: elevation_plotting
+:link-type: doc
+:class-header: bg-light
+**Measurement comparison figures**
+^^^
+Create standardized panel and boxplot figure comparing multiple DEM and altimeter measurements
+```
+
 ````
 
 ```{toctree}
@@ -62,4 +71,5 @@ cascading_search
 sliderule
 contextual_data
 additional_lidar
+elevation_plotting
 ```

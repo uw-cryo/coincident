@@ -32,17 +32,18 @@ dynamic = ["version"]
 
 dependencies = [
   "geopandas>=1.0.1,<2",
-"odc-stac>=0.3.11,<0.4",
-"pyarrow>=19.0.0,<20",
-"pystac-client>=0.8.6,<0.9",
-"requests>=2.32.3,<3",
-"rioxarray>=0.18.2,<0.19",
+ "odc-stac>=0.3.11,<0.4",
+ "pyarrow>=19.0.0,<20",
+ "pystac-client>=0.8.6,<0.9",
+ "requests>=2.32.3,<3",
+ "rioxarray>=0.18.2,<0.19",
   "cloudpathlib[s3]>=0.20.0,<0.21",
   "matplotlib>=3.9.4,<4",
   "maxar-platform>=1.0.6,<2",
   "stac-geoparquet",
   "sliderule>=4.7.1,<5",
   "stac-asset>=0.4.6,<0.5",
+  "matplotlib-scalebar>=0.9.0,<0.10",
 ]
 
 [project.optional-dependencies]
@@ -53,6 +54,7 @@ dev = [
   "pylint>=3.3.1,<4",
   "pytest >=6",
   "pytest-cov >=3",
+  "xdem>=0.1.0,<0.2",
 ]
 
 docs = [
@@ -65,6 +67,9 @@ docs = [
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
   "sphinx_design",
+  "xdem>=0.1.0,<0.2",
+  # TODO: not sure why, but RTD can't import xdem w/o this...
+  "setuptools", # ModuleNotFoundError: No module named 'distutils'
 ]
 
 [project.urls]
@@ -116,7 +121,7 @@ report.exclude_also = [
 
 [tool.codespell]
 ignore-words-list="ALOS"
-skip="pixi.lock"
+skip="pixi.lock,docs/examples/elevation_plotting.ipynb"
 
 [tool.mypy]
 files = ["src", "tests"]
@@ -214,6 +219,9 @@ stac-geoparquet = ">=0.6.0,<0.7"
 pyarrow = ">=19.0.0,<20"
 jsonschema = ">=4.23.0,<5"
 libgdal-arrow-parquet = ">=3.10.1,<4"
+matplotlib-scalebar = ">=0.9.0,<0.10"
+sliderule = "*"
+xdem = "*"
 
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
@@ -224,7 +232,6 @@ mypy = "*"
 pre-commit = "<4"
 pylint = "*"
 pytest = "*"
-sliderule = "*"
 
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = false }
@@ -245,3 +252,5 @@ coincident = { path = ".", editable = true }
 
 [tool.pixi.feature.docs.tasks]
 docs = "python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
+# NOTE: use https://jupyter-cache.readthedocs.io ?
+rebuild_docs = "rm -rf docs/_build ; python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"

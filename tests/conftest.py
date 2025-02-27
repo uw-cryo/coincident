@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import geopandas as gpd
 import pytest
+import xarray as xr
 
 # import os
 # if not os.environ.get('MAXAR_API_KEY'):
@@ -35,3 +36,29 @@ def bathy_aoi(scope="package"):
 def tinyaoi():
     # 4 vertices
     return gpd.read_file("tests/data/tiny.geojson")
+
+
+@pytest.fixture(scope="package")
+def dem_tiny():
+    # from CO PCD site
+    ds_cop30 = xr.open_dataset("tests/data/dem_tiny.tif")
+    return ds_cop30.rename({"band_data": "elevation"})
+
+
+@pytest.fixture(scope="package")
+def points_tiny():
+    # random points as is2/gedi facade overlapping and same CRS as dem_tiny
+    # has cols h_li, elevation_lm, and elevation_hr
+    # ^ random elevation values
+    return gpd.read_file("tests/data/points_tiny.gpkg")
+
+
+@pytest.fixture(scope="package")
+def dem_tiny_utm():
+    ds_cop30 = xr.open_dataset("tests/data/dem_tiny_utm.tif")
+    return ds_cop30.rename({"band_data": "elevation"})
+
+
+@pytest.fixture(scope="package")
+def points_tiny_utm():
+    return gpd.read_file("tests/data/points_tiny_utm.gpkg")

@@ -65,6 +65,11 @@ Plot
 
    plot_maxar_browse
    plot_esa_worldcover
+   plot_dem
+   compare_dems
+   plot_altimeter_points
+   boxplot_terrain_diff
+   hist_esa
 
 Datasets
 --------
