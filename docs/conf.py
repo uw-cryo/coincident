@@ -96,4 +96,4 @@ always_document_param_types = True
 # autodoc_typehints = "none"
 nb_execution_mode = "auto"  # off, on
 nb_execution_timeout = 90
-nb_execution_excludepatterns = ["elevation_plotting.ipynb"]
+# nb_execution_excludepatterns = ["elevation_plotting.ipynb"]
