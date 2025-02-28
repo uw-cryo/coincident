@@ -8,18 +8,12 @@ build:
   tools:
     python: "latest"
   jobs:
-    #create_environment:
-    #  - curl -fsSL https://pixi.sh/install.sh | bash
-    #  - export PATH=/home/docs/.pixi/bin:$PATH
-    #install:
-    #  - echo $PATH
-    #  - pixi shell -e docs
+    # NOTE: not sure how to modify PATH to just run 'pixi'
+    # https://github.com/readthedocs/readthedocs.org/issues/6311...
     install:
       - curl -fsSL https://pixi.sh/install.sh | bash
-      - export PATH=/home/docs/.pixi/bin:$PATH
     build:
       html:
-        - echo $PATH
-        - pixi run docs
+        - /home/docs/.pixi/bin/pixi run docs
         - mkdir -p $READTHEDOCS_OUTPUT/html
         - mv docs/_build/html $READTHEDOCS_OUTPUT/html
