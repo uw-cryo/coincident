@@ -18,5 +18,7 @@ build:
       html:
         - /home/docs/.pixi/bin/pixi run docs
     post_build:
+      - du -sh docs/_build/html
+      - cat docs/_build/html/reports/examples/*err.log || true
       - mkdir --parents $READTHEDOCS_OUTPUT/html/
       - cp --recursive docs/_build/html/* $READTHEDOCS_OUTPUT/html/

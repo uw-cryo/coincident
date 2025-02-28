@@ -251,6 +251,6 @@ networktest = "pytest --cov --cov-report=xml --cov-report=term --durations=0"
 coincident = { path = ".", editable = true }
 
 [tool.pixi.feature.docs.tasks]
-docs = "python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
+docs = "python -m sphinx -W --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
 # NOTE: use https://jupyter-cache.readthedocs.io ?
-rebuild_docs = "rm -rf docs/_build ; python -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
+rebuild_docs = "rm -rf docs/_build ; python -W --keep-going -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
