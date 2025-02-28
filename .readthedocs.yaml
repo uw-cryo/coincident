@@ -8,14 +8,18 @@ build:
   tools:
     python: "latest"
   jobs:
-    create_environment:
+    #create_environment:
+    #  - curl -fsSL https://pixi.sh/install.sh | bash
+    #  - export PATH=/home/docs/.pixi/bin:$PATH
+    #install:
+    #  - echo $PATH
+    #  - pixi shell -e docs
+    install:
       - curl -fsSL https://pixi.sh/install.sh | bash
       - export PATH=/home/docs/.pixi/bin:$PATH
-    install:
-      - echo $PATH
-      - pixi shell -e docs
     build:
       html:
+        - echo $PATH
         - pixi run docs
         - mkdir -p $READTHEDOCS_OUTPUT/html
         - mv docs/_build/html $READTHEDOCS_OUTPUT/html
