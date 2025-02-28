@@ -38,7 +38,7 @@ Use sliderule service to load altimeter data and sample DEMs
 :link: contextual_data
 :link-type: doc
 :class-header: bg-light
-**Contextual Data I/O**
+**Contextual Data**
 ^^^
 Load and plot landcover and global elevation data for an area of interest
 ```
@@ -47,7 +47,7 @@ Load and plot landcover and global elevation data for an area of interest
 :link: additional_lidar
 :link-type: doc
 :class-header: bg-light
-**Search Additional LiDAR Catalogs**
+**Additional LiDAR Catalogs**
 ^^^
 Search for NOAA Coastal, NCALM and NEON LiDAR datasets
 ```
@@ -56,7 +56,7 @@ Search for NOAA Coastal, NCALM and NEON LiDAR datasets
 :link: elevation_plotting
 :link-type: doc
 :class-header: bg-light
-**Measurement comparison figures**
+**Comparing elevation measurements**
 ^^^
 Create standardized panel and boxplot figure comparing multiple DEM and altimeter measurements
 ```

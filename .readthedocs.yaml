@@ -6,14 +6,23 @@ version: 2
 build:
   os: ubuntu-24.04
   tools:
-    python: "3.12"
-  apt_packages:
-    - gdal-bin
-  commands:
-    - asdf plugin add uv
-    - asdf install uv latest
-    - asdf global uv latest
-    - uv venv
-    - uv pip install .[docs]
-    - .venv/bin/python -m sphinx -T -b html -d docs/_build/doctrees -D
-      language=en docs $READTHEDOCS_OUTPUT/html
+    python: "latest"
+  jobs:
+    # NOTE: not sure best way to modify PATH to just run 'pixi'
+    # https://github.com/readthedocs/readthedocs.org/issues/6311...
+    install:
+      # Install specific pixi environment and list packages
+      - curl -fsSL https://pixi.sh/install.sh | bash
+      - $HOME/.pixi/bin/pixi list -e docs
+    pre_build:
+      # Retina resolution matplotlib plots in jupyter notebooks
+      - mkdir --parents $HOME/.ipython/profile_default/
+      - cp docs/ipython_kernel_config.py $HOME/.ipython/profile_default/
+    build:
+      html:
+        - $HOME/.pixi/bin/pixi run docs
+    post_build:
+      # Report full size of html folder
+      - du -sh docs/_build/html
+      - mkdir --parents $READTHEDOCS_OUTPUT/html/
+      - cp --recursive docs/_build/html/* $READTHEDOCS_OUTPUT/html/
