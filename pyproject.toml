@@ -173,6 +173,7 @@ ignore = [
 ]
 exclude = [
     "docs/*.ipynb",
+    "docs/ipython_kernel_config.py",
 ]
 isort.required-imports = ["from __future__ import annotations"]
 # Uncomment if using a _compat.typing backport
