@@ -19,4 +19,4 @@ build:
         - /home/docs/.pixi/bin/pixi run docs
     post_build:
       - mkdir --parents $READTHEDOCS_OUTPUT/html/
-      - cp --recursive docs/build/html/* $READTHEDOCS_OUTPUT/html/
+      - cp --recursive docs/_build/html/* $READTHEDOCS_OUTPUT/html/
