@@ -10,10 +10,9 @@ build:
   jobs:
     create_environment:
       - curl -fsSL https://pixi.sh/install.sh | bash
-      - echo $READTHEDOCS_VIRTUALENV_PATH
-      #- export PATH=/home/docs/.pixi/bin:$PATH
+      - export PATH=/home/docs/.pixi/bin:$PATH
     install:
-      - echo $READTHEDOCS_VIRTUALENV_PATH
+      - echo $PATH
       - pixi shell -e docs
     build:
       html:
