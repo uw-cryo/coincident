@@ -11,12 +11,12 @@ build:
     # NOTE: not sure best way to modify PATH to just run 'pixi'
     # https://github.com/readthedocs/readthedocs.org/issues/6311...
     create_environment:
-      - curl -fsSL https://pixi.sh/install.sh |
-        PIXI_HOME=$READTHEDOCS_VIRTUALENV_PATH bash
+      - curl -fsSL https://pixi.sh/install.sh | bash
     install:
-      - ls $READTHEDOCS_VIRTUALENV_PATH/
-      - pixi shell -e docs
+      # Install specific pixi environment and list packages
+      - /home/docs/.pixi/bin/pixi shell -e docs
+      - /home/docs/.pixi/bin/pixi list
     build:
       html:
-        - pixi run docs
+        - /home/docs/.pixi/bin/pixi run docs
         - mv docs/_build/html $READTHEDOCS_OUTPUT
