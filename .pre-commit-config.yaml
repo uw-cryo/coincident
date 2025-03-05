@@ -2,7 +2,7 @@ ci:
   autoupdate_commit_msg: "chore: update pre-commit hooks"
   autofix_commit_msg: "style: pre-commit fixes"
 
-exclude: ^.cruft.json|.copier-answers.yml$
+exclude: ^.cruft.json|.copier-answers.yml$|src/coincident/search/usgs_vendor_load.py|docs/examples/vendor_dems.ipynb
 
 repos:
   - repo: https://github.com/adamchainz/blacken-docs
