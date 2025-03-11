@@ -10,6 +10,7 @@ from typing import Any
 
 import pandas as pd
 import pyogrio
+import requests  # type: ignore[import-untyped]
 from cloudpathlib import S3Client
 from geopandas import GeoDataFrame, read_file
 from pandas import Timedelta, Timestamp
@@ -261,3 +262,46 @@ def get_swath_polygons(
     gf = swathtime_to_datetime(gf)
     # Swath polygons likely have different CRS (EPSG:6350), so reproject
     return gf.to_crs("EPSG:4326")
+
+
+def query_tnm_api(
+    polygon_str: str, tnmdataset: str = "Digital Elevation Model (DEM) 1 meter"
+) -> list[dict[str, Any]]:
+    """
+    Query the TNM API for USGS DEM products that intersect the given polygon.
+
+    Parameters:
+      polygon_str (str): Polygon coordinates string in the required API format.
+      tnmdataset (str): The dataset name for the TNM API (default is "Digital Elevation Model (DEM) 1 meter").
+
+    Returns:
+      list: A list of JSON items returned from the TNM API.
+    """
+    items = []
+    offset = 0
+    url = "https://tnmaccess.nationalmap.gov/api/v1/products"
+
+    while True:
+        params = {
+            "datasets": tnmdataset,
+            "polygon": polygon_str,
+            "prodFormats": "GeoTIFF",
+            "outputFormat": "JSON",
+            "max": 100,
+            "offset": offset,
+        }
+        response = requests.get(url, params=params)
+        if response.status_code != 200:
+            msg_status_code = (
+                f"TNM API request failed with status code {response.status_code}"
+            )
+            raise RuntimeError(msg_status_code)
+
+        data = response.json()
+        items.extend(data.get("items", []))
+        total_items = data.get("total", 0)
+        offset += len(data.get("items", []))
+
+        if offset >= total_items:
+            break
+    return items
