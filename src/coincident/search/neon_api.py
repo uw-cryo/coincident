@@ -27,6 +27,8 @@ The process goes as follows:
 
 from __future__ import annotations
 
+from typing import Any
+
 import geopandas as gpd
 import pandas as pd
 import pyogrio
@@ -226,3 +228,30 @@ def search_bboxes(
     return (
         gf_neon.sjoin(intersects).drop(columns=["index_right"]).reset_index(drop=True)
     )
+
+
+# NOTE: product code DP1.30003.001 is for discrete LiDAR point cloud
+def query_neon_data_api(
+    site_id: str, month_str: str, product_code: str = "DP3.30024.001"
+) -> dict[str, Any]:
+    """
+    Query the NEON API for LiDAR products for a given site and month.
+
+    Parameters:
+      site_id (str): The NEON site ID.
+      month_str (str): The month string in the format YYYY-MM.
+      product_code (str): The NEON product code (default is 'DP3.30024.001').
+
+    Returns:
+      dict: The JSON response from the NEON API.
+    """
+    SERVER = "http://data.neonscience.org/api/v0/"
+    query_url = f"{SERVER}data/{product_code}/{site_id}/{month_str}"
+    response = requests.get(query_url)
+    if response.status_code != 200:
+        msg_neon_fail = (
+            f"NEON API request failed with status code {response.status_code}"
+        )
+        raise RuntimeError(msg_neon_fail)
+    json_data: dict[str, Any] = response.json()  # Explicit cast for MyPy
+    return json_data

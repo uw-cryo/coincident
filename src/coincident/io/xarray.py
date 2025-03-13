@@ -5,6 +5,8 @@ Subset and Sample using Xarray
 from __future__ import annotations
 
 import os
+import re  # for NEON vendor products, client-side spatial filtering
+from datetime import datetime
 from typing import Any
 
 import geopandas as gpd
@@ -15,8 +17,9 @@ import rasterio
 # NOTE: must import for odc.stac outputs to have .rio accessor
 import rioxarray
 import xarray as xr
-from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry import MultiPolygon, Polygon, box
 
+from coincident.search.neon_api import query_neon_data_api
 from coincident.search.stac import to_pystac_items
 from coincident.search.wesm import query_tnm_api
 
@@ -304,3 +307,116 @@ def load_usgs_dem(
         merged_dem = merged_dem.rio.clip(aoi_tile_crs.geometry, tile_crs, drop=True)
 
     return merged_dem
+
+
+def _utm_crs_from_lonlat(lon: float, lat: float) -> str:
+    """
+    HELPER FUNCTION FOR load_neon_dem()
+    Compute the UTM CRS for a given longitude and latitude.
+    Assumes northern hemisphere if lat >= 0, otherwise southern.
+    Returns the CRS as a string, e.g., "EPSG:326XX" or "EPSG:327XX".
+    """
+    zone = int((lon + 180) / 6) + 1
+    epsg_code = 32600 + zone if lat >= 0 else 32700 + zone
+    return f"EPSG:{epsg_code}"
+
+
+def _get_tile_bbox(file_name: str, tile_size: int = 1000) -> Polygon | None:
+    """
+    HELPER FUNCTION FOR load_neon_dem()
+    Extract tile lower-left coordinates from the file name and return a shapely box.
+    Assumes file name pattern like: NEON_D17_TEAK_DP3_317000_4104000_CHM.tif
+
+    Note that we have to do client-side spatial filtering for NEON products since
+    their API doesn't allow for this. Assumes that all NEON products are in respective
+    UTM zones.
+    """
+    match = re.search(r"_(\d{6})_(\d{7})_", file_name)
+    if match:
+        easting = int(match.group(1))
+        northing = int(match.group(2))
+        return box(easting, northing, easting + tile_size, northing + tile_size)
+
+    return None  # return None if no match is found
+
+
+# TODO: look into warning below that prints for every "for f in filtered_files:"
+# RuntimeWarning: TIFFReadDirectoryCheckOrder:Invalid TIFF directory; tags are not sorted in ascending order if riods.subdatasets:
+def load_neon_dem(
+    aoi: gpd.GeoDataFrame,
+    datetime_str: str,
+    site_id: str,
+    product: str,
+    res: int = 1,
+    clip: bool = True,
+) -> xr.DataArray:
+    """
+    Load and merge NEON LiDAR tiles (DSM, DTM, or CHM) based on an AOI by querying the NEON API.
+
+    Steps:
+      1. Convert the datetime string to a month string in the format YYYY-MM.
+      2. Determine appropriate UTM CRS for the AOI.
+      3. Query the NEON API using a preset product code.
+      4. Filter the returned files based on product type and spatial intersection.
+      5. Load and optionally coarsen each GeoTIFF tile.
+      6. Merge the tiles and optionally clip the mosaic to the AOI.
+
+    Returns:
+      xr.DataArray: The merged (and optionally clipped) LiDAR mosaic.
+    """
+    # 1: Convert datetime_str to month string
+    dt = datetime.strptime(datetime_str, "%Y-%m-%d")
+    month_str = dt.strftime("%Y-%m")
+
+    # 2: Determine appropriate UTM CRS for the AOI
+    # we need to do this for client-side spatial filtering
+    # Get the centroid of the AOI (in EPSG:4326)
+    centroid = aoi.union_all().centroid
+    target_crs = _utm_crs_from_lonlat(centroid.x, centroid.y)
+    # Reproject AOI to target CRS
+    aoi_utm = aoi.to_crs(target_crs)
+    aoi_geom_utm = aoi_utm.union_all()  # Combined AOI in UTM coordinates
+
+    # 3: Query the NEON API
+    data_json = query_neon_data_api(site_id, month_str)
+
+    # 4: Spatial filtering: filter for product TIFF files and intersect with AOI
+    files = data_json["data"]["files"]
+    filtered_files = []
+    # Filter based on product (e.g., 'DSM.tif', 'DTM.tif', or 'CHM.tif')
+    product_filter = f"{product.upper()}.tif"
+    for f in files:
+        if product_filter in f["name"]:
+            tile_bbox = _get_tile_bbox(f["name"])
+            # Ensure we got a valid tile bounding box and that it intersects the AOI
+            if tile_bbox is not None and tile_bbox.intersects(aoi_geom_utm):
+                filtered_files.append(f)
+    if not filtered_files:
+        msg_neon_empty = "No matching LiDAR files found for the given spatial query."
+        raise RuntimeError(msg_neon_empty)
+
+    # 5: Set an optional resolution factor for coarsening. If res > 1, the tiles are coarsened.
+    dem_dataarrays = []
+    for f in filtered_files:
+        try:
+            da = rioxarray.open_rasterio(f["url"], masked=True, chunks="auto")
+            if res > 1:
+                da = da.coarsen(x=res, y=res, boundary="trim").mean()
+            dem_dataarrays.append(da)
+        except Exception as error:
+            msg_neon_open = f"Unable to open file {f['name']}. Error: {error}"
+            raise RuntimeError(msg_neon_open) from error
+    if not dem_dataarrays:
+        msg_neon_tif_open = "None of the TIFF files could be opened."
+        raise RuntimeError(msg_neon_tif_open)
+
+    # 6: Merge the tiles:
+    # Concatenate along a new "band" dimension and then take the max across bands.
+    tile_crs = dem_dataarrays[0].rio.crs
+    merged = xr.concat(dem_dataarrays, dim="band").max(dim="band").rename("elevation")
+    # Reproject the AOI to the tile CRS and clip the mosaic
+    if clip:
+        aoi_tile_crs = aoi.to_crs(tile_crs)
+        merged = merged.rio.clip(aoi_tile_crs.geometry, tile_crs, drop=True)
+
+    return merged
