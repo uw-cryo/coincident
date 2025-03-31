@@ -264,6 +264,8 @@ def get_swath_polygons(
     return gf.to_crs("EPSG:4326")
 
 
+# NOTE it says that 3DEP elevation products were "lastUpdatedDate": "Sep 11, 2019"?
+# https://tnmaccess.nationalmap.gov/api/v1/datasets?
 def query_tnm_api(
     polygon_str: str, tnmdataset: str = "Digital Elevation Model (DEM) 1 meter"
 ) -> list[dict[str, Any]]:

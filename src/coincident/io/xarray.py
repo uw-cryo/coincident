@@ -254,6 +254,13 @@ def load_usgs_dem(
       6. Load and optionally coarsen each GeoTIFF tile.
       7. Merge the DEM tiles and optionally clip the mosaic to the AOI.
 
+    Parameters:
+        aoi (gpd.GeoDataFrame): Area of interest geometry to query against
+        project (str): Project identifier to filter results
+        tnmdataset (str): TNM dataset identifier (default "Digital Elevation Model (DEM) 1 meter")
+        res (int): Resolution factor to coarsen DEM by (default 1)
+        clip (bool): Whether to clip final mosaic to AOI (default True)
+
     Returns:
       xr.DataArray: The merged (and optionally clipped) DEM mosaic.
     """
@@ -326,15 +333,23 @@ def load_neon_dem(
     Load and merge NEON LiDAR tiles (DSM, DTM, or CHM) based on an AOI by querying the NEON API.
 
     Steps:
-      1. Convert the datetime string to a month string in the format YYYY-MM.
-      2. Determine appropriate UTM CRS for the AOI.
-      3. Query the NEON API using a preset product code.
-      4. Filter the returned files based on product type and spatial intersection.
-      5. Load and optionally coarsen each GeoTIFF tile.
-      6. Merge the tiles and optionally clip the mosaic to the AOI.
+        1. Convert the datetime string to a month string in the format YYYY-MM.
+        2. Determine appropriate UTM CRS for the AOI.
+        3. Query the NEON API using a preset product code.
+        4. Filter the returned files based on product type and spatial intersection.
+        5. Load and optionally coarsen each GeoTIFF tile.
+        6. Merge the tiles and optionally clip the mosaic to the AOI.
+
+    Parameters:
+        aoi (gpd.GeoDataFrame): Area of interest geometry to query against
+        datetime_str (str): Date string in YYYY-MM-DD format
+        site_id (str): NEON site identifier
+        product (str): Product type to load ('dsm', 'dtm', or 'chm')
+        res (int): Resolution factor to coarsen DEM by (default 1)
+        clip (bool): Whether to clip final mosaic to AOI (default True)
 
     Returns:
-      xr.DataArray: The merged (and optionally clipped) LiDAR mosaic.
+        xr.DataArray: The merged (and optionally clipped) LiDAR mosaic
     """
     # 1: Convert datetime_str to month string
     dt = datetime.strptime(datetime_str, "%Y-%m-%d")
