@@ -4,14 +4,17 @@ Convenience functions for downloading STAC items via stac-asset
 
 from __future__ import annotations
 
+import json
 import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import geopandas as gpd
+import pdal
 import requests  # type: ignore[import-untyped]
 import stac_asset
+from pyproj import CRS
 from pystac import Item
 from shapely.geometry import box
 from tqdm import tqdm
@@ -134,6 +137,7 @@ def download_usgs_dem(
 ) -> None:
     """
     Download USGS 1-meter DEM tiles based on an AOI by querying the TNM API.
+    https://data.usgs.gov/datacatalog/data/USGS:77ae0551-c61e-4979-aedd-d797abdcde0e
 
     Steps:
       1. Reproject the AOI to EPSG:4326.
@@ -207,6 +211,113 @@ def download_usgs_dem(
     _download_files(filtered_api_items, path=path, product="DEM", url_key="downloadURL")
 
 
+def download_usgs_lpc(
+    aoi: gpd.GeoDataFrame,
+    workunit: str | None = None,
+    output_file: str = "/tmp/subset.laz",
+    resolution_value: int = 1,
+    https_requests: int = 30,
+) -> None:
+    """
+    Download USGS 3DEP LiDAR point cloud data for the given AOI using PDAL's EPT reader.
+
+    Parameters
+    ----------
+    aoi : gpd.GeoDataFrame
+        Area of interest geometry. Must be in EPSG:4326.
+    workunit : str, optional
+        The 3DEP workunit identifier (e.g., 'USGS_LPC_CO_SoPlatteRiver_Lot5_2013_LAS_2015').
+        If not provided, the function automatically finds a workunit that intersects the AOI.
+    output_file : str, optional
+        Path to save the output LAZ file. Defaults to "/tmp/subset.laz".
+    resolution_value : int, optional
+        Resolution value for the EPT reader, controlling the level of detail.
+        Higher values (e.g., 2, 3) decrease resolution but speed up downloads.
+        Defaults to 1 (highest resolution).
+    https_requests : int, optional
+        Number of concurrent HTTP requests to the EPT server.
+        Higher values may increase download speed but could be throttled.
+        Defaults to 30.
+
+    Returns
+    -------
+    None
+        The function saves the point cloud data to the specified output file
+        but doesn't return any values.
+
+    Notes
+    -----
+    - The AOI is simplified with a 10-meter tolerance to improve speed.
+    - The point cloud is automatically reprojected to match the AOI's coordinate system.
+    - For larger areas, consider increasing the resolution_value parameter to speed up downloads.
+    """
+    # If no workunit is provided, load the resource GeoJSON and find one that intersects the AOI
+    # NOTE: I have not tested this thoroughly
+    if not workunit:
+        resources_url = "https://raw.githubusercontent.com/hobuinc/usgs-lidar/master/boundaries/resources.geojson"
+        resources = gpd.read_file(resources_url).set_crs("EPSG:4326")
+        aoi_union = aoi.union_all()
+        workunit = None
+        for _, row in resources.iterrows():
+            if row.geometry.intersects(aoi_union):
+                workunit = row["name"]
+                break
+        if not workunit:
+            msg_no_workunit_overlap = (
+                "No matching 3DEP workunit found for the given AOI."
+            )
+            raise ValueError(msg_no_workunit_overlap)
+
+    # Construct the EPT URL based on the workunit
+    ept_url = (
+        f"https://s3-us-west-2.amazonaws.com/usgs-lidar-public/{workunit}/ept.json"
+    )
+
+    # Retrieve the dataset metadata to extract the spatial reference.
+    response = requests.get(ept_url)
+    response.raise_for_status()
+    data = response.json()
+    srs_wkt = data.get("srs", {}).get("wkt")
+    if not srs_wkt:
+        msg_ept_wkt_srs = "Could not retrieve SRS information from the EPT endpoint."
+        raise ValueError(msg_ept_wkt_srs)
+    pointcloud_input_crs = CRS.from_wkt(srs_wkt)
+
+    # Transform the AOI into the point cloud's CRS.
+    # Note: CRS.to_epsg() might return None if not EPSG-coded; adjust as needed.
+    target_epsg = pointcloud_input_crs.to_epsg() or 3857  # fallback if undefined
+    aoi_input = aoi.to_crs(target_epsg)
+
+    # Prepare AOI geometry strings
+    aoi_union = aoi_input.union_all().simplify(
+        10
+    )  # simplify (meters) to remove extra detail for WKT crop speed
+    aoi_wkt = aoi_union.wkt
+
+    # Derive bounds string from AOI envelope (format: "([minx, maxx], [miny, maxy])")
+    minx, miny, maxx, maxy = aoi_input.total_bounds
+    bounds_str = f"([{minx}, {maxx}], [{miny}, {maxy}])"
+
+    # Build the PDAL pipeline to read from the EPT endpoint, crop to AOI, and write to a LAZ file.
+    pipeline_json = {
+        "pipeline": [
+            {
+                "type": "readers.ept",
+                "filename": ept_url,
+                "bounds": bounds_str,
+                "requests": https_requests,  # concurrent http requests
+                "resolution": resolution_value,  # optional: get coarser level
+                # Removed 'threads' parameter - it's causing conflicts
+            },
+            {"type": "filters.crop", "polygon": aoi_wkt},
+            {"type": "writers.las", "filename": output_file, "compression": "laszip"},
+        ]
+    }
+
+    pipeline = pdal.Pipeline(json.dumps(pipeline_json))
+    pipeline.execute_streaming()
+
+
 def download_neon_dem(
     aoi: gpd.GeoDataFrame,
     datetime_str: str,
@@ -234,6 +345,11 @@ def download_neon_dem(
     Returns:
       returns None after downloading files
     """
+    if product not in ["dsm", "dtm", "chm", "lpc"]:
+        msg_invalid_prod = (
+            "Invalid product type. Choose from 'dsm', 'dtm', 'chm', or 'lpc'."
+        )
+        raise ValueError(msg_invalid_prod)
     # 1: Convert datetime_str to month string
     # TODO: make this simpler
     dt = datetime.strptime(datetime_str, "%Y-%m-%d")
@@ -245,12 +361,7 @@ def download_neon_dem(
     aoi_utm = aoi.to_crs(target_crs)
     aoi_geom_utm = aoi_utm.union_all()  # Combined AOI in UTM coordinates
 
-    # 3: Query the NEON API and validate the product type
-    if product not in ["dsm", "dtm", "chm", "lpc"]:
-        msg_invalid_prod = (
-            "Invalid product type. Choose from 'dsm', 'dtm', 'chm', or 'lpc'."
-        )
-        raise ValueError(msg_invalid_prod)
+    # 3: Query the NEON API and based on the product type
     product_code = "DP3.30024.001" if product != "lpc" else "DP1.30003.001"
     data_json = query_neon_data_api(site_id, month_str, product_code=product_code)
 

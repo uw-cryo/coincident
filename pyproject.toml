@@ -55,6 +55,7 @@ dev = [
   "pytest >=6",
   "pytest-cov >=3",
   "xdem>=0.1.0,<0.2",
+  "pdal>=2.4.0,<3",
 ]
 
 docs = [
@@ -223,7 +224,7 @@ libgdal-arrow-parquet = ">=3.10.1,<4"
 matplotlib-scalebar = ">=0.9.0,<0.10"
 sliderule = "*"
 xdem = "*"
-
+pdal = "*"
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
 ipykernel = ">=6.29.5,<7"
