@@ -63,7 +63,7 @@ def _get_tile_bbox(file_name: str, tile_size: int = 1000) -> Polygon | None:
     their API doesn't allow for this. Assumes that all NEON products are in respective
     UTM zones.
     """
-    patterns = [r"_(\d{6})_(\d{7})_", r"_(\d{7})_(\d{7})_", r"_(\d{7})_(\d{6})_"]
+    patterns = [r"(\d{6})_(\d{7})", r"(\d{7})_(\d{7})", r"(\d{7})_(\d{6})"]
 
     for pattern in patterns:
         match = re.search(pattern, file_name)
@@ -266,7 +266,7 @@ def search_bboxes(
     # Final spatial join to ensure that the flight geometries (now in EPSG:4326) intersect the input AOI.
     return (
         gf_neon.sjoin(intersects).drop(columns=["index_right"]).reset_index(drop=True)
-    )
+    )  # NOTE: need to drop left join columns...
 
 
 # NOTE: product code DP1.30003.001 is for discrete LiDAR point cloud

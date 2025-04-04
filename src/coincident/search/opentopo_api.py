@@ -20,6 +20,7 @@ def search_ncalm_noaa(
     aoi: gpd.GeoDataFrame | gpd.GeoSeries,
     search_start: Timestamp,
     search_end: Timestamp,
+    product: str = "lpc",
     dataset: str | None = None,
 ) -> gpd.GeoDataFrame:
     """
@@ -34,6 +35,9 @@ def search_ncalm_noaa(
         The start datetime for the search, by default searches the entire catalog defined by 'dataset'.
     search_end : Timestamp, optional
         The end datetime for the search, by default searches the entire catalog defined by 'dataset'.
+    product : str
+        The product type, must be either "lpc" for LiDAR Point Cloud or "dem" for Digital Elevation Model.
+        Defaults to "lpc".
     dataset : str
         The dataset type (either "noaa" or "ncalm").
 
@@ -47,6 +51,17 @@ def search_ncalm_noaa(
     ValueError
         If no valid `aoi` is provided or the API request fails.
     """
+    if dataset not in ["noaa", "ncalm"]:
+        msg = f"Unsupported dataset: {dataset}"
+        raise ValueError(msg)
+    if product not in ["lpc", "dem"]:
+        msg_product_arg = "Unsupported 'product' argument"
+        raise ValueError(msg_product_arg)
+    # Convert product shorthand to full description
+    if product == "lpc":
+        product = "PointCloud"
+    elif product == "dem":
+        product = "Raster"
     # If `aoi` is None, set the entire world as the search area
     if aoi is None:
         globe = shape(
@@ -73,10 +88,6 @@ def search_ncalm_noaa(
         search_poly = aoi.to_crs(4326).union_all()
         search_poly_chull = search_poly.convex_hull
         coords = ",".join([f"{x},{y}" for x, y in search_poly_chull.exterior.coords])
-
-    if dataset not in ["noaa", "ncalm"]:
-        msg = f"Unsupported dataset: {dataset}"
-        raise ValueError(msg)
 
     # https://requests.readthedocs.io/en/latest/user/quickstart/#passing-parameters-in-urls
     url_api_base = "https://portal.opentopography.org/API/otCatalog"
@@ -122,6 +133,9 @@ def search_ncalm_noaa(
         [
             {
                 "id": entry["Dataset"]["identifier"]["value"],
+                "name": entry["Dataset"]["identifier"]["value"]
+                if dataset == "noaa"
+                else entry["Dataset"]["alternateName"],
                 "title": entry["Dataset"]["name"],
                 "start_datetime": datetime.fromisoformat(
                     entry["Dataset"]["temporalCoverage"].split(" / ")[0]

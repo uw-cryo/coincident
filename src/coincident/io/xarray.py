@@ -128,8 +128,8 @@ def to_dataset(
 
     items = to_pystac_items(gf)
     ds = odc.stac.load(items, bands=bands, geopolygon=aoi, chunks={}, **kwargs)
-    if mask:
-        ds = ds.rio.clip(aoi)
+    if mask and aoi is not None:
+        ds = ds.rio.clip(aoi.geometry)
 
     return ds
 
@@ -366,6 +366,14 @@ def load_neon_dem(
 
     # 3: Query the NEON API
     data_json = query_neon_data_api(site_id, month_str)
+    if (
+        data_json.get("data", {}).get("release") == "PROVISIONAL"
+        and len(data_json.get("data", {}).get("files", [])) == 0
+    ):
+        msg_provisional = (
+            f"Data for {site_id} in {month_str} has PROVISIONAL status with no files."
+        )
+        raise ValueError(msg_provisional)
 
     # 4: Spatial filtering: filter for product TIFF files and intersect with AOI
     files = data_json["data"]["files"]
@@ -407,3 +415,108 @@ def load_neon_dem(
         merged = merged.rio.clip(aoi_tile_crs.geometry, tile_crs, drop=True)
 
     return merged
+
+
+def load_ncalm_dem(
+    aoi: gpd.GeoDataFrame, dataset_id: str | int, return_single: bool = True
+) -> xr.Dataset:
+    """
+    Process NCALM (or OpenTopo user-hosted) DEM data from OpenTopography S3 based on a dataset
+    identifier and an AOI. Returns an xarray Dataset with an 'elevation' variable containing
+    the values clipped to the AOI without downloading files locally.
+    Your dataset identifier will be the 'name' column from coincident.search.search(dataset="ncalm")
+
+    Parameters
+    ----------
+    aoi : geopandas.GeoDataFrame
+        Area of interest geometry (assumed to be in EPSG:4326).
+    dataset_id : str or int
+        Dataset identifier (e.g., "WA18_Wall" or "OTLAS.072019.6339.1"). This is used as the
+        prefix for S3 object keys.
+    return_single : bool, optional
+        If True, combines all DEM tiles into a single Dataset. If False, returns a list of
+        Datasets. Defaults to True.
+
+    Returns
+    -------
+    xarray.Dataset or list of xarray.Dataset
+        An xarray Dataset with 'elevation' variable containing DEM values clipped to the AOI,
+        or a list of such Datasets if return_single is False.
+
+    NOTE: the return_single argument is needed due to the strange structure of NCALM DEMs hosted on OpenTopo
+    See dem_urls = [
+                    "https://opentopography.s3.sdsc.edu/raster/WA18_Wall/WA18_Wall_be/WALL_GEG_1M.tif",
+                    "https://opentopography.s3.sdsc.edu/raster/WA18_Wall/WA18_Wall_hh/WALL_GEF_1M.tif"
+                ]
+    """
+    import boto3
+    from botocore import UNSIGNED
+    from botocore.client import Config
+
+    # Set the endpoint URL for OpenTopo S3
+    endpoint_url = "https://opentopography.s3.sdsc.edu"
+
+    # Create an S3 client configured for unsigned access
+    s3 = boto3.client(
+        "s3", config=Config(signature_version=UNSIGNED), endpoint_url=endpoint_url
+    )
+
+    # List objects under the dataset prefix
+    prefix = f"{dataset_id}/"
+    response = s3.list_objects_v2(Bucket="raster", Prefix=prefix)
+    if "Contents" not in response:
+        msg_empty_contents = f"No objects found for prefix {prefix} in bucket."
+        raise ValueError(msg_empty_contents)
+
+    # Estimate the AOI's local UTM CRS and reproject the AOI
+    aoi_crs = aoi.estimate_utm_crs()
+    aoi_utm = aoi.to_crs(aoi_crs)
+
+    # Process DEM files: collect all keys ending with the DEM extension
+    dem_keys = [
+        obj["Key"]
+        for obj in response.get("Contents", [])
+        if obj["Key"].endswith(".tif")
+    ]
+
+    if not dem_keys:
+        msg_data_id = f"No DEM files found for dataset {dataset_id}"
+        raise ValueError(msg_data_id)
+
+    # Process each DEM and store in a list
+    dem_datasets = []
+
+    for dem_key in dem_keys:
+        dem_url = f"{endpoint_url}/raster/{dem_key}"
+
+        # Open the DEM as an xarray
+        dem = rioxarray.open_rasterio(dem_url, masked=True)
+
+        # Reproject if necessary
+        if dem.rio.crs != aoi_crs:
+            dem = dem.rio.reproject(aoi_crs)
+
+        # Clip to the AOI
+        dem_clipped = dem.rio.clip(aoi_utm.geometry, aoi_utm.crs)
+
+        # Create a dataset with an 'elevation' variable
+        # Assuming the first band contains elevation data
+        ds = xr.Dataset({"elevation": dem_clipped.sel(band=1).drop("band")})
+
+        # Preserve coordinate reference system and metadata
+        ds.rio.write_crs(dem_clipped.rio.crs, inplace=True)
+
+        # Add any relevant metadata from original
+        for key, value in dem_clipped.attrs.items():
+            ds.attrs[key] = value
+
+        if return_single:
+            return ds
+
+        dem_datasets.append(ds)
+
+    try:
+        return xr.merge(dem_datasets)
+    except Exception as e:
+        msg_merge = f"Error merging DEM datasets: {e!s}"
+        raise ValueError(msg_merge) from e

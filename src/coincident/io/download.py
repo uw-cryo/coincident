@@ -10,10 +10,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import boto3
 import geopandas as gpd
-import pdal
 import requests  # type: ignore[import-untyped]
+import rioxarray as rxr
 import stac_asset
+from botocore import UNSIGNED
+from botocore.client import Config
 from pyproj import CRS
 from pystac import Item
 from shapely.geometry import box
@@ -214,7 +217,7 @@ def download_usgs_dem(
 def download_usgs_lpc(
     aoi: gpd.GeoDataFrame,
     workunit: str | None = None,
-    output_file: str = "/tmp/subset.laz",
+    output_file: str = "/tmp/usgs.laz",
     resolution_value: int = 1,
     https_requests: int = 30,
 ) -> None:
@@ -251,6 +254,12 @@ def download_usgs_lpc(
     - The point cloud is automatically reprojected to match the AOI's coordinate system.
     - For larger areas, consider increasing the resolution_value parameter to speed up downloads.
     """
+    try:
+        import pdal
+    except ImportError as err:
+        msg_pdal = "PDAL Python bindings are required for this functionality. Please try 'mamba install pdal' in your cli"
+        raise ImportError(msg_pdal) from err
+
     # If no workunit is provided, load the resource GeoJSON and find one that intersects the AOI
     # NOTE: I have not tested this thoroughly
     if not workunit:
@@ -323,7 +332,7 @@ def download_neon_dem(
     datetime_str: str,
     site_id: str,
     product: str,
-    path: str = "/tmp",
+    output_dir: str = "/tmp",
 ) -> None:
     """
     Download NEON LiDAR tiles (DSM, DTM, CHM, or LPC) based on an AOI by querying the NEON API.
@@ -340,7 +349,7 @@ def download_neon_dem(
       datetime_str (str): Date string in YYYY-MM-DD format.
       site_id (str): NEON site identifier.
       product (str): Product type to download ('dsm', 'dtm', 'chm', or 'lpc').
-      path (str): Directory path where tiles will be downloaded (default "/tmp").
+      output_dir (str): Directory path where tiles will be downloaded (default "/tmp").
 
     Returns:
       returns None after downloading files
@@ -383,4 +392,218 @@ def download_neon_dem(
         raise RuntimeError(msg_neon_empty)
 
     # 5: Use the helper function to download files
-    _download_files(filtered_files, path=path, url_key="url", product=product)
+    _download_files(filtered_files, path=output_dir, url_key="url", product=product)
+
+
+def download_noaa_lpc(
+    aoi: gpd.GeoDataFrame,
+    dataset_id: str | int,
+    output_file: str = "/tmp/noaa.laz",
+    resolution_value: int = 1,
+    https_requests: int = 30,
+) -> None:
+    """
+    Download NOAA LiDAR LAZ data for the given AOI using PDAL's EPT reader.
+
+    Parameters
+    ----------
+    aoi : gpd.GeoDataFrame
+        Area of interest geometry. Must be in EPSG:4326.
+    dataset_id : str | int
+        NOAA dataset identifier (e.g. "9536" or 9536).
+    output_file : str, optional
+        Path to save the output LAZ file. Defaults to "/tmp/subset.laz".
+    resolution_value : int, optional
+        Resolution value for the EPT reader. Defaults to 1 (highest resolution).
+    https_requests : int, optional
+        Number of concurrent HTTP requests to the EPT server. Defaults to 30.
+
+    Raises
+    ------
+    ValueError
+        If SRS information or an EPT asset is missing.
+    """
+    try:
+        import pdal
+    except ImportError as err:
+        msg_pdal = "PDAL Python bindings are required for this functionality. Please try 'mamba install pdal' in your cli"
+        raise ImportError(msg_pdal) from err
+    # Construct the EPT URL from the NOAA dataset id.
+    # NOTE: This URL pattern assumes that the EPT metadata is hosted under the 'geoid18' directory.
+    ept_url = f"https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/entwine/geoid18/{dataset_id}/ept.json"
+
+    # Retrieve the EPT metadata to extract spatial reference info.
+    response = requests.get(ept_url)
+    if response.status_code != 200:
+        msg_url_error = "Failed to retrieve EPT metadata. Check the NOAA dataset ID. Issue may lie on our end with the geoid18 directory."
+        raise ValueError(msg_url_error)
+    response.raise_for_status()
+    ept_metadata = response.json()
+
+    srs_wkt = ept_metadata.get("srs", {}).get("wkt")
+    if not srs_wkt:
+        msg_srs_ept = "Could not retrieve SRS information from the EPT endpoint."
+        raise ValueError(msg_srs_ept)
+
+    # Create a CRS object from the WKT string.
+    pointcloud_input_crs = CRS.from_wkt(srs_wkt)
+
+    # Extract the horizontal CRS from a compound CRS if present.
+    if pointcloud_input_crs.is_compound:
+        horizontal_crs = pointcloud_input_crs.sub_crs_list[0]
+    else:
+        horizontal_crs = pointcloud_input_crs
+
+    # Reproject the AOI from EPSG:4326 to the horizontal CRS.
+    aoi_input = aoi.to_crs(horizontal_crs)
+
+    # Simplify the AOI geometry to improve processing speed.
+    # We use unary_union to merge all geometries, then simplify with a tolerance of 10 units.
+    aoi_union = aoi_input.unary_union.simplify(10)
+    aoi_wkt = aoi_union.wkt
+
+    # Derive the bounds string from the AOI envelope.
+    minx, miny, maxx, maxy = aoi_input.total_bounds
+    bounds_str = f"([{minx}, {maxx}], [{miny}, {maxy}])"
+
+    # Build the PDAL pipeline JSON.
+    pipeline_json = {
+        "pipeline": [
+            {
+                "type": "readers.ept",
+                "filename": ept_url,
+                "bounds": bounds_str,
+                "requests": https_requests,  # number of concurrent HTTP requests
+                "resolution": resolution_value,  # resolution for download speed/detail
+            },
+            {"type": "filters.crop", "polygon": aoi_wkt},
+            {"type": "writers.las", "filename": output_file, "compression": "laszip"},
+        ]
+    }
+
+    # Create and execute the PDAL pipeline.
+    pipeline = pdal.Pipeline(json.dumps(pipeline_json))
+    pipeline.execute_streaming()
+
+
+def download_ncalm(
+    aoi: gpd.GeoDataFrame,
+    dataset_id: str | int,
+    data_type: str,
+    output_dir: str = "/tmp",
+) -> None:
+    """
+    Download NCALM (or OpenTopo user-hosted) data from OpenTopography S3 based on a dataset identifier and an AOI.
+    Your dataset identifier will be the 'name' column from coincident.search.search(dataset="ncalm")
+    NOTE: this function will save individual tiles to the output directory of interest, this is due
+    to the messier structure of the NCALM OpenTopo catalog (especially confusing for DEMs)
+
+    For LPC (point cloud) data, the function lists all tiles in the specified dataset,
+    uses a helper function (_get_tile_bbox) to extract each tiles spatial extent, and then
+    downloads and crops only those tiles whose bounding boxes intersect the AOI. Cropping is
+    performed using a PDAL pipeline, and the output is saved as compressed LAZ files.
+
+    For DEM  data, the function lists all available DEM tiles under the
+    dataset prefix, downloads each tile, reprojects it (if necessary) to the AOI's local UTM
+    CRS, clips it to the AOI, and then saves the clipped DEM as a GeoTIFF file.
+
+    Parameters
+    ----------
+    aoi : geopandas.GeoDataFrame
+        Area of interest geometry (assumed to be in EPSG:4326).
+    dataset_id : str or int
+        Dataset identifier (e.g., "WA18_Wall" or "OTLAS.072019.6339.1"). This is used as the
+        prefix for S3 object keys.
+    data_type : str
+        Either "lpc" for point cloud data or "dem" for gridded DEM data.
+    output_dir : str, optional
+        Directory to save output files. Defaults to "/tmp".
+
+    Returns
+    -------
+    None
+        The function writes the cropped/clipped output files to the specified output directory.
+    """
+    # Set bucket and file extension based on data type
+    if data_type.lower() == "lpc":
+        try:
+            import pdal
+        except ImportError as err:
+            msg_pdal = "PDAL Python bindings are required for this functionality. Please try 'mamba install pdal' in your cli"
+            raise ImportError(msg_pdal) from err
+        bucket = "pc-bulk"  # point cloud bucket
+        file_ext = ".laz"  # expecting LAZ files for point clouds
+    elif data_type.lower() == "dem":
+        bucket = "raster"  # DEM (raster) bucket
+        file_ext = ".tif"  # expecting GeoTIFF files for DEMs
+    else:
+        msg_ncalm_datatype = "data_type must be either 'lpc' or 'dem'"
+        raise ValueError(msg_ncalm_datatype)
+
+    # Ensure the output directory exists
+    Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    # Set the endpoint URL for OpenTopo S3
+    endpoint_url = "https://opentopography.s3.sdsc.edu"
+
+    # Create an S3 client configured for unsigned access
+    s3 = boto3.client(
+        "s3", config=Config(signature_version=UNSIGNED), endpoint_url=endpoint_url
+    )
+
+    # List objects under the dataset prefix
+    prefix = f"{dataset_id}/"
+    response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+    if "Contents" not in response:
+        msg_empty_contents = f"No objects found for prefix {prefix} in bucket {bucket}."
+        raise ValueError(msg_empty_contents)
+
+    # Estimate the AOI's local UTM CRS and reproject the AOI, most NCALM flight are in local UTMs
+    # we add another check for this later
+    aoi_crs = aoi.estimate_utm_crs()
+    aoi_utm = aoi.to_crs(aoi_crs)
+
+    if data_type.lower() == "lpc":
+        # Process point cloud files
+        intersecting_tiles = []
+        for obj in response.get("Contents", []):
+            file_key = obj["Key"]
+            file_name = Path.name(file_key)
+            if file_name.endswith(file_ext):
+                # regex for spatial filtering on tiles
+                tile_bbox = _get_tile_bbox(file_name)
+                if tile_bbox and tile_bbox.intersects(aoi_utm.unary_union):
+                    intersecting_tiles.append(file_key)
+        for tile_key in intersecting_tiles:
+            tile_url = f"{endpoint_url}/{bucket}/{tile_key}"
+            output_file = Path(output_dir) / Path.name(tile_key)
+            # Build the PDAL pipeline to read, crop, and write the point cloud
+            pipeline_json = {
+                "pipeline": [
+                    {"type": "readers.las", "filename": tile_url},
+                    {"type": "filters.crop", "polygon": aoi_utm.union_all().wkt},
+                    {
+                        "type": "writers.las",
+                        "filename": output_file,
+                        "compression": "laszip",
+                    },
+                ]
+            }
+            pipeline = pdal.Pipeline(json.dumps(pipeline_json))
+            pipeline.execute_streaming()
+
+    elif data_type.lower() == "dem":
+        # Process DEM files: collect all keys ending with the DEM extension
+        dem_keys = [
+            obj["Key"]
+            for obj in response.get("Contents", [])
+            if obj["Key"].endswith(file_ext)
+        ]
+        for dem_key in dem_keys:
+            dem_url = f"{endpoint_url}/{bucket}/{dem_key}"
+            dem = rxr.open_rasterio(dem_url, masked=True)
+            if dem.rio.crs != aoi_crs:
+                dem = dem.rio.reproject(aoi_crs)
+            dem_clipped = dem.rio.clip(aoi_utm.geometry, aoi_utm.crs)
+            clipped_output_path = Path(output_dir) / f"clipped_{Path(dem_key).name}"
+            dem_clipped.rio.to_raster(clipped_output_path)
