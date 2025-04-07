@@ -32,18 +32,19 @@ dynamic = ["version"]
 
 dependencies = [
   "geopandas>=1.0.1,<2",
- "odc-stac>=0.3.11,<0.4",
- "pyarrow>=19.0.0,<20",
- "pystac-client>=0.8.6,<0.9",
- "requests>=2.32.3,<3",
- "rioxarray>=0.18.2,<0.19",
-  "cloudpathlib[s3]>=0.20.0,<0.21",
-  "matplotlib>=3.9.4,<4",
-  "maxar-platform>=1.0.6,<2",
-  "stac-geoparquet",
-  "sliderule>=4.7.1,<5",
-  "stac-asset>=0.4.6,<0.5",
-  "matplotlib-scalebar>=0.9.0,<0.10",
+     "odc-stac>=0.3.11,<0.4",
+     "odc-loader>=0.5.1,<0.6",
+     "pyarrow>=19.0.0,<20",
+     "pystac-client>=0.8.6,<0.9",
+     "requests>=2.32.3,<3",
+     "rioxarray>=0.18.2,<0.19",
+     "cloudpathlib[s3]>=0.20.0,<0.21",
+     "matplotlib>=3.9.4,<4",
+    "maxar-platform>=1.0.6,<2",
+    "stac-geoparquet",
+    "sliderule>=4.7.1,<5",
+    "stac-asset>=0.4.6,<0.5",
+    "matplotlib-scalebar>=0.9.0,<0.10",
 ]
 
 [project.optional-dependencies]
@@ -87,7 +88,7 @@ features = ["test"]
 scripts.test = "pytest {args}"
 
 [tool.pytest.ini_options]
-minversion = "6.0"
+minversion = "8.0"
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = [
@@ -103,6 +104,8 @@ filterwarnings = [
   # Optional imports
   "ignore:Unable to authenticate with Maxar API:UserWarning",
   "ignore:.* package not found:UserWarning",
+  # NOTE: should be able to remove with geopandas 1.1
+  "ignore:.*shapely.geos.*:DeprecationWarning:geopandas",
 ]
 log_cli_level = "INFO"
 testpaths = [
@@ -223,6 +226,7 @@ libgdal-arrow-parquet = ">=3.10.1,<4"
 matplotlib-scalebar = ">=0.9.0,<0.10"
 sliderule = "*"
 xdem = "*"
+odc-loader="*"
 
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
