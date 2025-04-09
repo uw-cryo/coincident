@@ -42,4 +42,4 @@ _datasets = [
 aliases = [x.alias for x in _datasets]
 _alias_to_Dataset = dict(zip(aliases, _datasets, strict=False))
 
-__all__ = ["Dataset", "usgs", "maxar", "nasa", "planetary_computer", "csda", "opentopo"]
+__all__ = ["Dataset", "csda", "maxar", "nasa", "opentopo", "planetary_computer", "usgs"]

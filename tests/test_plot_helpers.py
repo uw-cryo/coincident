@@ -13,9 +13,9 @@ def assert_boxplot():
 
     def _assert_boxplot(axd, expected_boxes):
         """Helper to verify boxplot properties"""
-        assert isinstance(
-            axd, plt.Axes
-        ), "Return value should be a matplotlib Axes object"
+        assert isinstance(axd, plt.Axes), (
+            "Return value should be a matplotlib Axes object"
+        )
         assert len(axd.get_children()) > 0, "Figure should exist"
         assert (
             len(
@@ -29,8 +29,8 @@ def assert_boxplot():
         ), f"Should have {expected_boxes} boxplot boxes"
         assert axd.get_legend() is not None, "Legend should exist"
         assert len(axd.figure.axes) == 2, "Should have two y-axes"
-        assert (
-            axd.figure.axes[1].get_ylabel() == "Count"
-        ), "Second y-axis should be 'Count'"
+        assert axd.figure.axes[1].get_ylabel() == "Count", (
+            "Second y-axis should be 'Count'"
+        )
 
     return _assert_boxplot

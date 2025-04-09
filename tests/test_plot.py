@@ -37,9 +37,9 @@ def test_plot_esa_worldcover_valid(aoi):
     assert ax is not None, "Expected a valid Matplotlib Axes object."
     # https://matplotlib.org/stable/users/prev_whats_new/whats_new_3.4.0.html
     # https://github.com/matplotlib/matplotlib/blob/main/lib/matplotlib/tests/test_contour.py#L146
-    assert any(
-        isinstance(c, QuadMesh) for c in ax.get_children()
-    ), "Expected at least one pcolormesh object in the plot."
+    assert any(isinstance(c, QuadMesh) for c in ax.get_children()), (
+        "Expected at least one pcolormesh object in the plot."
+    )
 
 
 def test_hillshade_tiny(dem_tiny_utm):
@@ -58,9 +58,9 @@ def test_hillshade_tiny(dem_tiny_utm):
             10,
             10,
         ), f"Incorrect shape for azi={azi}, alt={alt}"
-        assert not np.isnan(
-            hillshade[1]
-        ).any(), f"NaN values found for azi={azi}, alt={alt}"
+        assert not np.isnan(hillshade[1]).any(), (
+            f"NaN values found for azi={azi}, alt={alt}"
+        )
         assert hillshade[1].dtype == np.uint8, f"Wrong dtype for azi={azi}, alt={alt}"
         assert hillshade[1].min() >= 0, f"Values < 0 found for azi={azi}, alt={alt}"
         assert hillshade[1].max() <= 255, f"Values > 255 found for azi={azi}, alt={alt}"
@@ -71,12 +71,12 @@ def test_clear_labels():
 
     fig, ax = plt.subplots()
     coincident.plot.matplotlib._clear_labels(ax)
-    assert isinstance(
-        ax.xaxis.get_major_formatter(), plt.NullFormatter
-    ), "x-axis abels not cleared"
-    assert isinstance(
-        ax.yaxis.get_major_formatter(), plt.NullFormatter
-    ), "y-axis abels not cleared"
+    assert isinstance(ax.xaxis.get_major_formatter(), plt.NullFormatter), (
+        "x-axis abels not cleared"
+    )
+    assert isinstance(ax.yaxis.get_major_formatter(), plt.NullFormatter), (
+        "y-axis abels not cleared"
+    )
 
 
 def test_plot_dem_no_hillshade(dem_tiny):
@@ -141,12 +141,12 @@ def test_get_elev_diff_gf(dem_tiny_utm, points_tiny_utm):
     )
     assert type(gf_diff) is gpd.GeoDataFrame, "Returned object should be a GeoDataFrame"
     assert len(gf_diff) == 10, "Returned GeoDataFrame should have 10 rows"
-    assert (
-        "elev_diff" in gf_diff.columns
-    ), "GeoDataFrame should contain elev_diff column"
-    assert all(
-        geom.geom_type == "Point" for geom in gf_diff.geometry
-    ), "All geometries should be Points"
+    assert "elev_diff" in gf_diff.columns, (
+        "GeoDataFrame should contain elev_diff column"
+    )
+    assert all(geom.geom_type == "Point" for geom in gf_diff.geometry), (
+        "All geometries should be Points"
+    )
     assert gf_diff["elev_diff"].dtype == float, "elev_diff column should be float type"
 
 
@@ -160,9 +160,9 @@ def test_get_elev_diff_ds(dem_tiny_utm):
     assert type(ds_diff) is xr.Dataset, "Returned object should be an xr dataset"
     assert "elev_diff" in ds_diff.data_vars, "Dataset should contain elev_diff variable"
     assert ds_diff.elev_diff.shape == (1, 10, 10), "elev_diff should have 10x10 grid"
-    assert (
-        ds_diff["elev_diff"].dtype == float
-    ), "elev_diff variable should be float type"
+    assert ds_diff["elev_diff"].dtype == float, (
+        "elev_diff variable should be float type"
+    )
 
 
 def test_plot_diff_hist_raster(dem_tiny_utm):
@@ -220,13 +220,13 @@ def test_compare_dems(dem_tiny, points_tiny):
     for i in range(3):
         assert len(axd_3_dems[f"dem_{i}"].images) > 0, f"dem_{i} should have image data"
     for i in range(1, 3):
-        assert (
-            len(axd_3_dems[f"diff_{i}"].images) > 0
-        ), f"diff_{i} should have image data"
+        assert len(axd_3_dems[f"diff_{i}"].images) > 0, (
+            f"diff_{i} should have image data"
+        )
     for i in range(1, 3):
-        assert (
-            len(axd_3_dems[f"hist_{i}"].patches) > 0
-        ), f"hist_{i} should have histogram bars"
+        assert len(axd_3_dems[f"hist_{i}"].patches) > 0, (
+            f"hist_{i} should have histogram bars"
+        )
 
     # Test with 3 DEMs and 2 GeoDataFrames
     axd_full = coincident.plot.compare_dems(
@@ -257,21 +257,21 @@ def test_compare_dems(dem_tiny, points_tiny):
     for i in range(1, 3):
         assert len(axd_full[f"diff_{i}"].images) > 0, f"diff_{i} should have image data"
     for i in range(1, 3):
-        assert (
-            len(axd_full[f"hist_{i}"].patches) > 0
-        ), f"hist_{i} should have histogram bars"
+        assert len(axd_full[f"hist_{i}"].patches) > 0, (
+            f"hist_{i} should have histogram bars"
+        )
     for key in ["is2", "gedi"]:
-        assert (
-            len(axd_full[f"diff_{key}"].collections) > 0
-        ), f"diff_{key} should have point data"
+        assert len(axd_full[f"diff_{key}"].collections) > 0, (
+            f"diff_{key} should have point data"
+        )
     for i in range(1, 3):
-        assert (
-            len(axd_full[f"hist_{i}"].patches) > 0
-        ), f"hist_{i} should have histogram bars"
+        assert len(axd_full[f"hist_{i}"].patches) > 0, (
+            f"hist_{i} should have histogram bars"
+        )
     for key in ["is2", "gedi"]:
-        assert (
-            len(axd_full[f"hist_{key}"].patches) > 0
-        ), f"hist_{key} should have histogram bars"
+        assert len(axd_full[f"hist_{key}"].patches) > 0, (
+            f"hist_{key} should have histogram bars"
+        )
 
 
 @pytest.mark.parametrize(
@@ -344,9 +344,9 @@ def test_esa_hist(dem_tiny_utm, points_tiny_utm):
     axd = coincident.plot.hist_esa(
         [dem_tiny_utm, dem_tiny_utm_2],
     )[0]  # since hist_esa returns a numpy array
-    assert isinstance(
-        axd, plt.Axes
-    ), "Return value should be a matplotlib Axes object (raster test)"
+    assert isinstance(axd, plt.Axes), (
+        "Return value should be a matplotlib Axes object (raster test)"
+    )
     assert len(axd.get_children()) > 0, "Figure should exist (raster test)"
     assert (
         len(
@@ -359,17 +359,17 @@ def test_esa_hist(dem_tiny_utm, points_tiny_utm):
         == 241
     ), "Should have 241 rectangles histograms (raster test)"
     assert axd.get_legend() is not None, "Legend should exist (raster test)"
-    assert (
-        axd.title.get_text() == "Grassland"
-    ), "Plot title should be 'Grassland' (raster test)"
+    assert axd.title.get_text() == "Grassland", (
+        "Plot title should be 'Grassland' (raster test)"
+    )
 
     axd = coincident.plot.hist_esa(
         [dem_tiny_utm, points_tiny_utm],
         elev_col="h_li",
     )[0]  # since hist_esa returns a numpy array
-    assert isinstance(
-        axd, plt.Axes
-    ), "Return value should be a matplotlib Axes object (gdf test)"
+    assert isinstance(axd, plt.Axes), (
+        "Return value should be a matplotlib Axes object (gdf test)"
+    )
     assert len(axd.get_children()) > 0, "Figure should exist (gdf test)"
     assert (
         len(
@@ -382,6 +382,6 @@ def test_esa_hist(dem_tiny_utm, points_tiny_utm):
         == 257
     ), "Should have 257 rectangles (gdf test)"
     assert axd.get_legend() is not None, "Legend should exist (gdf test)"
-    assert (
-        axd.title.get_text() == "Grassland"
-    ), "Plot title should be 'Grassland' (gdf test)"
+    assert axd.title.get_text() == "Grassland", (
+        "Plot title should be 'Grassland' (gdf test)"
+    )

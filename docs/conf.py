@@ -97,4 +97,5 @@ always_document_param_types = True
 nb_execution_mode = "auto"  # off, on
 nb_execution_show_tb = True
 nb_execution_timeout = 90
+nb_execution_allow_errors = False
 # nb_execution_excludepatterns = ["elevation_plotting.ipynb"]

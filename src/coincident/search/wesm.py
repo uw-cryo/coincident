@@ -176,7 +176,7 @@ def load_by_fid(
     """
     # Format SQL: # special case for (a) not (a,)
     # Reading a remote WESM by specific FIDs is fast
-    query = f"fid in ({fids[0]})" if len(fids) == 1 else f"fid in {*fids,}"
+    query = f"fid in ({fids[0]})" if len(fids) == 1 else f"fid in {(*fids,)}"
 
     gf = read_file(
         url,
