@@ -14,10 +14,6 @@ build:
       # Install specific pixi environment and list packages
       - curl -fsSL https://pixi.sh/install.sh | bash
       - $HOME/.pixi/bin/pixi list -e docs
-    pre_build:
-      # Retina resolution matplotlib plots in jupyter notebooks
-      - mkdir --parents $HOME/.ipython/profile_default/
-      - cp docs/ipython_kernel_config.py $HOME/.ipython/profile_default/
     build:
       html:
         - $HOME/.pixi/bin/pixi run docs

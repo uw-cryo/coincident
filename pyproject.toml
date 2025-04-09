@@ -51,7 +51,7 @@ dependencies = [
 dev = [
   "ipykernel>=6.29.5,<7",
   "mypy>=1.11.2,<2",
-  "pre-commit>=3.8.0,<4",
+  "pre-commit>=4",
   "pylint>=3.3.1,<4",
   "pytest >=6",
   "pytest-cov >=3",
@@ -175,8 +175,7 @@ ignore = [
   "PD901",    # df for DataFrame
 ]
 exclude = [
-    "docs/*.ipynb",
-    "docs/ipython_kernel_config.py",
+    "docs/*.ipynb"
 ]
 isort.required-imports = ["from __future__ import annotations"]
 # Uncomment if using a _compat.typing backport
@@ -238,7 +237,7 @@ ipykernel = ">=6.29.5,<7"
 matplotlib = "*"
 mypy = "*"
 # Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.
-pre-commit = "<4"
+pre-commit = "*"
 pylint = "*"
 pytest = "*"
 
