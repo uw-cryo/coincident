@@ -44,6 +44,7 @@ dependencies = [
   "sliderule>=4.7.1,<5",
   "stac-asset>=0.4.6,<0.5",
   "matplotlib-scalebar>=0.9.0,<0.10",
+  "dask<2025", # quote (and perhaps even the expected behavior of tokenize) no longer exist in the same location for 2025.3.0
 ]
 
 [project.optional-dependencies]
@@ -221,6 +222,7 @@ pyarrow = ">=19.0.0,<20"
 jsonschema = ">=4.23.0,<5"
 libgdal-arrow-parquet = ">=3.10.1,<4"
 matplotlib-scalebar = ">=0.9.0,<0.10"
+dask = "<2025"
 sliderule = "*"
 xdem = "*"
 

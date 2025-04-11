@@ -6,12 +6,14 @@ from __future__ import annotations
 
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 import boto3
 import geopandas as gpd
+import rasterio
 import requests  # type: ignore[import-untyped]
 import rioxarray as rxr
 import stac_asset
@@ -19,7 +21,7 @@ from botocore import UNSIGNED
 from botocore.client import Config
 from pyproj import CRS
 from pystac import Item
-from shapely.geometry import box
+from shapely.geometry import Polygon, box
 from tqdm import tqdm
 
 from coincident.io.xarray import _aoi_to_polygon_string, _filter_items_by_project
@@ -28,6 +30,7 @@ from coincident.search.neon_api import (
     _utm_crs_from_lonlat,
     query_neon_data_api,
 )
+from coincident.search.opentopo_api import _find_noaa_dem_files
 from coincident.search.wesm import query_tnm_api
 
 
@@ -257,7 +260,7 @@ def download_usgs_lpc(
     try:
         import pdal
     except ImportError as err:
-        msg_pdal = "PDAL Python bindings are required for this functionality. Please try 'mamba install pdal' in your cli"
+        msg_pdal = "PDAL Python bindings are required for this functionality. Please try !pip install coincident[pdal]"
         raise ImportError(msg_pdal) from err
 
     # If no workunit is provided, load the resource GeoJSON and find one that intersects the AOI
@@ -395,6 +398,113 @@ def download_neon_dem(
     _download_files(filtered_files, path=output_dir, url_key="url", product=product)
 
 
+def download_noaa_dem(
+    aoi: gpd.GeoDataFrame,
+    dataset_id: str | int,
+    output_dir: str = "/tmp",
+    res: int = 1,
+    clip: bool = True,
+) -> None:
+    """
+    Download NOAA coastal lidar DEM data from S3 based on a dataset identifier and an AOI.
+    For each tile that intersects the AOI, the tile is downloaded, optionally coarsened and clipped,
+    then saved as a GeoTIFF file in the specified output directory.
+
+    Parameters
+    ----------
+    aoi : geopandas.GeoDataFrame
+        Area of interest geometry (assumed to be in EPSG:4326 or any other CRS that will be reprojected).
+    dataset_id : str or int
+        NOAA dataset identifier (e.g., "8431" or "6260").
+    output_dir : str, optional
+        Directory to save downloaded output files. Defaults to "/tmp".
+    res : int, optional
+        Resolution factor. If greater than 1, the DEMs will be coarsened by this factor. Defaults to 1.
+    clip : bool, optional
+        Whether to clip each DEM tile to the AOI. Defaults to True.
+
+    Returns
+    -------
+    None
+        Processed DEM tiles are saved as GeoTIFF files to the specified output directory.
+
+    Notes
+    -----
+    The function retrieves only the header information from each file on S3 to determine tile bounds,
+    then filters and processes only those tiles intersecting the AOI. Files are processed concurrently
+    to reduce overall network latency.
+    """
+    # Ensure the output directory exists.
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    # Step 1: List all .tif files within the NOAA dataset directory using a helper function.
+    tif_files = _find_noaa_dem_files(dataset_id)
+    tile_urls = [file_info["url"] for file_info in tif_files]
+
+    # Helper function to fetch a tile's bounds and retain its URL.
+    def fetch_tile_geometry(
+        url: str,
+    ) -> tuple[str, Polygon, rasterio.crs.CRS]:
+        # Open the raster header from S3 using rasterio.Env for proper configuration.
+        with rasterio.Env(), rasterio.open(url) as src:
+            bounds = src.bounds
+            tile_crs = src.crs
+        # Create a shapely bounding box polygon from the raster bounds.
+        polygon = box(bounds.left, bounds.bottom, bounds.right, bounds.top)
+        return url, polygon, tile_crs
+
+    # Step 2: Retrieve header metadata for each tile concurrently.
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(fetch_tile_geometry, tile_urls))
+
+    # Unpack the results into separate lists (url, geometry, and CRS).
+    urls, tile_geometries, crs_list = zip(*results, strict=False)
+    common_crs = crs_list[0]  # Assume all tiles share the same CRS.
+
+    # Create a GeoDataFrame to map tile geometries to their source URLs.
+    tiles_gdf = gpd.GeoDataFrame(
+        {"url": urls, "geometry": tile_geometries}, crs=common_crs
+    )
+
+    # Step 3: Reproject the AOI to the common CRS of the raster tiles.
+    aoi = aoi.to_crs(common_crs)
+
+    # Step 4: Filter tiles by determining which ones intersect the AOI.
+    aoi_union = aoi.union_all()
+    selected_tiles = tiles_gdf[tiles_gdf.intersects(aoi_union)]
+
+    if selected_tiles.empty:
+        msg = f"No TIFF files intersect with the provided AOI for dataset ID {dataset_id}."
+        raise ValueError(msg)
+
+    # Step 5: Process and download each intersecting DEM tile.
+    for _, row in selected_tiles.iterrows():
+        tile_url = row["url"]
+        # Extract the filename from the URL.
+        file_name = tile_url.split("/")[-1]
+        output_file = (
+            output_path / f"clipped_{file_name}" if clip else output_path / file_name
+        )
+
+        try:
+            # Open the remote DEM using rioxarray (reads only metadata/chunks, not full data into memory).
+            dem = rxr.open_rasterio(tile_url, masked=True, chunks="auto")
+            # Optionally coarsen the DEM if a resolution factor greater than 1 is provided.
+            if res > 1:
+                dem = dem.coarsen(x=res, y=res, boundary="trim").mean()
+            # If clipping is enabled, reproject the AOI to the DEM's CRS and clip.
+            if clip:
+                dem_crs = dem.rio.crs
+                aoi_tile_crs = aoi.to_crs(dem_crs)
+                dem = dem.rio.clip(aoi_tile_crs.geometry, dem_crs, drop=True)
+            # Save the processed DEM as a GeoTIFF.
+            dem.rio.to_raster(output_file)
+        except Exception as error:
+            msg = f"Unable to process or save tile from URL {tile_url}. Error: {error}"
+            raise RuntimeError(msg) from error
+
+
 def download_noaa_lpc(
     aoi: gpd.GeoDataFrame,
     dataset_id: str | int,
@@ -404,6 +514,7 @@ def download_noaa_lpc(
 ) -> None:
     """
     Download NOAA LiDAR LAZ data for the given AOI using PDAL's EPT reader.
+    From NOAA's Digital Coast https://coast.noaa.gov/htdata/lidar1_z/
 
     Parameters
     ----------
@@ -426,17 +537,20 @@ def download_noaa_lpc(
     try:
         import pdal
     except ImportError as err:
-        msg_pdal = "PDAL Python bindings are required for this functionality. Please try 'mamba install pdal' in your cli"
+        msg_pdal = "PDAL Python bindings are required for this functionality. Please try !pip install coincident[pdal]"
         raise ImportError(msg_pdal) from err
     # Construct the EPT URL from the NOAA dataset id.
-    # NOTE: This URL pattern assumes that the EPT metadata is hosted under the 'geoid18' directory.
     ept_url = f"https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/entwine/geoid18/{dataset_id}/ept.json"
 
     # Retrieve the EPT metadata to extract spatial reference info.
     response = requests.get(ept_url)
     if response.status_code != 200:
-        msg_url_error = "Failed to retrieve EPT metadata. Check the NOAA dataset ID. Issue may lie on our end with the geoid18 directory."
-        raise ValueError(msg_url_error)
+        # some of the NOAA data are under the geoid12b subdirectory instead
+        ept_url = f"https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/entwine/geoid12b/{dataset_id}/ept.json"
+        response = requests.get(ept_url)
+        if response.status_code != 200:
+            msg_url_error = "Failed to retrieve EPT metadata. Check the NOAA dataset ID. Issue may lie on our end with the geoid18 directory."
+            raise ValueError(msg_url_error)
     response.raise_for_status()
     ept_metadata = response.json()
 
@@ -529,7 +643,7 @@ def download_ncalm(
         try:
             import pdal
         except ImportError as err:
-            msg_pdal = "PDAL Python bindings are required for this functionality. Please try 'mamba install pdal' in your cli"
+            msg_pdal = "PDAL Python bindings are required for this functionality. Please try !pip install coincident[pdal]"
             raise ImportError(msg_pdal) from err
         bucket = "pc-bulk"  # point cloud bucket
         file_ext = ".laz"  # expecting LAZ files for point clouds

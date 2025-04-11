@@ -5,6 +5,7 @@ Subset and Sample using Xarray
 from __future__ import annotations
 
 import os
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any
 
@@ -16,13 +17,14 @@ import rasterio
 # NOTE: must import for odc.stac outputs to have .rio accessor
 import rioxarray
 import xarray as xr
-from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry import MultiPolygon, Polygon, box
 
 from coincident.search.neon_api import (
     _get_tile_bbox,
     _utm_crs_from_lonlat,
     query_neon_data_api,
 )
+from coincident.search.opentopo_api import _find_noaa_dem_files
 from coincident.search.stac import to_pystac_items
 from coincident.search.wesm import query_tnm_api
 
@@ -321,6 +323,8 @@ def load_usgs_dem(
 
 # TODO: look into warning below that prints for every "for f in filtered_files:"
 # RuntimeWarning: TIFFReadDirectoryCheckOrder:Invalid TIFF directory; tags are not sorted in ascending order if riods.subdatasets:
+# NOTE: this function requires client-side spatial querying. I went with regex for this because it's significantly faster
+# than reading in metadata headers via rasterio as seen in load_noaa_dem but we can always switch
 def load_neon_dem(
     aoi: gpd.GeoDataFrame,
     datetime_str: str,
@@ -520,3 +524,120 @@ def load_ncalm_dem(
     except Exception as e:
         msg_merge = f"Error merging DEM datasets: {e!s}"
         raise ValueError(msg_merge) from e
+
+
+# NOTE: NOAA has separate ids and catalogs for their "lidar" and "imagery and elevation raster" datasets
+# https://coast.noaa.gov/htdata/lidar1_z/
+# https://coast.noaa.gov/htdata/raster1/
+# Our current NOAA search functionality only supports the lidar datasets via opentopo
+# Note that we get the dataset IDs from our NOAA search for the lidar datasets, not the dem datasets
+# that being said the dem ids = lidar ids + 1
+# e.g. "Great Bay NERR UAS Lidar" has id 10175 for lidar and id 10176 for dem
+# NOTE: NOAA tiles also don't have a consistent size... see below
+# 'https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/dem/NGS_South_TampBay_Topobathy_2021_9481/2021_324000e_3062000n_dem.tif'
+# 'https://noaa-nos-coastal-lidar-pds.s3.amazonaws.com/dem/NGS_South_TampBay_Topobathy_2021_9481/2021_364000e_3082000n_dem.tif'
+def load_noaa_dem(
+    aoi: gpd.GeoDataFrame, dataset_id: str | int, res: int = 1, clip: bool = True
+) -> xr.DataArray:
+    """
+    Process NOAA coastal lidar DEM data from S3 based on a dataset identifier and an AOI.
+    Returns an xarray DataArray with elevation values clipped to the AOI without downloading files locally.
+
+    Parameters
+    ----------
+    aoi : geopandas.GeoDataFrame
+        Area of interest geometry (assumed to be in EPSG:4326 or any other CRS that will be reprojected).
+    dataset_id : str or int
+        NOAA dataset identifier (e.g., "8431" or "6260").
+    res : int, optional
+        Resolution factor. If greater than 1, the data will be coarsened by this factor. Defaults to 1.
+    clip : bool, optional
+        Whether to clip the output mosaic to the AOI. Defaults to True.
+
+    Returns
+    -------
+    xarray.DataArray
+        An xarray DataArray containing DEM values clipped to the AOI.
+
+    Notes
+    -----
+    This function queries only the raster headers from S3 to retrieve bounds information quickly.
+    The header metadata is processed concurrently to reduce I/O latency.
+    Tiles are spatially filtered against the AOI and merged into a mosaic using xarray.
+    """
+    # Step 1: List all .tif files within the NOAA dataset directory (using a hypothetical helper function)
+    tif_files = _find_noaa_dem_files(dataset_id)
+    tile_urls = [file_info["url"] for file_info in tif_files]
+
+    # Modified function to fetch a tile's bounds and retain its URL
+    def fetch_tile_geometry(
+        url: str,
+    ) -> tuple[str, Polygon, rasterio.crs.CRS]:
+        # Using rasterio.Env ensures proper configuration (e.g., for vsicurl access)
+        with rasterio.Env(), rasterio.open(url) as src:
+            bounds = src.bounds
+            tile_crs = src.crs
+        # Create a shapely polygon (bounding box) from the raster bounds
+        polygon = box(bounds.left, bounds.bottom, bounds.right, bounds.top)
+        return url, polygon, tile_crs
+
+    # Use ThreadPoolExecutor to concurrently fetch header metadata from each tile URL
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(fetch_tile_geometry, tile_urls))
+
+    # Unpack results: each item is a tuple (url, geometry, crs)
+    urls, tile_geometries, crs_list = zip(*results, strict=False)
+    common_crs = crs_list[0]  # Assume all tiles share the same CRS
+
+    # Create a GeoDataFrame that includes both geometry and the corresponding URL.
+    tiles_gdf = gpd.GeoDataFrame(
+        {"url": urls, "geometry": tile_geometries}, crs=common_crs
+    )
+
+    # --- Preparing the AOI ---
+    # Reproject AOI to the common CRS of the raster tiles.
+    aoi = aoi.to_crs(common_crs)
+
+    # --- Spatial Filtering ---
+    # Use a union of AOI geometries for efficient intersection testing.
+    aoi_union = aoi.union_all()
+    # Filter the tiles by testing for spatial intersection with the AOI.
+    selected_tiles = tiles_gdf[tiles_gdf.intersects(aoi_union)]
+
+    if selected_tiles.empty:
+        msg = (
+            f"No TIFF files intersect with the provided AOI for dataset ID {dataset_id}"
+        )
+        raise ValueError(msg)
+
+    # Step 5: Process each DEM and store the resulting DataArray in a list.
+    dem_dataarrays = []
+    for _, row in selected_tiles.iterrows():
+        try:
+            # Open the remote raster using rioxarray without loading full data (only metadata and chunks)
+            da = rioxarray.open_rasterio(row["url"], masked=True, chunks="auto")
+            # Coarsen the resolution if a factor greater than 1 is provided.
+            if res > 1:
+                da = da.coarsen(x=res, y=res, boundary="trim").mean()
+            dem_dataarrays.append(da)
+        except Exception as error:
+            msg = f"Unable to open file from URL {row['url']}. Error: {error}"
+            raise RuntimeError(msg) from error
+
+    if not dem_dataarrays:
+        msg_empty_arrays = "None of the TIFF files could be opened."
+        raise RuntimeError(msg_empty_arrays)
+
+    # Step 6: Merge the DEM tiles.
+    # Concatenate along a new "band" dimension and use the maximum value across bands to form a mosaic.
+    tile_crs = dem_dataarrays[0].rio.crs
+    merged_dem = (
+        xr.concat(dem_dataarrays, dim="band").max(dim="band").rename("elevation")
+    )
+
+    # Step 7: Reproject the AOI to tile CRS and clip the mosaic if requested.
+    if clip:
+        aoi_tile_crs = aoi.to_crs(tile_crs)
+        merged_dem = merged_dem.rio.clip(aoi_tile_crs.geometry, tile_crs, drop=True)
+
+    return merged_dem
