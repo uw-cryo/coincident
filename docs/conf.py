@@ -60,6 +60,7 @@ html_context = {
     "github_version": "main",
     "doc_path": "docs",
 }
+html_show_sourcelink = False
 
 # remove sidebar, see GH issue #82
 html_css_files = [
