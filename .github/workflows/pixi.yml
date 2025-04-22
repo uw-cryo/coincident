@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: prefix-dev/setup-pixi@v0.8.3
+      - uses: prefix-dev/setup-pixi@v0.8.8
         with:
           environments: dev
           manifest-path: pyproject.toml
@@ -25,7 +25,7 @@ jobs:
       # NOTE: https://github.com/prefix-dev/setup-pixi/issues/136
       - name: Ensure Dynamic version
         run: |
-          pip install -e .
+          pip install -e . --no-deps
 
       - name: Run Pylint
         continue-on-error: true

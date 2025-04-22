@@ -155,7 +155,7 @@ def open_maxar_browse(item: pystac.Item, overview_level: int = 0) -> xr.DataArra
 
     env = rasterio.Env(
         GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
-        GDAL_HTTP_HEADERS=f'MAXAR-API-KEY:{os.environ["MAXAR_API_KEY"]}',
+        GDAL_HTTP_HEADERS=f"MAXAR-API-KEY:{os.environ['MAXAR_API_KEY']}",
     )
     with env:
         return xr.open_dataarray(
