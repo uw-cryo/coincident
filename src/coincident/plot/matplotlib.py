@@ -146,16 +146,31 @@ def plot_maxar_browse(
     plt.Axes
         The Matplotlib Axes object with the plot.
     """
-
     da = open_maxar_browse(item, overview_level=overview_level)
-    mid_lat = da.y[int(da.y.size / 2)].to_numpy()  # PD011
+    mid_lat = da.y[int(da.y.size / 2)].to_numpy()
 
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 11))
-    da.plot.imshow(rgb="band", add_labels=False, ax=ax)
+
+    # Select just the first band if it's a multi-dimensional array
+    if "band" in da.dims and da.band.size == 1:
+        # Select the first (and only) band
+        da_plot = da.squeeze("band")
+        da_plot.plot.imshow(add_labels=False, ax=ax, cmap="gray")
+    else:
+        # Try RGB plotting if possible
+        try:
+            da.plot.imshow(rgb="band", add_labels=False, ax=ax)
+        except ValueError:
+            # Fallback to plotting the first band if RGB fails
+            if "band" in da.dims:
+                da.isel(band=0).plot.imshow(add_labels=False, ax=ax, cmap="gray")
+            else:
+                # Last resort - try to plot whatever we have
+                da.plot(ax=ax)
+
     ax.set_aspect(aspect=1 / np.cos(np.deg2rad(mid_lat)))
     ax.set_title(item.id)
-
     return ax
 
 
