@@ -152,13 +152,17 @@ def plot_maxar_browse(
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 11))
 
-    # Select just the first band if it's a multi-dimensional array
-    if "band" in da.dims and da.band.size == 1:
-        # Select the first (and only) band
+    nbands = da.band.size
+    if nbands == 1:
         da_plot = da.squeeze("band")
-        da_plot.plot.imshow(add_labels=False, ax=ax, cmap="gray")
-    elif "band" in da.dims and da.band.size == 3:
-        da.plot.imshow(rgb="band", add_labels=False, ax=ax)
+        da_plot.plot.imshow(add_labels=False, ax=ax, cmap="gray", add_colorbar=False)
+    elif nbands == 3:
+        da.plot.imshow(rgb="band", add_labels=False, ax=ax, add_colorbar=False)
+    else:
+        error_message = (
+            f"Maxar browse image must have 1 or 3 bands. Found: {nbands} bands."
+        )
+        raise ValueError(error_message)
 
     ax.set_aspect(aspect=1 / np.cos(np.deg2rad(mid_lat)))
     ax.set_title(item.id)
