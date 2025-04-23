@@ -157,17 +157,8 @@ def plot_maxar_browse(
         # Select the first (and only) band
         da_plot = da.squeeze("band")
         da_plot.plot.imshow(add_labels=False, ax=ax, cmap="gray")
-    else:
-        # Try RGB plotting if possible
-        try:
-            da.plot.imshow(rgb="band", add_labels=False, ax=ax)
-        except ValueError:
-            # Fallback to plotting the first band if RGB fails
-            if "band" in da.dims:
-                da.isel(band=0).plot.imshow(add_labels=False, ax=ax, cmap="gray")
-            else:
-                # Last resort - try to plot whatever we have
-                da.plot(ax=ax)
+    elif "band" in da.dims and da.band.size == 3:
+        da.plot.imshow(rgb="band", add_labels=False, ax=ax)
 
     ax.set_aspect(aspect=1 / np.cos(np.deg2rad(mid_lat)))
     ax.set_title(item.id)
