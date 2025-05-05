@@ -229,7 +229,7 @@ xdem = "*"
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
 ipykernel = ">=6.29.5,<7"
-matplotlib = "*"
+matplotlib = ">=3.9.4,<4"
 mypy = "*"
 # Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.
 pre-commit = "<4"
