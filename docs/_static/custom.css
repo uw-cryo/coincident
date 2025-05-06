@@ -4,8 +4,8 @@ div.cell_output table {
 }
 
 /*  png2x/retina rendering of figues in docs would also need to modify custom.css:
-https://github.com/spatialaudio/nbsphinx/issues/464#issuecomment-652729126  */
-.rst-content .image-reference img {
+based on https://github.com/spatialaudio/nbsphinx/issues/464#issuecomment-652729126  */
+div.cell_output img {
   max-width: unset;
   width: 100% !important;
   height: auto !important;
