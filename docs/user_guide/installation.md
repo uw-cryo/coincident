@@ -1,19 +1,47 @@
 # Installation
 
-The latest release of `coincident` can be installed from PyPi:
+We recommend working with coincident in an isolated environment, managed by
+[pixi.sh](https://pixi.sh/latest/):
 
-```bash
-pip install coincident
-```
+## Pixi
 
 Alternatively, you can install the latest development version using the
-[GitHub CLI](https://cli.github.com) and [pixi.sh](https://pixi.sh/latest/):
+[GitHub CLI](https://cli.github.com) and :
 
 ```bash
 gh repo clone uw-cryo/coincident
 cd coincident
 pixi install
 pixi shell
+```
+
+### Pixi+JupyterLab
+
+## pip
+
+The latest release of `coincident` can be installed from PyPi:
+
+```bash
+pip install coincident
+```
+
+## conda
+
+We do yet have a conda-forge package for coincident. In the meantime, you can
+try installing coincident with pip _into_ an existing conda environment, but
+dependencies are not guaranteed to work:
+
+```bash
+conda activate myenv
+pip install coincident
+```
+
+Or, if possible, install into a clean conda environment:
+
+```bash
+mamba create -n coincident python=3.12 pip
+conda activate coincident
+pip install coincident
 ```
 
 ## Authentication

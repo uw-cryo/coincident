@@ -43,6 +43,7 @@ exclude_patterns = [
 
 html_theme = "pydata_sphinx_theme"
 html_theme_options = {
+    "announcement": "Welcome! Coincident is in early development. APIs may change significantly",
     "use_edit_page_button": True,
     "icon_links": [
         {
@@ -52,6 +53,8 @@ html_theme_options = {
             "type": "fontawesome",
         },
     ],
+    "show_version_warning_banner": True,
+    "footer_center": ["last-updated"],
 }
 html_title = "Coincident"
 html_context = {
