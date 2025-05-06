@@ -15,7 +15,28 @@ pixi install
 pixi shell
 ```
 
-### Pixi+JupyterLab
+### Pixi + JupyterLab
+
+To expose the pixi environment as a "notebook kernel" in JupyterLab, you can
+either install JupyterLab into your pixi environment (`pixi add jupyterlab`) and
+lunch jupyterlab from that environment. Or if you are running code on a remote
+JupyterHub you can use an extension to expose the pixi environment to JupyterLab
+with the [pixi-kernel extension](https://github.com/renan-r-santos/pixi-kernel).
+
+For example, on the [CryoCloud JupyterHub](https://hub.cryointhecloud.com/), we
+use the following steps to create an environment for running the `coincident`
+example notebooks:
+
+```bash
+pip install pixi-kernel --user
+```
+
+You will then be able to select the `Pixi (Python)` kernel from the JupyterLab
+interface.
+
+```{note}
+Pixi environments are scoped to folders, so you will only be able to use this environment for notebooks under the `coincident/` repository folder.
+```
 
 ## pip
 
