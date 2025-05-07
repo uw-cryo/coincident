@@ -267,7 +267,9 @@ def get_swath_polygons(
 # NOTE it says that 3DEP elevation products were "lastUpdatedDate": "Sep 11, 2019"?
 # https://tnmaccess.nationalmap.gov/api/v1/datasets?
 def query_tnm_api(
-    polygon_str: str, tnmdataset: str = "Digital Elevation Model (DEM) 1 meter"
+    polygon_str: str,
+    tnmdataset: str = "Digital Elevation Model (DEM) 1 meter",
+    prodFormats: str = "GeoTIFF",
 ) -> list[dict[str, Any]]:
     """
     Query the TNM API for USGS DEM products that intersect the given polygon.
@@ -275,6 +277,7 @@ def query_tnm_api(
     Parameters:
       polygon_str (str): Polygon coordinates string in the required API format.
       tnmdataset (str): The dataset name for the TNM API (default is "Digital Elevation Model (DEM) 1 meter").
+      prodFormats (str): The product format filetype to search (default is "GeoTIFF").
 
     Returns:
       list: A list of JSON items returned from the TNM API.
@@ -287,9 +290,9 @@ def query_tnm_api(
         params = {
             "datasets": tnmdataset,
             "polygon": polygon_str,
-            "prodFormats": "GeoTIFF",
+            "prodFormats": prodFormats,
             "outputFormat": "JSON",
-            "max": 100,
+            "max": 200,
             "offset": offset,
         }
         response = requests.get(url, params=params)
@@ -300,10 +303,12 @@ def query_tnm_api(
             raise RuntimeError(msg_status_code)
 
         data = response.json()
-        items.extend(data.get("items", []))
-        total_items = data.get("total", 0)
-        offset += len(data.get("items", []))
-
-        if offset >= total_items:
+        batch = data.get("items", [])
+        if not batch:
+            # no more products -> exit loop
             break
+
+        items.extend(batch)
+        offset += len(batch)
+
     return items

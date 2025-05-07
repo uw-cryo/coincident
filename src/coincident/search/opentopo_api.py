@@ -19,71 +19,93 @@ from pandas import Timestamp
 from shapely.geometry import shape
 
 
-def _find_noaa_dem_files(dataset_id: str | int) -> list[dict[str, str]]:
+def _find_noaa_dem_files(
+    dataset_id: str | int, prefix: str = "dem/"
+) -> list[dict[str, str]]:
     """
     HELPER FUNCTION FOR coincident.io.xarray.load_noaa_dem()
 
-    Find all TIFF files in the S3 directory containing the specified NOAA dataset ID.
+    Find all TIFF or LAZ files in the S3 directory containing the specified NOAA dataset ID.
+    Supports multiple “geoid” subdirectories under `laz/`.
 
     Parameters
     ----------
     dataset_id : str or int
-        NOAA dataset identifier (e.g., "8431" or "6260").
+        NOAA dataset identifier (e.g., "8431", "6260", or "10196").
+    prefix : str
+        The S3 prefix under which to look. Default is "dem/". Use "laz/" for point clouds.
 
     Returns
     -------
-    list[dict[str, str]]
-        A list of dictionaries, each containing 'url' and 'name' keys for each TIFF file.
+    List[Dict[str, str]]
+        A list of dicts, each with keys:
+          - 'url': full HTTPS download URL
+          - 'name': basename of the object key
 
     Raises
     ------
     ValueError
-        If no directory is found for the given dataset ID, or if no TIFF files are found.
+        If no directory is found for dataset_id, or if no matching files are found.
     """
+    # Initialize unsigned S3 client
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.meta.events.register("choose-signer.s3.*", botocore.handlers.disable_signing)
+    bucket = "noaa-nos-coastal-lidar-pds"
+    dataset_str = str(dataset_id)
 
-    # Initialize the S3 client
-    s3_client = boto3.client("s3", region_name="us-east-1")
-    s3_client.meta.events.register(
-        "choose-signer.s3.*", botocore.handlers.disable_signing
-    )
+    # 1) If prefix is 'laz/', we must search one level deeper for geoid subfolders
+    search_prefixes = [prefix]
+    if prefix.rstrip("/").endswith("laz"):
+        # list possible geoid*/ top level under 'laz/'
+        resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, Delimiter="/")
+        geoids = [cp["Prefix"] for cp in resp.get("CommonPrefixes", [])]
+        search_prefixes = geoids
 
-    bucket_name = "noaa-nos-coastal-lidar-pds"
-    prefix = "dem/"
-
-    # List all directories under the 'dem/' prefix
-    paginator = s3_client.get_paginator("list_objects_v2")
-    pages = paginator.paginate(Bucket=bucket_name, Prefix=prefix, Delimiter="/")
-
-    dataset_directory = None
-    for page in pages:
-        for common_prefix in page.get("CommonPrefixes", []):
-            folder_name = common_prefix["Prefix"]
-            if str(dataset_id) in folder_name:
-                dataset_directory = folder_name
+    # 2) Find the exact dataset directory under one of the search_prefixes
+    dataset_dir = None
+    for p in search_prefixes:
+        pages = s3.get_paginator("list_objects_v2").paginate(
+            Bucket=bucket,
+            Prefix=p,
+            Delimiter="/",
+        )
+        for page in pages:
+            for cp in page.get("CommonPrefixes", []):
+                if dataset_str + "/" in cp["Prefix"]:
+                    dataset_dir = cp["Prefix"]
+                    break
+            if dataset_dir:
                 break
-        if dataset_directory:
+        if dataset_dir:
             break
 
-    if not dataset_directory:
-        msg_dataset = f"No directory found for dataset ID {dataset_id}"
-        raise ValueError(msg_dataset)
+    if not dataset_dir:
+        msg_no_dir = f"No directory found for dataset ID {dataset_id} under '{prefix}'"
+        raise ValueError(msg_no_dir)
 
-    # List all TIFF files in the dataset directory
-    tif_files = []
-    paginator = s3_client.get_paginator("list_objects_v2")
-    pages = paginator.paginate(Bucket=bucket_name, Prefix=dataset_directory)
-
+    # 3) List all objects under dataset_dir and filter by extension
+    f_ext = ".laz" if prefix.rstrip("/").endswith("laz") else ".tif"
+    files: list[dict[str, str]] = []
+    pages = s3.get_paginator("list_objects_v2").paginate(
+        Bucket=bucket,
+        Prefix=dataset_dir,
+    )
     for page in pages:
         for obj in page.get("Contents", []):
-            if obj["Key"].endswith(".tif"):
-                tif_url = f"https://{bucket_name}.s3.amazonaws.com/{obj['Key']}"
-                tif_files.append({"url": tif_url, "name": Path(obj["Key"]).name})
+            key = obj["Key"]
+            if key.lower().endswith(f_ext):
+                files.append(
+                    {
+                        "url": f"https://{bucket}.s3.amazonaws.com/{key}",
+                        "name": Path(key).name,
+                    }
+                )
 
-    if not tif_files:
-        msg_no_tifs = f"No TIFF files found for dataset ID {dataset_id}"
-        raise ValueError(msg_no_tifs)
+    if not files:
+        msg_no_files = f"No '{f_ext}' files found for dataset ID {dataset_id}"
+        raise ValueError(msg_no_files)
 
-    return tif_files
+    return files
 
 
 def search_ncalm_noaa(

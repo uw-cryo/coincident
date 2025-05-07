@@ -5,6 +5,8 @@ Convenience functions for downloading STAC items via stac-asset
 from __future__ import annotations
 
 import os
+import re
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
@@ -217,6 +219,75 @@ def download_usgs_dem(
     )
 
 
+def fetch_usgs_lpc_tiles(
+    aoi: gpd.GeoDataFrame,
+    project: str,
+    tnmdataset: str = "Lidar Point Cloud (LPC)",
+    output_dir: str | None = None,
+) -> gpd.GeoDataFrame:
+    """
+    Query USGS TNMAccess for LPC products intersecting an AOI, assemble their
+    bounding boxes into a GeoDataFrame (EPSG:4326), and optionally write to disk.
+
+    Steps:
+      1. Reproject AOI to EPSG:4326 and explode to a single geometry.
+      2. Convert that geometry into the TNM APIs `polygon` string format.
+      3. Call `query_tnm_api` to retrieve all LPC products (LAS/LAZ) in the AOI.
+      4. Filter the returned items by matching `project` via `_filter_items_by_project`.
+      5. Build a Shapely box from each items `boundingBox` coordinates.
+      6. Assemble into a GeoDataFrame in EPSG:4326.
+      7. If `output_dir` is provided, save as `usgs_lpc_products.geojson`.
+
+    Parameters:
+      aoi (gpd.GeoDataFrame): Area of interest.
+      project (str): A substring or identifier used to filter product titles.
+      tnmdataset (str): Dataset name for TNM API (default: "Lidar Point Cloud (LPC)", changing this will break the function).
+      output_dir (Optional[str]): Directory to write out the GeoJSON. If None,
+                                  no file is written.
+
+    Returns:
+      gpd.GeoDataFrame: Contains columns from the API plus a `geometry` column
+                        with each products bounding box in WGS84.
+    """
+    # 1. AOI in lon/lat for TNM query
+    aoi_4326 = aoi.to_crs(epsg=4326)
+    single_geom = aoi_4326.geometry.explode(index_parts=False).iloc[0]
+
+    # 2. Build polygon string for the API
+    polygon_string = _aoi_to_polygon_string(single_geom)
+
+    # 3. Query TNM API (only LAS/LAZ for LPC)
+    items = query_tnm_api(polygon_string, tnmdataset=tnmdataset, prodFormats="LAS,LAZ")
+
+    if not items:
+        msg_empty_api = "TNM API returned no products for the given AOI/dataset."
+        raise ValueError(msg_empty_api)
+
+    # 4. Filter by project identifier
+    filtered = _filter_items_by_project(items, project)
+    if not filtered:
+        msg_no_lpc = "No LPC products match the project filter and AOI."
+        raise ValueError(msg_no_lpc)
+
+    # 5. Build bbox geometries
+    geometries = []
+    for itm in filtered:
+        bb = itm.get("boundingBox", {})
+        geom = box(bb["minX"], bb["minY"], bb["maxX"], bb["maxY"])
+        geometries.append(geom)
+
+    # 6. Assemble GeoDataFrame in WGS84
+    gdf = gpd.GeoDataFrame(filtered, geometry=geometries, crs="EPSG:4326")
+    gdf = gdf[["sourceId", "downloadURL", "geometry"]]
+
+    # 7. Optionally write out
+    if output_dir:
+        out_path = Path(output_dir) / f"USGS_{project}_lpc_tiles.geojson"
+        gdf.to_file(out_path, driver="GeoJSON")
+
+    return gdf
+
+
 def download_neon_dem(
     aoi: gpd.GeoDataFrame,
     datetime_str: str,
@@ -283,6 +354,94 @@ def download_neon_dem(
 
     # 5: Use the helper function to download files
     _download_files(filtered_files, path=output_dir, url_key="url", product=product)
+
+
+def fetch_neon_lpc_tiles(
+    aoi: gpd.GeoDataFrame,
+    datetime_str: str,
+    site_id: str,
+    output_dir: str | None = None,
+) -> gpd.GeoDataFrame:
+    """
+    Fetch NEON LPC tile bboxes as a GeoDataFrame (in EPSG:4326),
+    optionally writing to disk as a GeoJSON.
+    This function uses regex and assumes a tile size of 1km for all NEON tiles
+    given the necessity for client-side spatial filtering and no PDAL
+
+    Steps:
+      1. Convert the datetime string to YYYY-MM for the API query.
+      2. Determine the appropriate UTM CRS for spatial filtering.
+      3. Query the NEON API for LPC files.
+      4. Filter files whose 1km tile intersects the AOI in UTM.
+      5. Parse each filename for its lower left UTM corner, build a 1km box.
+      6. Assemble into a GeoDataFrame and reproject to EPSG:4326.
+      7. If `output_dir` is provided, save the GeoDataFrame as `lpc_tiles.geojson`.
+
+    Parameters:
+      aoi (gpd.GeoDataFrame): AOI geometries.
+      datetime_str (str): Date in “YYYY-MM-DD” format.
+      site_id (str): NEON site identifier.
+      output_dir (Optional[str]): Directory to write `lpc_tiles.geojson`.
+                                  If None, nothing is written.
+
+    Returns:
+      gpd.GeoDataFrame: Tile extent polygons in lon/lat.
+    """
+    # 1. Month string
+    dt = datetime.strptime(datetime_str, "%Y-%m-%d")
+    month_str = dt.strftime("%Y-%m")
+
+    # 2. AOI in UTM for spatial filtering
+    centroid = aoi.unary_union.centroid
+    utm_crs = _utm_crs_from_lonlat(centroid.x, centroid.y)
+    aoi_utm = aoi.to_crs(utm_crs)
+    aoi_u = aoi_utm.unary_union
+
+    # 3. Query NEON API for LPC product
+    data = query_neon_data_api(site_id, month_str, product_code="DP1.30003.001")
+    files = data["data"]["files"]
+
+    # 4. Filter by filename and AOI intersection
+    pattern = re.compile(r"_DP1_(\d+)_(\d+)_classified_point_cloud_colorized\.laz$")
+    records = []
+    for f in files:
+        if "classified_point_cloud_colorized.laz" not in f["name"]:
+            continue
+
+        m = pattern.search(f["name"])
+        if not m:
+            # skip any unexpected naming
+            continue
+
+        easting, northing = map(float, m.groups())
+        # assumes 1km x 1km tiles
+        tile = box(easting, northing, easting + 1000, northing + 1000)
+
+        if not tile.intersects(aoi_u):
+            continue
+
+        records.append(
+            {
+                "name": f["name"],
+                "url": f["url"],
+                "geometry": tile,
+            }
+        )
+
+    if not records:
+        msg_no_lpc_tiles = "No LPC tiles intersect your AOI for the given date."
+        raise RuntimeError(msg_no_lpc_tiles)
+
+    # 5. Build GeoDataFrame & reproject
+    gdf = gpd.GeoDataFrame(records, crs=utm_crs)
+    gdf_wgs84 = gdf.to_crs(epsg=4326)
+
+    # 6. Optionally write out
+    if output_dir:
+        out_path = Path(output_dir) / f"NEON_{site_id}_{datetime_str}_lpc_tiles.geojson"
+        gdf_wgs84.to_file(out_path, driver="GeoJSON")
+
+    return gdf_wgs84
 
 
 def download_noaa_dem(
@@ -390,6 +549,182 @@ def download_noaa_dem(
         except Exception as error:
             msg = f"Unable to process or save tile from URL {tile_url}. Error: {error}"
             raise RuntimeError(msg) from error
+
+
+def fetch_noaa_lpc_tiles(
+    aoi: gpd.GeoDataFrame,
+    dataset_id: str,
+    output_dir: str | None = None,
+) -> gpd.GeoDataFrame:
+    """
+    Fetch NOAA DEM tile geometries as a GeoDataFrame (in EPSG:4326),
+    optionally writing to disk as a GeoJSON.
+
+    This function processes NOAA DEM LAZ files, extracts tile geometries based on filename patterns,
+    filters them by intersection with the provided AOI, and returns a GeoDataFrame in EPSG:4326.
+
+    NOTE: regex was necessary here for client-side spatial filtering, otherwise you'd have to make network
+    requests to thousands of laz files
+
+    Steps:
+      1. Estimate the appropriate UTM CRS for spatial filtering.
+      2. Query the NOAA dataset for LAZ files.
+      3. Extract easting and northing from filenames using regex.
+      4. Determine tile dimensions by analyzing neighboring tiles.
+      5. Construct tile geometries and filter by AOI intersection.
+      6. Assemble into a GeoDataFrame and reproject to EPSG:4326.
+      7. If output_dir is provided, save the GeoDataFrame as noaa_dem_tiles.geojson.
+
+    Parameters:
+      aoi (gpd.GeoDataFrame): AOI geometries.
+      dataset_id (str): NOAA dataset identifier.
+      output_dir (Optional[str]): Directory to write noaa_dem_tiles.geojson.
+                                  If None, nothing is written.
+
+    Returns:
+      gpd.GeoDataFrame: Tile extent polygons in lon/lat.
+    """
+    # 1. Estimate UTM CRS for AOI
+    utm_crs = aoi.estimate_utm_crs()
+    aoi_utm = aoi.to_crs(utm_crs)
+    aoi_union = aoi_utm.union_all()
+
+    # 2. Query NOAA dataset for LAZ files
+    laz_files = _find_noaa_dem_files(dataset_id, prefix="laz/")
+
+    # 3. Define patterns to match filenames (NOAA has a lot of different formats)
+    patterns = [
+        re.compile(
+            r"(\d+)_(\d+)e_(\d+)"
+        ),  # Matches patterns like '20221027_252000e_3268500n'
+        re.compile(
+            r"(\d{4})_(\d{4})_(\d{2})_(\d{2})"
+        ),  # Matches patterns like '2022_1027_25_15'
+        re.compile(
+            r"_\w+_(\d+)_(\d+)_\d+\."
+        ),  # Matches patterns like '_abc_1234_5678_90.'
+        re.compile(
+            r"(\w+)_lpc_\d+ft_\d+$"
+        ),  # Matches patterns like 'abc_lpc_10ft_1234'
+        re.compile(r"(\w+)_lpc$"),  # Matches patterns like 'abc_lpc'
+        re.compile(r"_(\d+)e_(\d+)n"),  # Matches patterns like '_252000e_3268500n'
+    ]
+
+    # 4. Extract easting and northing from filenames
+    tile_coords = []
+    row_tiles = defaultdict(list)
+    col_tiles = defaultdict(list)
+
+    for f in laz_files:
+        name = f["name"]
+        matched = False
+
+        for pattern in patterns:
+            match = pattern.search(name)
+            if match:
+                try:
+                    # Attempt to extract easting and northing, considering edge cases
+                    easting = int(match.group(1))
+                    northing = int(match.group(2))
+
+                    # Sanity check for values (e.g., avoid interpreting a date as a coordinate)
+                    if (
+                        easting < 100000 or northing < 100000
+                    ):  # Assuming reasonable limits for easting/northing
+                        continue
+
+                    tile_coords.append((easting, northing))
+                    row_tiles[northing].append(easting)
+                    col_tiles[easting].append(northing)
+                    matched = True
+                except ValueError:
+                    # Handle cases where conversion to int fails
+                    continue
+
+        # If no match, continue with the next file
+        if not matched:
+            continue
+
+    # 5. Sort the rows and columns
+    for northing in row_tiles:
+        row_tiles[northing].sort()
+    for easting in col_tiles:
+        col_tiles[easting].sort()
+
+    # 6. Calculate tile dimensions
+    tile_sizes = {}
+    for easting, northing in tile_coords:
+        # Calculate width
+        eastings = row_tiles[northing]
+        e_index = eastings.index(easting)
+        if e_index < len(eastings) - 1:
+            width = eastings[e_index + 1] - easting
+        elif e_index > 0:
+            width = easting - eastings[e_index - 1]
+        else:
+            width = 0  # Default or handle as needed
+
+        # Calculate height
+        northings = col_tiles[easting]
+        n_index = northings.index(northing)
+        if n_index < len(northings) - 1:
+            height = northings[n_index + 1] - northing
+        elif n_index > 0:
+            height = northing - northings[n_index - 1]
+        else:
+            height = 0  # Default or handle as needed
+
+        tile_sizes[(easting, northing)] = (width, height)
+
+    # 7. Construct tile geometries and filter by AOI intersection
+    records = []
+    for f in laz_files:
+        name = f["name"]
+        matched = False
+
+        for pattern in patterns:
+            match = pattern.search(name)
+            if match:
+                try:
+                    # Attempt to extract easting and northing, considering edge cases
+                    easting = int(match.group(1))
+                    northing = int(match.group(2))
+
+                    # Sanity check for values
+                    if (
+                        easting < 100000 or northing < 100000
+                    ):  # Skip invalid coordinates
+                        continue
+
+                    width, height = tile_sizes.get((easting, northing), (0, 0))
+                    tile = box(easting, northing, easting + width, northing + height)
+                    if tile.intersects(aoi_union):
+                        records.append(
+                            {"name": name, "url": f["url"], "geometry": tile}
+                        )
+                    matched = True
+                except ValueError:
+                    # Handle cases where conversion to int fails
+                    continue
+
+        # If no match, continue with the next file
+        if not matched:
+            continue
+
+    if not records:
+        msg_no_lpc_hits = "No LPC tiles intersect your AOI."
+        raise RuntimeError(msg_no_lpc_hits)
+
+    # 8. Build GeoDataFrame & reproject
+    gdf = gpd.GeoDataFrame(records, crs=utm_crs)
+    gdf_wgs84 = gdf.to_crs(epsg=4326)
+
+    # 9. Optionally write out
+    if output_dir:
+        out_path = Path(output_dir) / f"NOAA_{dataset_id}_lpc_tiles.geojson"
+        gdf_wgs84.to_file(out_path, driver="GeoJSON")
+
+    return gdf_wgs84
 
 
 def download_ncalm_dem(
