@@ -17,7 +17,7 @@ coincident.datasets.aliases
 
 ## Unified search function
 
-the `coincident` package provides a [search()](#coincident.search.search) method
+the `coincident` package provides a [search()](coincident.search.search.rst) method
 that has the same syntax regardless of which dataset you are searching. Behind
 the scenes, polygons intersecting your area of interest are efficiently located
 and returned as a geodataframe.
