@@ -9,8 +9,8 @@ version = release = importlib.metadata.version("coincident")
 
 # NOTE: it seems order of extensions matters if one depends on another
 extensions = [
-    # "myst_parser",
-    "myst_nb",
+    "myst_parser",
+    "nbsphinx",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
     "sphinx.ext.intersphinx",
@@ -23,8 +23,6 @@ extensions = [
 
 source_suffix = {
     ".rst": "restructuredtext",
-    ".ipynb": "myst-nb",
-    ".md": "myst-nb",
 }
 exclude_patterns = [
     "_build",
@@ -92,10 +90,6 @@ nitpick_ignore = [
     ("py:class", "_io.BytesIO"),
 ]
 
-always_document_param_types = True
-# autodoc_typehints = "none"
-nb_execution_mode = "auto"  # off, on
-nb_execution_show_tb = True
-nb_execution_timeout = 90
-nb_execution_allow_errors = False
-# nb_execution_excludepatterns = ["elevation_plotting.ipynb"]
+nbsphinx_timeout = 90
+nbsphinx_execute = "auto"
+nbsphinx_allow_errors = False

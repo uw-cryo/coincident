@@ -61,7 +61,7 @@ dev = [
 docs = [
   "folium", # comes w/ geopandas on conda-forge but not pypi
   "mapclassify",
-  "myst-nb",
+  "nbsphinx",
   "myst_parser>=0.13",
   "pydata-sphinx-theme>=0.16.0,<0.17",
   "sphinx>=7.0",
@@ -230,6 +230,7 @@ xdem = "*"
 odc-loader="*"
 # https://github.com/conda-forge/numpy-feedstock/issues/347#issuecomment-2772248255
 libgfortran5 = ">=14"
+ipykernel = "*"
 
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
