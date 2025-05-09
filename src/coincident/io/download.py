@@ -27,7 +27,6 @@ from tqdm import tqdm
 from coincident.io.xarray import _aoi_to_polygon_string, _filter_items_by_project
 from coincident.search.neon_api import (
     _get_tile_bbox,
-    _utm_crs_from_lonlat,
     query_neon_data_api,
 )
 from coincident.search.opentopo_api import _find_noaa_dem_files
@@ -296,7 +295,7 @@ def download_neon_dem(
     output_dir: str = "/tmp",
 ) -> None:
     """
-    Download NEON LiDAR tiles (DSM, DTM, CHM, or LPC) based on an AOI by querying the NEON API.
+    Download NEON LiDAR tiles (DSM, DTM, or CHM) based on an AOI by querying the NEON API.
 
     Steps:
       1. Convert the datetime string to a month string in the format YYYY-MM.
@@ -309,16 +308,14 @@ def download_neon_dem(
       aoi (gpd.GeoDataFrame): Area of interest geometry to query against.
       datetime_str (str): Date string in YYYY-MM-DD format.
       site_id (str): NEON site identifier.
-      product (str): Product type to download ('dsm', 'dtm', 'chm', or 'lpc').
+      product (str): Product type to download ('dsm', 'dtm', or 'chm').
       output_dir (str): Directory path where tiles will be downloaded (default "/tmp").
 
     Returns:
       returns None after downloading files
     """
-    if product not in ["dsm", "dtm", "chm", "lpc"]:
-        msg_invalid_prod = (
-            "Invalid product type. Choose from 'dsm', 'dtm', 'chm', or 'lpc'."
-        )
+    if product not in ["dsm", "dtm", "chm"]:
+        msg_invalid_prod = "Invalid product type. Choose from 'dsm', 'dtm', 'chm'."
         raise ValueError(msg_invalid_prod)
     # 1: Convert datetime_str to month string
     # TODO: make this simpler
@@ -326,23 +323,17 @@ def download_neon_dem(
     month_str = dt.strftime("%Y-%m")
 
     # 2: Determine appropriate UTM CRS for the AOI
-    centroid = aoi.union_all().centroid
-    target_crs = _utm_crs_from_lonlat(centroid.x, centroid.y)
+    target_crs = aoi.estimate_utm_crs()
     aoi_utm = aoi.to_crs(target_crs)
     aoi_geom_utm = aoi_utm.union_all()  # Combined AOI in UTM coordinates
 
     # 3: Query the NEON API and based on the product type
-    product_code = "DP3.30024.001" if product != "lpc" else "DP1.30003.001"
-    data_json = query_neon_data_api(site_id, month_str, product_code=product_code)
+    data_json = query_neon_data_api(site_id, month_str, product_code="DP3.30024.001")
 
     # 4: Filter files based on product type and spatial intersection
     files = data_json["data"]["files"]
     filtered_files = []
-    product_filter = (
-        f"{product.upper()}.tif"
-        if product != "lpc"
-        else "classified_point_cloud_colorized.laz"
-    )
+    product_filter = f"{product.upper()}.tif"
     for f in files:
         if product_filter in f["name"]:
             tile_bbox = _get_tile_bbox(f["name"])
@@ -392,10 +383,9 @@ def fetch_neon_lpc_tiles(
     month_str = dt.strftime("%Y-%m")
 
     # 2. AOI in UTM for spatial filtering
-    centroid = aoi.unary_union.centroid
-    utm_crs = _utm_crs_from_lonlat(centroid.x, centroid.y)
+    utm_crs = aoi.estimate_utm_crs()
     aoi_utm = aoi.to_crs(utm_crs)
-    aoi_u = aoi_utm.unary_union
+    aoi_u = aoi_utm.union_all()
 
     # 3. Query NEON API for LPC product
     data = query_neon_data_api(site_id, month_str, product_code="DP1.30003.001")
@@ -730,13 +720,18 @@ def fetch_noaa_lpc_tiles(
 def download_ncalm_dem(
     aoi: gpd.GeoDataFrame,
     dataset_id: str | int,
+    product: str,
     output_dir: str = "/tmp",
 ) -> None:
     """
     Download NCALM (or OpenTopo user-hosted) data from OpenTopography S3 based on a dataset identifier and an AOI.
     Your dataset identifier will be the 'name' column from coincident.search.search(dataset="ncalm")
-    NOTE: this function will save individual tiles to the output directory of interest, this is due
-    to the messier structure of the NCALM OpenTopo catalog (especially confusing for DEMs)
+
+    NOTE: NCALM provides both DSMs and DTMs
+    e.g. WA18_Wall/WA18_Wall_be/WALL_GEG_1M.tif vs WA18_Wall/WA18_Wall_hh/WALL_GEF_1M.tif
+    where the be suffix stands for "bare earth" and the hh suffix stands for "highest hits" (or first return)
+    GEG = Grid Elevation (Ground) or the the bare earth elevation grid
+    GEF = Grid Elevation (First return) or the the first return elevation grid
 
     For DEM  data, the function lists all available DEM tiles under the
     dataset prefix, downloads each tile, reprojects it (if necessary) to the AOI's local UTM
@@ -749,6 +744,9 @@ def download_ncalm_dem(
     dataset_id : str or int
         Dataset identifier (e.g., "WA18_Wall" or "OTLAS.072019.6339.1"). This is used as the
         prefix for S3 object keys.
+    product : str
+        'dtm' to download the bare-earth DEM (GEG),
+        'dsm' to download the first-return DEM (GEF).
     output_dir : str, optional
         Directory to save output files. Defaults to "/tmp".
 
@@ -757,43 +755,156 @@ def download_ncalm_dem(
     None
         The function writes the cropped/clipped output files to the specified output directory.
     """
-    bucket = "raster"  # DEM (raster) bucket
-    file_ext = ".tif"  # expecting GeoTIFF files for DEMs
+    product = product.lower()
+    if product not in ("dtm", "dsm"):
+        msg_invalid_product = "product must be either 'dtm' or 'dsm'"
+        raise ValueError(msg_invalid_product)
+
+    # Determine folder and filename suffix
+    folder_suffix = "_be" if product == "dtm" else "_hh"
+    # file_code = "GEG" if product == "dtm" else "GEF"
+    bucket = "raster"
+    file_ext = ".tif"
 
     # Ensure the output directory exists
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    # Set the endpoint URL for OpenTopo S3
+    # S3 client for unsigned access
     endpoint_url = "https://opentopography.s3.sdsc.edu"
-
-    # Create an S3 client configured for unsigned access
     s3 = boto3.client(
-        "s3", config=Config(signature_version=UNSIGNED), endpoint_url=endpoint_url
+        "s3",
+        config=Config(signature_version=UNSIGNED),
+        endpoint_url=endpoint_url,
     )
 
-    # List objects under the dataset prefix
-    prefix = f"{dataset_id}/"
+    # List objects under the dataset prefix + return folder
+    prefix = f"{dataset_id}/{dataset_id}{folder_suffix}/"
     response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
     if "Contents" not in response:
-        msg_empty_contents = f"No objects found for prefix {prefix} in bucket {bucket}."
-        raise ValueError(msg_empty_contents)
+        msg_empty_project = f"No objects found for prefix {prefix} in bucket {bucket}."
+        raise ValueError(msg_empty_project)
 
-    # Estimate the AOI's local UTM CRS and reproject the AOI, most NCALM flight are in local UTMs
-    # we add another check for this later
+    # Estimate the AOI's UTM and reproject
     aoi_crs = aoi.estimate_utm_crs()
     aoi_utm = aoi.to_crs(aoi_crs)
 
-    # Process DEM files: collect all keys ending with the DEM extension
+    # Filter keys by suffix
     dem_keys = [
-        obj["Key"]
-        for obj in response.get("Contents", [])
-        if obj["Key"].endswith(file_ext)
+        obj["Key"] for obj in response["Contents"] if obj["Key"].endswith(file_ext)
     ]
+
     for dem_key in dem_keys:
         dem_url = f"{endpoint_url}/{bucket}/{dem_key}"
         dem = rxr.open_rasterio(dem_url, masked=True)
+
+        # Reproject if needed
         if dem.rio.crs != aoi_crs:
             dem = dem.rio.reproject(aoi_crs)
+
+        # Clip to AOI
         dem_clipped = dem.rio.clip(aoi_utm.geometry, aoi_utm.crs)
-        clipped_output_path = Path(output_dir) / f"clipped_{Path(dem_key).name}"
+
+        # Save output
+        output_name = f"clipped_{Path(dem_key).stem}_{product}.tif"
+        clipped_output_path = Path(output_dir) / output_name
         dem_clipped.rio.to_raster(clipped_output_path)
+
+
+def fetch_ncalm_lpc_tiles(
+    aoi: gpd.GeoDataFrame,
+    dataset_name: str,
+    output_dir: str | None = None,
+    download: bool = False,
+) -> gpd.GeoDataFrame:
+    """
+    Fetch NCALM LPC (1 km LAZ) tiles intersecting an AOI from the OpenTopography 'pc-bulk' bucket,
+    optionally downloading them to disk.
+
+    Steps:
+      1. Reproject AOI to its local UTM CRS for accurate spatial filtering.
+      2. List all .laz keys under pc-bulk/{dataset_id}/.
+      3. Client-side filter: extract easting/northing from each filename, build a 1 km box,
+         keep only tiles that intersect the AOI in UTM.
+      4. Build a GeoDataFrame with columns ['key','url','geometry'] and reproject back to EPSG:4326.
+      5. If download=True, write each tile to output_dir.
+
+    Parameters
+    ----------
+    aoi : geopandas.GeoDataFrame
+        AOI geometries (any CRS, but assumed geographic or projected).
+    dataset_name : str
+        NCALM project shortname (e.g. "WA18_Wall").
+    output_dir : str | None
+        If provided, directory to download .laz files into.
+    download : bool
+        If True, download the filtered LAZ files to output_dir.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        Columns:
+          - key: S3 object key (e.g. "WA18_Wall/617000_5148000.laz")
+          - url: full http URL to the LAZ tile
+          - geometry: shapely Polygon of the 1 km tile, in EPSG:4326
+    """
+    # 1. Determine AOI's UTM CRS and reproject
+    utm_crs = aoi.estimate_utm_crs()
+    aoi_utm = aoi.to_crs(utm_crs)
+    union_utm = aoi_utm.union_all()
+
+    # 2. List all .laz keys in pc-bulk
+    bucket = "pc-bulk"
+    endpoint_url = "https://opentopography.s3.sdsc.edu"
+    s3 = boto3.client(
+        "s3",
+        config=Config(signature_version=UNSIGNED),
+        endpoint_url=endpoint_url,
+    )
+    prefix = f"{dataset_name}/"
+    resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+    if "Contents" not in resp:
+        msg_empty_contents = f"No objects found for prefix {prefix} in bucket {bucket}."
+        raise ValueError(msg_empty_contents)
+
+    # 3. Filter client-side by 1 km tile intersection
+    pattern = re.compile(r"(\d+)\_(\d+)\.laz$")
+    records = []
+    for obj in resp["Contents"]:
+        key = obj["Key"]
+        if not key.endswith(".laz"):
+            continue
+        m = pattern.search(Path(key).name)
+        if not m:
+            continue
+        easting, northing = map(int, m.groups())
+        # 1000 for 1km x 1km tile shape (consistent for all NCALM datasets)
+        tile = box(easting, northing, easting + 1000, northing + 1000)
+        if not tile.intersects(union_utm):
+            continue
+        url = f"{endpoint_url}/{bucket}/{key}"
+        records.append({"key": key, "url": url, "geometry": tile})
+
+    if not records:
+        msg_no_overlay = "No LPC tiles intersect your AOI for this dataset."
+        raise RuntimeError(msg_no_overlay)
+
+    # 4. Build GeoDataFrame and reproject to 4326
+    gdf = gpd.GeoDataFrame(records, crs=utm_crs)
+    gdf = gdf.to_crs(epsg=4326)
+
+    # 5. Optionally download
+    if download:
+        if not output_dir:
+            msg_no_output_dir = "`output_dir` must be set when download=True"
+            raise ValueError(msg_no_output_dir)
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        for key in gdf["key"]:
+            local_path = Path(output_dir) / Path(key).name
+            s3.download_file(bucket, key, str(local_path))
+
+    # 6. Optionally save GeoJSON
+    if output_dir:
+        geojson_path = Path(output_dir) / f"{dataset_name}_lpc_tiles.geojson"
+        gdf.to_file(geojson_path, driver="GeoJSON")
+
+    return gdf

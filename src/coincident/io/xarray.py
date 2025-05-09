@@ -21,7 +21,6 @@ from shapely.geometry import MultiPolygon, Polygon, box
 
 from coincident.search.neon_api import (
     _get_tile_bbox,
-    _utm_crs_from_lonlat,
     query_neon_data_api,
 )
 from coincident.search.opentopo_api import _find_noaa_dem_files
@@ -360,10 +359,7 @@ def load_neon_dem(
     month_str = dt.strftime("%Y-%m")
 
     # 2: Determine appropriate UTM CRS for the AOI
-    # we need to do this for client-side spatial filtering
-    # Get the centroid of the AOI (in EPSG:4326)
-    centroid = aoi.union_all().centroid
-    target_crs = _utm_crs_from_lonlat(centroid.x, centroid.y)
+    target_crs = aoi.estimate_utm_crs()
     # Reproject AOI to target CRS
     aoi_utm = aoi.to_crs(target_crs)
     aoi_geom_utm = aoi_utm.union_all()  # Combined AOI in UTM coordinates
@@ -422,108 +418,116 @@ def load_neon_dem(
 
 
 def load_ncalm_dem(
-    aoi: gpd.GeoDataFrame, dataset_id: str | int, return_single: bool = True
-) -> xr.Dataset:
+    aoi: gpd.GeoDataFrame,
+    dataset_id: str | int,
+    product: str,
+    res: int = 1,
+    clip: bool = True,
+    return_single: bool = True,
+) -> xr.DataArray | list[xr.DataArray]:
     """
-    Process NCALM (or OpenTopo user-hosted) DEM data from OpenTopography S3 based on a dataset
-    identifier and an AOI. Returns an xarray Dataset with an 'elevation' variable containing
-    the values clipped to the AOI without downloading files locally.
-    Your dataset identifier will be the 'name' column from coincident.search.search(dataset="ncalm")
+    Load NCALM DEM (DTM or DSM) tiles directly from OpenTopography S3 and return as xarray DataArray.
+
+    NCALM provides:
+      - DTM (bare-earth) with file code GEG in folder suffix '_be'
+      - DSM (first-return) with file code GEF in folder suffix '_hh'
 
     Parameters
     ----------
     aoi : geopandas.GeoDataFrame
-        Area of interest geometry (assumed to be in EPSG:4326).
+        Area of interest geometries (in EPSG:4326).
     dataset_id : str or int
-        Dataset identifier (e.g., "WA18_Wall" or "OTLAS.072019.6339.1"). This is used as the
-        prefix for S3 object keys.
+        NCALM dataset identifier (e.g., 'WA18_Wall').
+    product : str
+        'dtm' for bare-earth, 'dsm' for first-return.
+    res : int, optional
+        Factor to coarsen the DEM (default 1 = no coarsening).
+    clip : bool, optional
+        Whether to clip final mosaic to the AOI (default True).
     return_single : bool, optional
-        If True, combines all DEM tiles into a single Dataset. If False, returns a list of
-        Datasets. Defaults to True.
+        If True, return a single merged DataArray. If False, return a list of DataArrays.
 
     Returns
     -------
-    xarray.Dataset or list of xarray.Dataset
-        An xarray Dataset with 'elevation' variable containing DEM values clipped to the AOI,
-        or a list of such Datasets if return_single is False.
-
-    NOTE: the return_single argument is needed due to the strange structure of NCALM DEMs hosted on OpenTopo
-    See dem_urls = [
-                    "https://opentopography.s3.sdsc.edu/raster/WA18_Wall/WA18_Wall_be/WALL_GEG_1M.tif",
-                    "https://opentopography.s3.sdsc.edu/raster/WA18_Wall/WA18_Wall_hh/WALL_GEF_1M.tif"
-                ]
+    xarray.DataArray or list of xarray.DataArray
+        DEM tile arrays or merged mosaic with name 'elevation'.
     """
     import boto3
     from botocore import UNSIGNED
     from botocore.client import Config
 
-    # Set the endpoint URL for OpenTopo S3
-    endpoint_url = "https://opentopography.s3.sdsc.edu"
+    # Validate product
+    product = product.lower()
+    if product not in ("dtm", "dsm"):
+        msg_invalid_prod = "product must be 'dtm' or 'dsm'"
+        raise ValueError(msg_invalid_prod)
 
-    # Create an S3 client configured for unsigned access
+    # Determine folder and file code
+    folder_suffix = "_be" if product == "dtm" else "_hh"
+    # file_code = "GEG" if product == "dtm" else "GEF"
+
+    # S3 setup
+    bucket = "raster"
+    endpoint_url = "https://opentopography.s3.sdsc.edu"
     s3 = boto3.client(
-        "s3", config=Config(signature_version=UNSIGNED), endpoint_url=endpoint_url
+        "s3",
+        config=Config(signature_version=UNSIGNED),
+        endpoint_url=endpoint_url,
     )
 
-    # List objects under the dataset prefix
-    prefix = f"{dataset_id}/"
-    response = s3.list_objects_v2(Bucket="raster", Prefix=prefix)
-    if "Contents" not in response:
-        msg_empty_contents = f"No objects found for prefix {prefix} in bucket."
-        raise ValueError(msg_empty_contents)
+    # List DEM tiles
+    prefix = f"{dataset_id}/{dataset_id}{folder_suffix}/"
+    resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
+    if "Contents" not in resp:
+        msg_no_contents = f"No objects found for prefix {prefix} in bucket {bucket}."
+        raise ValueError(msg_no_contents)
 
-    # Estimate the AOI's local UTM CRS and reproject the AOI
+    # AOI UTM reprojection
     aoi_crs = aoi.estimate_utm_crs()
     aoi_utm = aoi.to_crs(aoi_crs)
 
-    # Process DEM files: collect all keys ending with the DEM extension
-    dem_keys = [
-        obj["Key"]
-        for obj in response.get("Contents", [])
-        if obj["Key"].endswith(".tif")
-    ]
-
+    # Filter keys matching DEM code and resolution
+    pattern = ".tif"
+    # file_ext = ".tif"
+    # pattern = f"_{file_code}_1M{file_ext}"
+    dem_keys = [obj["Key"] for obj in resp["Contents"] if obj["Key"].endswith(pattern)]
     if not dem_keys:
-        msg_data_id = f"No DEM files found for dataset {dataset_id}"
-        raise ValueError(msg_data_id)
+        msg_no_overlay = f"No DEM files ({pattern}) found for dataset {dataset_id}"
+        raise ValueError(msg_no_overlay)
 
-    # Process each DEM and store in a list
-    dem_datasets = []
+    # Load each tile
+    tile_arrays: list[xr.DataArray] = []
+    for key in dem_keys:
+        url = f"{endpoint_url}/{bucket}/{key}"
+        da = rioxarray.open_rasterio(url, masked=True)
+        # select band1
+        da = da.sel(band=1).drop_vars("band")
 
-    for dem_key in dem_keys:
-        dem_url = f"{endpoint_url}/raster/{dem_key}"
+        # reproject if needed
+        if da.rio.crs != aoi_crs:
+            da = da.rio.reproject(aoi_crs)
 
-        # Open the DEM as an xarray
-        dem = rioxarray.open_rasterio(dem_url, masked=True)
+        # coarsen if requested
+        if res > 1:
+            da = da.coarsen(x=res, y=res, boundary="trim").mean()
 
-        # Reproject if necessary
-        if dem.rio.crs != aoi_crs:
-            dem = dem.rio.reproject(aoi_crs)
+        # clip if requested
+        if clip:
+            da = da.rio.clip(aoi_utm.geometry, aoi_crs, drop=True)
 
-        # Clip to the AOI
-        dem_clipped = dem.rio.clip(aoi_utm.geometry, aoi_utm.crs)
-
-        # Create a dataset with an 'elevation' variable
-        # Assuming the first band contains elevation data
-        ds = xr.Dataset({"elevation": dem_clipped.sel(band=1).drop("band")})
-
-        # Preserve coordinate reference system and metadata
-        ds.rio.write_crs(dem_clipped.rio.crs, inplace=True)
-
-        # Add any relevant metadata from original
-        for key, value in dem_clipped.attrs.items():
-            ds.attrs[key] = value
+        da.name = "elevation"
+        tile_arrays.append(da)
 
         if return_single:
-            return ds
+            # return single first tile if requested
+            return da
 
-        dem_datasets.append(ds)
+    # return list if not merging
+    if not return_single:
+        return tile_arrays
 
-    try:
-        return xr.merge(dem_datasets)
-    except Exception as e:
-        msg_merge = f"Error merging DEM datasets: {e!s}"
-        raise ValueError(msg_merge) from e
+    # merge by stacking bands and taking max
+    return xr.concat(tile_arrays, dim="band").max(dim="band").rename("elevation")
 
 
 # NOTE: NOAA has separate ids and catalogs for their "lidar" and "imagery and elevation raster" datasets

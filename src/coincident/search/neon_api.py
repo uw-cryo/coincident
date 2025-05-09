@@ -38,18 +38,6 @@ from shapely.geometry import Point, Polygon, box
 from shapely.ops import unary_union
 
 
-def _utm_crs_from_lonlat(lon: float, lat: float) -> str:
-    """
-    HELPER FUNCTION FOR load_neon_dem()
-    Compute the UTM CRS for a given longitude and latitude.
-    Assumes northern hemisphere if lat >= 0, otherwise southern.
-    Returns the CRS as a string, e.g., "EPSG:326XX" or "EPSG:327XX".
-    """
-    zone = int((lon + 180) / 6) + 1
-    epsg_code = 32600 + zone if lat >= 0 else 32700 + zone
-    return f"EPSG:{epsg_code}"
-
-
 def _get_tile_bbox(file_name: str, tile_size: int = 1000) -> Polygon | None:
     """
     HELPER FUNCTION FOR load_neon_dem()
@@ -262,11 +250,30 @@ def search_bboxes(
         lambda row: _get_neon_flight_geometry(row["product_url"], row["geometry"]),
         axis=1,
     )
-
     # Final spatial join to ensure that the flight geometries (now in EPSG:4326) intersect the input AOI.
-    return (
-        gf_neon.sjoin(intersects).drop(columns=["index_right"]).reset_index(drop=True)
-    )  # NOTE: need to drop left join columns...
+    gf_neon = gf_neon.sjoin(intersects)[
+        [
+            "id",
+            "title",
+            "start_datetime_left",
+            "end_datetime_left",
+            "product_url",
+            "geometry",
+        ]
+    ].rename(
+        columns={
+            "start_datetime_left": "start_datetime",
+            "end_datetime_left": "end_datetime",
+        }
+    )
+    # add days in -dd to the start_datetime and end_datetime which are in yyyy-mm
+    gf_neon["start_datetime"] = gf_neon["start_datetime"] + "-01"
+    gf_neon["end_datetime"] = (
+        gf_neon["end_datetime"]
+        .astype(str)
+        .apply(lambda m: f"{m}-{pd.Period(m, freq='M').days_in_month:02d}")
+    )
+    return gf_neon
 
 
 # NOTE: product code DP1.30003.001 is for discrete LiDAR point cloud
