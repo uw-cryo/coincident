@@ -17,3 +17,19 @@ pixi run precommit # also runs automatically upon commits
 pixi run lint
 pixi run docs
 ```
+
+## Without internet access
+
+In situations where you don't have reliable internet it can be convenient to not
+run any checks for package version updates with pixi commands
+(`--no-lockfile-update`)
+
+```bash
+pixi shell -e dev --no-lockfile-update
+```
+
+You can also run only the tests that don't require searching via external APIs:
+
+```bash
+pixi run test
+```
