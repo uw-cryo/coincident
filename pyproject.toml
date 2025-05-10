@@ -31,31 +31,28 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
-  "geopandas>=1.0.1,<2",
-  "odc-stac>=0.3.11,<0.4",
-  "odc-loader>=0.5.1,<0.6",
-  "pyarrow>=19.0.0,<20",
-  "pystac-client>=0.8.6,<0.9",
-  "requests>=2.32.3,<3",
-  "rioxarray>=0.18.2,<0.19",
-  "cloudpathlib[s3]>=0.20.0,<0.21",
-  "matplotlib>=3.9.4,<4",
-  "maxar-platform>=1.0.6,<2",
-  "stac-geoparquet",
-  "sliderule>=4.7.1,<5",
-  "stac-asset>=0.4.6,<0.5",
-  "matplotlib-scalebar>=0.9.0,<0.10",
+"geopandas>=1",
+"odc-stac>=0.4",
+"pyarrow>=20",
+"pystac-client>=0.8",
+"requests>=2.32",
+"rioxarray>=0.19",
+"matplotlib>=3",
+"stac-geoparquet>=0.6",
+"sliderule>=4",
+"cloudpathlib[s3]>=0.21",
+"maxar-platform>=1",
+"stac-asset>=0.4",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "ipykernel>=6.29.5,<7",
-  "mypy>=1.11.2,<2",
+  "ipykernel>=6.29",
+  "mypy>=1.11",
   "pre-commit>=4",
-  "pylint>=3.3.1,<4",
-  "pytest >=6",
-  "pytest-cov >=3",
-  "xdem>=0.1.0,<0.2",
+  "pylint>=3.3",
+  "pytest>=6",
+  "pytest-cov>=3",
 ]
 
 docs = [
@@ -68,9 +65,6 @@ docs = [
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
   "sphinx_design",
-  "xdem>=0.1.0,<0.2",
-  # TODO: not sure why, but RTD can't import xdem w/o this...
-  "setuptools", # ModuleNotFoundError: No module named 'distutils'
 ]
 
 [project.urls]
@@ -213,27 +207,21 @@ docs = { features = ["docs"], solve-group = "default" }
 # If a package is listed in project.dependencies but not repeated here, it is installed from pypi
 [tool.pixi.dependencies]
 python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
-geopandas = ">=1.0.1,<2"
-odc-stac = ">=0.3.11,<0.4"
-pystac-client = ">=0.8.6,<0.9"
-requests = ">=2.32.3,<3"
-rioxarray = ">=0.18.2,<0.19"
-stac-geoparquet = ">=0.6.0,<0.7"
-pyarrow = ">=19.0.0,<20"
-jsonschema = ">=4.23.0,<5"
-libgdal-arrow-parquet = ">=3.10.1,<4"
-matplotlib-scalebar = ">=0.9.0,<0.10"
+geopandas = "*"
+odc-stac = "*"
+pystac-client = "*"
+requests = "*"
+rioxarray = "*"
+stac-geoparquet = "*"
+pyarrow = "*"
+jsonschema = "*"
+libgdal-arrow-parquet = "*"
 sliderule = "*"
-# NOTE: xdem pins numpy<2
-# https://github.com/GlacioHack/xdem/blob/856100ce05f211fad0737213c3eff3f46d4ab413/requirements.txt#L6
-xdem = "*"
-odc-loader="*"
-# https://github.com/conda-forge/numpy-feedstock/issues/347#issuecomment-2772248255
-libgfortran5 = ">=14"
+libgfortran5 = ">=14.2.0"
 
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
-ipykernel = ">=6.29.5,<7"
+ipykernel = ">=6.29"
 matplotlib = "*"
 mypy = "*"
 # Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.

@@ -2,11 +2,3 @@
 div.cell_output table {
   font-size: 0.8em;
 }
-
-/*  png2x/retina rendering of figues in docs would also need to modify custom.css:
-based on https://github.com/spatialaudio/nbsphinx/issues/464#issuecomment-652729126  */
-div.cell_output img {
-  max-width: unset;
-  width: 100% !important;
-  height: auto !important;
-}
