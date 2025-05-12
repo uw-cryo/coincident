@@ -4,6 +4,7 @@ Convenience functions for downloading STAC items via stac-asset
 
 from __future__ import annotations
 
+import json
 import os
 import re
 from collections import defaultdict
@@ -20,6 +21,7 @@ import rioxarray as rxr
 import stac_asset
 from botocore import UNSIGNED
 from botocore.client import Config
+from pyproj import CRS
 from pystac import Item
 from shapely.geometry import Polygon, box
 from tqdm import tqdm
@@ -285,6 +287,192 @@ def fetch_usgs_lpc_tiles(
         gdf.to_file(out_path, driver="GeoJSON")
 
     return gdf
+
+
+def build_usgs_ept_pipeline(
+    aoi: gpd.GeoDataFrame,
+    workunit: str | None = None,
+    output_dir: str | None = None,
+) -> dict[str, Any]:  # Added type hint for dict return
+    """
+    Finds the relevant USGS 3DEP EPT dataset for an AOI and returns a dictionary
+    structured as a PDAL pipeline JSON to subset the data based on the AOI,
+    without downloading point data.
+
+    The returned pipeline includes an 'readers.ept' stage and a 'filters.crop'
+    stage configured with the EPT URL, the AOI's bounds, and polygon WKT,
+    all in the EPT's spatial reference system (SRS). Users can add their
+    custom parameters (like writers and additional filters) to this pipeline
+    before executing it with PDAL.
+
+    Parameters:
+        aoi (gpd.GeoDataFrame): Area of interest (can be in any CRS).
+        workunit (Optional[str]): The specific 3DEP workunit name from coincident.search.search(dataset="3dep")
+                                  (e.g., 'CO_CentralEasternPlains_1_2020').
+                                  If None, the function will attempt to find a
+                                  workunit intersecting the AOI using the USGS
+                                  resources GeoJSON.
+        output_dir (Optional[str]): Directory to write out the generated PDAL
+                                    pipeline JSON file. If None, no file is written.
+
+    Returns:
+        dict: A dictionary representing the base PDAL pipeline JSON for subsetting.
+
+    Raises:
+        ValueError: If the AOI geometry is not a Polygon/MultiPolygon, or if
+                    no matching 3DEP workunit is found for the given AOI.
+        requests.exceptions.RequestException: If there's an issue fetching the
+                                              EPT metadata.
+        RuntimeError: If essential data like SRS WKT is missing/cannot be parsed,
+                      or if the resources GeoJSON cannot be read.
+    """
+    # Added check for AOI geometry type as filters.crop expects Polygon/MultiPolygon
+    # Placed here early to fail fast if AOI is not suitable for cropping
+    if not aoi.geom_type.isin(["Polygon", "MultiPolygon"]).all():
+        aoi_geom_msg = (
+            "AOI geometry must be a Polygon or MultiPolygon for PDAL filters.crop."
+        )
+        raise ValueError(aoi_geom_msg)
+
+    # --- 1. Find the relevant 3DEP workunit for the AOI ---
+    if workunit is None:
+        # Assuming resources_url is defined and accessible
+        resources_url = "https://raw.githubusercontent.com/hobuinc/usgs-lidar/master/boundaries/resources.geojson"
+        try:
+            resources = gpd.read_file(resources_url).set_crs("EPSG:4326")
+        except Exception as e:
+            err_msg = f"Could not read USGS resources GeoJSON from {resources_url}: {e}"
+            raise RuntimeError(err_msg) from e  # Added 'from e' for B904
+
+        # Ensure AOI is in 4326 for spatial intersect with resources
+        aoi_4326 = aoi.to_crs("EPSG:4326")
+        aoi_union_4326 = aoi_4326.unary_union
+
+        found_workunit = None
+        # Check for intersection with bounds first for slight optimization
+        aoi_bounds_4326 = aoi_4326.total_bounds
+        for _, row in resources.iterrows():
+            # Combined nested if statement for SIM102
+            if (
+                row.geometry
+                and row.geometry.bounds.intersects(aoi_bounds_4326)
+                and row.geometry.intersects(aoi_union_4326)
+            ):
+                found_workunit = row["name"]
+                break  # Found the first intersecting workunit
+
+        if found_workunit is None:
+            err_msg = "No matching 3DEP workunit found for the given AOI."
+            raise ValueError(err_msg)
+        workunit = found_workunit
+
+    # --- 2. Construct and fetch the EPT metadata (ept.json) ---
+    # Construct the EPT URL based on the workunit
+    ept_url = (
+        f"https://s3-us-west-2.amazonaws.com/usgs-lidar-public/{workunit}/ept.json"
+    )
+
+    # Retrieve the dataset metadata to extract the spatial reference and other details.
+    try:
+        response = requests.get(ept_url)
+        # Raise an HTTPError for bad responses (4xx or 5xx)
+        response.raise_for_status()
+        ept_data = response.json()
+    except requests.exceptions.RequestException as e:
+        err_msg = f"Failed to fetch EPT metadata from {ept_url}: {e}"
+        raise requests.exceptions.RequestException(err_msg) from e
+    # Catch JSONDecodeError and raise a standard RuntimeError chaining the original error
+    except json.JSONDecodeError as e:
+        err_msg = f"Failed to decode JSON from EPT metadata at {ept_url}: {e}"
+        raise RuntimeError(
+            err_msg
+        ) from e  # Changed from json.JSONDecodeError to RuntimeError for mypy
+
+    # --- 3. Determine EPT CRS and transform AOI ---
+    srs_info = ept_data.get("srs", {})
+    srs_wkt = srs_info.get("wkt")
+
+    if srs_wkt is None:
+        # Check for horizontal/vertical if wkt is missing, though WKT is preferred
+        horizontal_epsg = srs_info.get("horizontal")
+        # vertical_epsg = srs_info.get("vertical") # Not needed for horizontal CRS
+        if horizontal_epsg:
+            try:
+                pointcloud_input_crs = CRS.from_epsg(int(horizontal_epsg))
+            except Exception as e:
+                err_msg = f"Could not create CRS from EPSG:{horizontal_epsg} found in EPT metadata: {e}"
+                raise RuntimeError(err_msg) from e
+        else:
+            err_msg = "Could not retrieve SRS WKT or horizontal EPSG from the EPT endpoint metadata."
+            raise RuntimeError(err_msg)
+    else:
+        try:
+            pointcloud_input_crs = CRS.from_wkt(srs_wkt)
+        except Exception as e:
+            err_msg = f"Could not parse SRS WKT from EPT metadata: {e}"
+            raise RuntimeError(err_msg) from e
+
+    # Transform the AOI into the point cloud's CRS.
+    # Use the WKT definition for to_crs, pyproj will handle it regardless of EPSG code presence
+    aoi_input = aoi.to_crs(pointcloud_input_crs)
+
+    # --- 4. Prepare AOI geometry strings/bounds in EPT CRS for PDAL pipeline ---
+    # Union and simplify for the polygon WKT (for filters.crop)
+    # Simplifying helps prevent excessively long WKT strings which can cause issues
+    # The 10-meter tolerance is an example, adjust based on your needs
+    aoi_union = aoi_input.union_all()
+
+    # PDAL filters.crop expects a Polygon or MultiPolygon WKT.
+    # We added a check at the start of the function to ensure the input AOI
+    # is already a suitable geometry type. Simplification is appropriate now.
+    aoi_wkt_geom = aoi_union.simplify(10)  # simplify in meters
+    aoi_wkt = aoi_wkt_geom.wkt
+
+    # Derive bounds from AOI envelope (for readers.ept 'bounds' parameter)
+    # PDAL expects bounds in the format "(([minx, maxx], [miny, maxy]))"
+    minx, miny, maxx, maxy = aoi_input.total_bounds
+    # f-string for UP031
+    bounds_str_pdal = f"(([{minx:.10f}, {maxx:.10f}], [{miny:.10f}, {maxy:.10f}]))"
+
+    # --- 5. Assemble the base PDAL pipeline dictionary ---
+    # This pipeline defines the input EPT source and the initial spatial subsetting (bounds and crop)
+    # Users will add their own writers, filters, etc., to this pipeline.
+    pdal_pipeline = {
+        "pipeline": [
+            {
+                "type": "readers.ept",
+                "filename": ept_url,
+                "bounds": bounds_str_pdal,
+                # Optional: Add concurrent requests parameter? This depends on user environment.
+                # Let's omit it for a minimal template.
+                # "requests": 8,
+                # Optional: Add threads? Omit for minimal template.
+                # "threads": 2,
+            },
+            {
+                "type": "filters.crop",
+                "polygon": aoi_wkt,
+                # Optional: Add a name to the filter? Omit for minimal template.
+                # "tag": "aoi_crop"
+            },
+            # User adds their custom stages (filters, writers) here
+            {
+                "type": "writers.las",
+                "filename": f"{workunit}_EPT_subset_pipeline.laz",
+                "compression": "laszip",
+            },
+        ]
+    }
+
+    # --- 6. Optionally write out the pipeline dictionary to JSON ---
+    if output_dir:
+        out_path = Path(output_dir) / f"{workunit}_EPT_subset_pipeline.json"
+        # out_path.parent.mkdir(parents=True, exist_ok=True)
+        with out_path.open("w") as f:
+            json.dump(pdal_pipeline, f, indent=4)
+
+    # --- 7. Return the pipeline dictionary ---
+    return pdal_pipeline
 
 
 def download_neon_dem(
