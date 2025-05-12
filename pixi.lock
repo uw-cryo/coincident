@@ -2929,7 +2929,7 @@ packages:
   timestamp: 1736947650712
 - pypi: .
   name: coincident
-  version: 0.3.dev9+g117f4f0.d20250512
+  version: 0.3.dev16+g0316f58.d20250512
   sha256: d8b7f0ae57a8e06b49b1e6b2abfcc159a74d98fda2e01b55f8bdc4f51999b7e8
   requires_dist:
   - cloudpathlib[s3]>=0.21

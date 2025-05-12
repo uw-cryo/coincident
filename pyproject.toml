@@ -57,6 +57,7 @@ dev = [
 
 docs = [
   "folium", # comes w/ geopandas on conda-forge but not pypi
+  "ipykernel>=6.29",
   "mapclassify",
   "myst-nb",
   "myst_parser>=0.13",

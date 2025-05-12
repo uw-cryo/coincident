@@ -30,5 +30,6 @@ See the following website for more details on the motivation for this project!
 
 user_guide/index.md
 examples/index.md
+datasets/index.md
 api.rst
 ```
