@@ -31,18 +31,18 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
+"cloudpathlib[s3]>=0.21",
 "geopandas>=1",
-"odc-stac>=0.4",
+"matplotlib>=3.10",
+"maxar-platform>=1",
 "pyarrow>=20",
 "pystac-client>=0.8",
+"odc-stac>=0.4",
 "requests>=2.32",
 "rioxarray>=0.19",
-"matplotlib>=3",
-"stac-geoparquet>=0.6",
 "sliderule>=4",
-"cloudpathlib[s3]>=0.21",
-"maxar-platform>=1",
 "stac-asset>=0.4",
+"stac-geoparquet>=0.6",
 ]
 
 [project.optional-dependencies]
@@ -61,7 +61,7 @@ docs = [
   "myst-nb",
   "myst_parser>=0.13",
   "pydata-sphinx-theme>=0.16.0,<0.17",
-  "sphinx>=7.0",
+  "sphinx>=8.0",
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
   "sphinx_design",
@@ -222,7 +222,7 @@ libgfortran5 = ">=14.2.0"
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
 ipykernel = ">=6.29"
-matplotlib = "*"
+matplotlib-base = ">=3.10"
 mypy = "*"
 # Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.
 pre-commit = "*"
