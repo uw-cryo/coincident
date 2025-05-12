@@ -32,7 +32,8 @@ pip install pixi-kernel --user
 ```
 
 You will then be able to select the `Pixi (Python)` kernel from the JupyterLab
-interface.
+interface. You may need to run `pixi shell` in a terminal before the environment
+is available in JupyterLab.
 
 ```{note}
 Pixi environments are scoped to folders, so you will only be able to use this environment for notebooks under the `coincident/` repository folder.

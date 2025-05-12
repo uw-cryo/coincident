@@ -18,11 +18,12 @@ pixi run lint
 pixi run docs
 ```
 
-## Without internet access
+## Developing without internet access or environment changes
 
 In situations where you don't have reliable internet it can be convenient to not
 run any checks for package version updates with pixi commands
-(`--no-lockfile-update`)
+(`--no-lockfile-update`). Alternatively you can set an environment variable
+`export PIXI_FROZEN=true`.
 
 ```bash
 pixi shell -e dev --no-lockfile-update
