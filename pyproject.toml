@@ -33,6 +33,7 @@ dynamic = ["version"]
 dependencies = [
 "cloudpathlib[s3]>=0.21",
 "geopandas>=1",
+"gdal>=3.10",
 "matplotlib>=3.10",
 "maxar-platform>=1",
 "pyarrow>=20",
@@ -209,6 +210,7 @@ docs = { features = ["docs"], solve-group = "default" }
 [tool.pixi.dependencies]
 python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
 geopandas = "*"
+gdal = "*"
 odc-stac = "*"
 pystac-client = "*"
 requests = "*"
@@ -238,7 +240,7 @@ coincident = { path = ".", editable = false }
 coincident = { path = ".", editable = true }
 
 [tool.pixi.feature.dev.tasks]
-precommit = "pre-commit run --all"
+precommit = "pre-commit run --all-files"
 # NOTE: consider --output-format=github for github actions
 lint = "pylint src"
 test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"

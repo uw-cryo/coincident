@@ -18,8 +18,8 @@ from coincident.plot.matplotlib import (
     plot_maxar_browse,
 )
 from coincident.plot.utils import (
+    gdaldem,
     get_elev_diff,
-    hillshade,
 )
 
 __all__ = [
@@ -28,8 +28,8 @@ __all__ = [
     "boxplot_slope",
     "boxplot_terrain_diff",
     "compare_dems",
+    "gdaldem",
     "get_elev_diff",
-    "hillshade",
     "hist_esa",
     "plot_altimeter_points",
     "plot_dem",
