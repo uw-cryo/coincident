@@ -33,8 +33,6 @@ dynamic = ["version"]
 dependencies = [
 "cloudpathlib[s3]>=0.21",
 "geopandas>=1",
-"gdal>=3.10",
-"matplotlib>=3.10",
 "maxar-platform>=1",
 "pyarrow>=20",
 "pystac-client>=0.8",
@@ -48,17 +46,17 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  # packaging pain, assume most people using conda
+  #"gdal>=3.10",
   "ipykernel>=6.29",
   "mypy>=1.11",
   "pre-commit>=4",
   "pylint>=3.3",
   "pytest>=6",
   "pytest-cov>=3",
-]
-
-docs = [
+  # Docs:
   "folium", # comes w/ geopandas on conda-forge but not pypi
-  "ipykernel>=6.29",
+  "matplotlib>=3.10",
   "mapclassify",
   "myst-nb",
   "myst_parser>=0.13",
@@ -203,14 +201,13 @@ platforms = ["osx-arm64", "linux-64"]
 [tool.pixi.environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
-docs = { features = ["docs"], solve-group = "default" }
 
 # NOTE: pixi will match project.dependencies versions above but get them from conda-forge
 # If a package is listed in project.dependencies but not repeated here, it is installed from pypi
 [tool.pixi.dependencies]
 python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
 geopandas = "*"
-gdal = "*"
+gdal = ">=3.10"
 odc-stac = "*"
 pystac-client = "*"
 requests = "*"
@@ -220,14 +217,14 @@ pyarrow = "*"
 jsonschema = "*"
 libgdal-arrow-parquet = "*"
 sliderule = "*"
+# https://github.com/prefix-dev/pixi/issues/3479
 libgfortran5 = ">=14.2.0"
 
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
-ipykernel = ">=6.29"
+ipykernel = "*"
 matplotlib-base = ">=3.10"
 mypy = "*"
-# Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.
 pre-commit = "*"
 pylint = "*"
 pytest = "*"
@@ -245,11 +242,6 @@ precommit = "pre-commit run --all-files"
 lint = "pylint src"
 test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
 networktest = "pytest --cov --cov-report=xml --cov-report=term --durations=0"
-
-[tool.pixi.feature.docs.pypi-dependencies]
-coincident = { path = ".", editable = true }
-
-[tool.pixi.feature.docs.tasks]
 # NOTE: || true to always update readthedocs even if there are errors
 docs = "python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true"
 rebuild_docs = "rm -rf docs/_build ; python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true"

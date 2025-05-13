@@ -1,13 +1,23 @@
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import geopandas as gpd
 import numpy as np
 import xarray as xr
-from osgeo import gdal, gdal_array
 
-gdal.UseExceptions()
+try:
+    from osgeo import gdal, gdal_array
+
+    gdal.UseExceptions()
+except ImportError:
+    warnings.warn(
+        "'gdal python bindings' not found. `pip install gdal` for gdaldem functions",
+        stacklevel=2,
+    )
+
+from coincident._utils import depends_on_optional
 
 
 # TODO: better to split to separate functions, each with unique return type
@@ -66,6 +76,7 @@ def get_elev_diff(
     raise TypeError(msg_type_error)
 
 
+@depends_on_optional("gdal")
 def gdaldem(
     da: xr.DataArray, subcommand: str = "hillshade", **kwargs: Any
 ) -> xr.DataArray:
