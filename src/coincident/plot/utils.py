@@ -9,6 +9,7 @@ import xarray as xr
 
 try:
     from osgeo import gdal, gdal_array
+
     gdal.UseExceptions()
 except ImportError:
     warnings.warn(

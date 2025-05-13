@@ -89,6 +89,12 @@ repos:
       - id: check-github-workflows
       - id: check-readthedocs
 
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.8.1
+    hooks:
+      - id: nbstripout
+        args: [--extra-keys=metadata.kernelspec metadata.language_info.version]
+
   # https://pylint.pycqa.org/en/latest/user_guide/installation/pre-commit-integration.html#pre-commit-integration
   # - repo: local
   #   hooks:
