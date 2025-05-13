@@ -9,7 +9,6 @@ import xarray as xr
 
 try:
     from osgeo import gdal, gdal_array
-
     gdal.UseExceptions()
 except ImportError:
     warnings.warn(
@@ -76,7 +75,7 @@ def get_elev_diff(
     raise TypeError(msg_type_error)
 
 
-@depends_on_optional("gdal")
+@depends_on_optional("osgeo")
 def gdaldem(
     da: xr.DataArray, subcommand: str = "hillshade", **kwargs: Any
 ) -> xr.DataArray:
