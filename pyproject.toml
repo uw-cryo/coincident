@@ -31,16 +31,15 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
-"cloudpathlib[s3]>=0.21",
-"geopandas>=1",
-"maxar-platform>=1",
-"pyarrow>=20",
+"geopandas>=1.0",
+"maxar-platform>=1.0.7",
+"pyarrow>=19.0",
 "pystac-client>=0.8",
 "odc-stac>=0.4",
 "requests>=2.32",
 "rioxarray>=0.19",
-"sliderule>=4",
-"stac-asset>=0.4",
+"sliderule>=4.12",
+"stac-asset>=0.4.5",
 "stac-geoparquet>=0.6",
 ]
 
@@ -208,17 +207,17 @@ dev = { features = ["dev"], solve-group = "default" }
 python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
 geopandas = "*"
 gdal = ">=3.10"
+jsonschema = "*"
+libgdal-arrow-parquet = "*"
+# https://github.com/prefix-dev/pixi/issues/3479
+libgfortran5 = ">=14.2.0"
 odc-stac = "*"
+pyarrow = "*"
 pystac-client = "*"
 requests = "*"
 rioxarray = "*"
 stac-geoparquet = "*"
-pyarrow = "*"
-jsonschema = "*"
-libgdal-arrow-parquet = "*"
 sliderule = "*"
-# https://github.com/prefix-dev/pixi/issues/3479
-libgfortran5 = ">=14.2.0"
 
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
@@ -231,6 +230,7 @@ pytest = "*"
 
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = false }
+#stac-asset = { version = ">=0.4.5"}
 #cloudpathlib = { version = "0.20.0,<0.21", extras = ["s3"]}
 
 [tool.pixi.feature.dev.pypi-dependencies]
