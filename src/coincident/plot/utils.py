@@ -13,7 +13,7 @@ try:
     gdal.UseExceptions()
 except ImportError:
     warnings.warn(
-        "'gdal python bindings' not found. `pip install gdal` for gdaldem functions",
+        "gdal python bindings not found. `pip install gdal` for gdaldem functions",
         stacklevel=2,
     )
 

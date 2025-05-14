@@ -38,6 +38,7 @@ dependencies = [
 "odc-stac>=0.4",
 "requests>=2.32",
 "rioxarray>=0.19",
+"s3fs>=2025.3",
 "sliderule>=4.12",
 "stac-asset>=0.4.5",
 "stac-geoparquet>=0.6",
@@ -88,15 +89,16 @@ filterwarnings = [
   "error",
   # NOTE: try to remove with maxar-platform>1.0.1
   "ignore::DeprecationWarning:lark",
+  "ignore::DeprecationWarning:sliderule",
   "ignore:maxar_plaform authentication error:UserWarning",
   # https://github.com/microsoft/planetary-computer-sdk-for-python/issues/58
   "ignore::pydantic.warnings.PydanticDeprecatedSince20",
   "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning",
-  # sliderule datetime.datetime.utcnow() is deprecated...
-  "ignore::DeprecationWarning:sliderule",
+  # Coming from slidrule and boto
+  "ignore:datetime.datetime.utcnow().*:DeprecationWarning",
   # Optional imports
   "ignore:Unable to authenticate with Maxar API:UserWarning",
-  "ignore:.* package not found:UserWarning",
+  "ignore:.* not found:UserWarning",
   # NOTE: should be able to remove with geopandas 1.1
   "ignore:.*shapely.geos.*:DeprecationWarning:geopandas",
 ]

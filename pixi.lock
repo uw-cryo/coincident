@@ -262,6 +262,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/fb/13/e3b075031a738c9598c51cfbc4c7879e26729c53aa9cca59211c44235314/regex-2024.11.6-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/3b/5d/63d4ae3b9daea098d5d6f5da83984853c1bbacd5dc826764b249fe119d24/requests_oauthlib-2.0.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0d/9b/63f4c7ebc259242c89b3acafdb37b41d1185c07ff0011164674e9076b491/rich-14.0.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/66/e1/4db0388df5655de92ce5f9b60d2bef220a58dde130e0453e5433c579986e/s3fs-2025.3.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ac/ad/173f9fc405b787b819c5285192d8d44e683b648d29cee5252567c05fe470/stac_asset-0.4.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/31/08/aa4fdfb71f7de5176385bd9e90852eaf6b5d622735020ad600f2bab54385/typing_inspection-0.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c2/14/e2a54fabd4f08cd7af1c07030603c3356b74da07f7cc056e600436edfa17/tzlocal-5.3.1-py3-none-any.whl
@@ -512,6 +513,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/60/85/cebcc0aff603ea0a201667b203f13ba75d9fc8668fab917ac5b2de3967bc/regex-2024.11.6-cp312-cp312-macosx_11_0_arm64.whl
       - pypi: https://files.pythonhosted.org/packages/3b/5d/63d4ae3b9daea098d5d6f5da83984853c1bbacd5dc826764b249fe119d24/requests_oauthlib-2.0.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0d/9b/63f4c7ebc259242c89b3acafdb37b41d1185c07ff0011164674e9076b491/rich-14.0.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/66/e1/4db0388df5655de92ce5f9b60d2bef220a58dde130e0453e5433c579986e/s3fs-2025.3.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ac/ad/173f9fc405b787b819c5285192d8d44e683b648d29cee5252567c05fe470/stac_asset-0.4.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/31/08/aa4fdfb71f7de5176385bd9e90852eaf6b5d622735020ad600f2bab54385/typing_inspection-0.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c2/14/e2a54fabd4f08cd7af1c07030603c3356b74da07f7cc056e600436edfa17/tzlocal-5.3.1-py3-none-any.whl
@@ -847,6 +849,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/3b/5d/63d4ae3b9daea098d5d6f5da83984853c1bbacd5dc826764b249fe119d24/requests_oauthlib-2.0.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0d/9b/63f4c7ebc259242c89b3acafdb37b41d1185c07ff0011164674e9076b491/rich-14.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/53/97/d2cbbaa10c9b826af0e10fdf836e1bf344d9f0abb873ebc34d1f49642d3f/roman_numerals_py-3.1.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/66/e1/4db0388df5655de92ce5f9b60d2bef220a58dde130e0453e5433c579986e/s3fs-2025.3.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c8/78/3565d011c61f5a43488987ee32b6f3f656e7f107ac2782dd57bdd7d91d9a/snowballstemmer-3.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e7/9c/0e6afc12c269578be5c0c1c9f4b49a8d32770a080260c333ac04cc1c832d/soupsieve-2.7-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/31/53/136e9eca6e0b9dc0e1962e2c908fbea2e5ac000c2a2fbd9a35797958c48b/sphinx-8.2.3-py3-none-any.whl
@@ -1179,6 +1182,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/3b/5d/63d4ae3b9daea098d5d6f5da83984853c1bbacd5dc826764b249fe119d24/requests_oauthlib-2.0.0-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/0d/9b/63f4c7ebc259242c89b3acafdb37b41d1185c07ff0011164674e9076b491/rich-14.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/53/97/d2cbbaa10c9b826af0e10fdf836e1bf344d9f0abb873ebc34d1f49642d3f/roman_numerals_py-3.1.0-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/66/e1/4db0388df5655de92ce5f9b60d2bef220a58dde130e0453e5433c579986e/s3fs-2025.3.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c8/78/3565d011c61f5a43488987ee32b6f3f656e7f107ac2782dd57bdd7d91d9a/snowballstemmer-3.0.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e7/9c/0e6afc12c269578be5c0c1c9f4b49a8d32770a080260c333ac04cc1c832d/soupsieve-2.7-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/31/53/136e9eca6e0b9dc0e1962e2c908fbea2e5ac000c2a2fbd9a35797958c48b/sphinx-8.2.3-py3-none-any.whl
@@ -2317,8 +2321,8 @@ packages:
   timestamp: 1736947650712
 - pypi: .
   name: coincident
-  version: 0.3.dev21+g5edc272.d20250513
-  sha256: 01166be21989834c4a036fd9b7f6dc83e72b48c99aa00e3bb96b4ce28ebe825a
+  version: 0.3.dev22+gac73261.d20250514
+  sha256: eb0ff4daf8a2222e1db95c40483bc043f774512d7c0a9169e8a785b63df783c6
   requires_dist:
   - geopandas>=1.0
   - maxar-platform>=1.0.7
@@ -2327,6 +2331,7 @@ packages:
   - pystac-client>=0.8
   - requests>=2.32
   - rioxarray>=0.19
+  - s3fs>=2025.3
   - sliderule>=4.12
   - stac-asset>=0.4.5
   - stac-geoparquet>=0.6
@@ -7330,6 +7335,17 @@ packages:
   purls: []
   size: 353577
   timestamp: 1746350509891
+- pypi: https://files.pythonhosted.org/packages/66/e1/4db0388df5655de92ce5f9b60d2bef220a58dde130e0453e5433c579986e/s3fs-2025.3.2-py3-none-any.whl
+  name: s3fs
+  version: 2025.3.2
+  sha256: 81eae3f37b4b04bcc08845d7bcc607c6ca45878813ef7e6a28d77b2688417130
+  requires_dist:
+  - aiobotocore>=2.5.4,<3.0.0
+  - fsspec==2025.3.2.*
+  - aiohttp!=4.0.0a0,!=4.0.0a1
+  - aiobotocore[awscli]>=2.5.4,<3.0.0 ; extra == 'awscli'
+  - aiobotocore[boto3]>=2.5.4,<3.0.0 ; extra == 'boto3'
+  requires_python: '>=3.9'
 - conda: https://conda.anaconda.org/conda-forge/linux-64/scikit-learn-1.6.1-py312h7a48858_0.conda
   sha256: 7c869c73c95ef09edef839448ae3d153c4e3a208fb110c4260225f342d23e08e
   md5: 102727f71df02a51e9e173f2e6f87d57
