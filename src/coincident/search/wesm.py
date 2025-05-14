@@ -10,7 +10,6 @@ from typing import Any
 
 import pandas as pd
 import pyogrio
-from cloudpathlib import S3Client
 from geopandas import GeoDataFrame, read_file
 from pandas import Timedelta, Timestamp
 from shapely.geometry import box
@@ -18,8 +17,6 @@ from shapely.geometry import box
 from coincident.datasets import usgs
 from coincident.overlaps import subset_by_temporal_overlap
 
-# Cloudpath-based S3 client
-client = S3Client(no_sign_request=True)
 # Geopandas S3 Client
 pyogrio.set_gdal_config_options(
     {"AWS_NO_SIGN_REQUEST": True, "GDAL_PAM_ENABLED": False}
@@ -91,8 +88,8 @@ def read_wesm_csv(url: str = wesm_gpkg_url) -> GeoDataFrame:
     GeoDataFrame
         A GeoDataFrame containing the metadata from the CSV file.
     """
-    # Cache CSV locally, so subsequent reads are faster
-    wesm_csv = client.CloudPath(url.replace(".gpkg", ".csv"))
+    # TODO: Cache CSV locally, so subsequent reads are faster
+    wesm_csv = url.replace(".gpkg", ".csv")
     df = pd.read_csv(wesm_csv)
     df.index += 1
     df.index.name = "fid"

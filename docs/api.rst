@@ -53,6 +53,7 @@ IO
    xarray.to_dataset
    xarray.open_maxar_browse
    download.download_item
+   download.read_href
 
 Plot
 ----

@@ -16,6 +16,17 @@ from tests.test_plot_helpers import assert_boxplot  # noqa: F401
 network = pytest.mark.network
 plt.switch_backend("Agg")  # Non-interactive backend to not display plots
 
+# Optional tests for gdaldem functions (e.g. hillshade)
+try:
+    from osgeo import gdal  # noqa: F401
+
+    no_gdal = False
+except:  # noqa: E722
+    no_gdal = True
+gdal_python_bindings_available = pytest.mark.skipif(
+    no_gdal, reason="GDAL Python bindings not available"
+)
+
 
 @network
 def test_plot_esa_worldcover_valid(aoi):
@@ -42,28 +53,20 @@ def test_plot_esa_worldcover_valid(aoi):
     )
 
 
+@gdal_python_bindings_available
 def test_hillshade_tiny(dem_tiny_utm):
     """Test 'hillshade' with a tiny DEM (10x10 cop30)"""
-
-    # Test cases with different azimuth and altitude combinations
-    test_params = [
-        (45, 45),  # default values
-        (90, 30),
-    ]
-    for azi, alt in test_params:
-        hillshade = coincident.plot.hillshade(dem_tiny_utm.elevation, azi=azi, alt=alt)
-        assert hillshade[0][0] == "y", f"Incorrect y coords for azi={azi}, alt={alt}"
-        assert hillshade[0][1] == "x", f"Incorrect x coords for azi={azi}, alt={alt}"
-        assert hillshade[1].shape == (
-            10,
-            10,
-        ), f"Incorrect shape for azi={azi}, alt={alt}"
-        assert not np.isnan(hillshade[1]).any(), (
-            f"NaN values found for azi={azi}, alt={alt}"
-        )
-        assert hillshade[1].dtype == np.uint8, f"Wrong dtype for azi={azi}, alt={alt}"
-        assert hillshade[1].min() >= 0, f"Values < 0 found for azi={azi}, alt={alt}"
-        assert hillshade[1].max() <= 255, f"Values > 255 found for azi={azi}, alt={alt}"
+    hillshade = coincident.plot.gdaldem(dem_tiny_utm.elevation, "hillshade")
+    assert hillshade.dims[0] == "y"
+    assert hillshade.dims[1] == "x"
+    assert hillshade.shape == (
+        10,
+        10,
+    )
+    assert not np.isnan(hillshade[1]).any()
+    assert hillshade[1].dtype == np.uint8
+    assert hillshade[1].min() >= 0
+    assert hillshade[1].max() <= 255
 
 
 def test_clear_labels():
@@ -89,15 +92,16 @@ def test_plot_dem_no_hillshade(dem_tiny):
     assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
 
 
+@gdal_python_bindings_available
 def test_plot_dem_with_hillshade(dem_tiny):
     """Test plot_dem with tiny DEM input with hillshade"""
 
-    dem_tiny["hillshade"] = coincident.plot.hillshade(dem_tiny.elevation)
+    hillshade = coincident.plot.gdaldem(dem_tiny.elevation, "hillshade")
     fig, ax = plt.subplots()
     coincident.plot.plot_dem(
         dem_tiny.elevation.squeeze(),
         ax,
-        da_hillshade=dem_tiny.hillshade.squeeze(),
+        da_hillshade=hillshade,
         alpha=0.5,
     )
     # Check that both hillshade and DEM layers are present
@@ -118,9 +122,10 @@ def test_plot_altimeter_points_no_hillshade(points_tiny):
     assert ax.get_title() == "Test Points", "Plot title does not match expected value"
 
 
+@gdal_python_bindings_available
 def test_plot_altimeter_points_with_hillshade(dem_tiny, points_tiny):
     """Test plot_altimeter_points with point data and hillshade background"""
-    dem_tiny["hillshade"] = coincident.plot.hillshade(dem_tiny.elevation)
+    dem_tiny["hillshade"] = coincident.plot.gdaldem(dem_tiny.elevation, "hillshade")
 
     fig, ax = plt.subplots()
     ax = coincident.plot.plot_altimeter_points(
@@ -192,11 +197,12 @@ def test_plot_diff_hist_point(points_tiny, dem_tiny):
 
 # network to grab ESA worldcover
 @network
+@gdal_python_bindings_available
 def test_compare_dems(dem_tiny, points_tiny):
     """Test compare_dems with permutations of different numbers of DEMs and point gfs"""
     # Takes ~8secs to run
     # Create multiple DEMs
-    dem_tiny["hillshade"] = coincident.plot.hillshade(dem_tiny.elevation)
+    dem_tiny["hillshade"] = coincident.plot.gdaldem(dem_tiny.elevation, "hillshade")
     dem_tiny_2 = dem_tiny.copy()
     dem_tiny_3 = dem_tiny.copy()
 

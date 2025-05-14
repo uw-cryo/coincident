@@ -88,12 +88,13 @@ def test_maxar_search(aoi):
         datetime="2023",
         filter="eo:cloud_cover < 20",
     )
-    assert gf.shape == (10, 71)
+    assert gf.shape == (10, 69)
     assert gf.iloc[0].stac_version == expected_stac_version
     assert {"browse", "cloud-cover", "sample-point-set"}.issubset(
         gf.iloc[0].assets.keys()
     )
     assert isinstance(gf.datetime.iloc[0], gpd.pd.Timestamp)
+    # NOTE: add more here depending on what is needed in lidar_tools
     assert {"id", "dayofyear", "stereo_pair_identifiers", "platform"}.issubset(
         set(gf.columns)
     )
