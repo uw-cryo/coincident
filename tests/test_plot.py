@@ -18,6 +18,8 @@ plt.switch_backend("Agg")  # Non-interactive backend to not display plots
 
 # Optional tests for gdaldem functions (e.g. hillshade)
 try:
+    from osgeo import gdal  # noqa: F401
+
     no_gdal = False
 except:  # noqa: E722
     no_gdal = True
