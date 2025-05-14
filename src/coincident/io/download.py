@@ -15,7 +15,6 @@ from typing import Any
 
 import boto3
 import geopandas as gpd
-import rasterio
 import requests  # type: ignore[import-untyped]
 import rioxarray as rxr
 import stac_asset
@@ -23,10 +22,14 @@ from botocore import UNSIGNED
 from botocore.client import Config
 from pyproj import CRS
 from pystac import Item
-from shapely.geometry import Polygon, box
+from shapely.geometry import box
 from tqdm import tqdm
 
-from coincident.io.xarray import _aoi_to_polygon_string, _filter_items_by_project
+from coincident.io.xarray import (
+    _aoi_to_polygon_string,
+    _fetch_noaa_tile_geometry,
+    _filter_items_by_project,
+)
 from coincident.search.neon_api import (
     _get_tile_bbox,
     query_neon_data_api,
@@ -35,10 +38,59 @@ from coincident.search.opentopo_api import _find_noaa_dem_files
 from coincident.search.wesm import query_tnm_api
 
 
+def _set_config(
+    item: Item,
+    config: dict[str, Any] | None = None,
+) -> stac_asset.Config:
+    """Set stac_asset config. Automatically add Maxar API key if needed"""
+    if item.properties.get("constellation") == "maxar" and config is None:
+        config = stac_asset.Config(
+            http_headers={"MAXAR-API-KEY": os.environ.get("MAXAR_API_KEY")}
+        )
+    else:
+        config = stac_asset.Config(**config)
+
+    return config
+
+
+async def read_href(
+    item: Item,
+    asset: str,
+    config: dict[str, Any] | None = None,
+) -> Item:
+    """
+    Open and read a STAC asset href into local memory
+
+    Parameters
+    ----------
+    item : pystac.Item
+        The STAC item to be downloaded.
+    asset : str
+        The asset name to open (e.g. "cloud-cover" for maxar).
+    config : dict, optional
+        dictionary of options for :class:`~stac_asset.Config`
+
+    Returns
+    -------
+    bytes
+        Bytes read from file at corresponding href
+
+    Examples
+    --------
+    Read cloud-cover MultiPolygon estimate from Maxar API
+    >>> bytes = asyncio.run(read_href(item, "cloud-cover" config=MAXAR_CONFIG))
+    """
+    href = item.assets.get(asset).href
+
+    config = _set_config(item, config)
+
+    return await stac_asset.read_href(href, config=config)
+
+
 async def download_item(
     item: Item,
     path: str = "/tmp",
-    config: str | None = None,
+    config: dict[str, Any] | None = None,
 ) -> Item:
     """
     Downloads a STAC item to a specified local path.
@@ -49,8 +101,8 @@ async def download_item(
         The STAC item to be downloaded.
     path : str, optional
         The local directory path where the item will be downloaded. Default is "/tmp".
-    config : str, optional
-        If config=='maxar', a MAXAR-API-KEY HTTP Header is used for authentication.
+    config : dict, optional
+        dictionary of options for :doc:`stac_asset.Config <stac_asset:stac_asset.Config>`
 
     Returns
     -------
@@ -59,16 +111,15 @@ async def download_item(
 
     Examples
     --------
+    Download all assets for given item to /tmp directory
     >>> localitem = asyncio.run(download_item(item, config=MAXAR_CONFIG))
     """
     posixpath = Path(path)
 
-    if config == "maxar":
-        config = stac_asset.Config(
-            http_headers={"MAXAR-API-KEY": os.environ.get("MAXAR_API_KEY")}
-        )
+    config = _set_config(item, config)
+
     # NOTE: prevent in-place modification of remote hrefs with item.clone()
-    await stac_asset.download_item(item.clone(), posixpath, config=config)
+    return await stac_asset.download_item(item.clone(), posixpath, config=config)
 
 
 # Helper function to download files given a list of file dicts.
@@ -293,7 +344,7 @@ def build_usgs_ept_pipeline(
     aoi: gpd.GeoDataFrame,
     workunit: str | None = None,
     output_dir: str | None = None,
-) -> dict[str, Any]:  # Added type hint for dict return
+) -> dict[str, Any]:
     """
     Finds the relevant USGS 3DEP EPT dataset for an AOI and returns a dictionary
     structured as a PDAL pipeline JSON to subset the data based on the AOI,
@@ -326,8 +377,6 @@ def build_usgs_ept_pipeline(
         RuntimeError: If essential data like SRS WKT is missing/cannot be parsed,
                       or if the resources GeoJSON cannot be read.
     """
-    # Added check for AOI geometry type as filters.crop expects Polygon/MultiPolygon
-    # Placed here early to fail fast if AOI is not suitable for cropping
     if not aoi.geom_type.isin(["Polygon", "MultiPolygon"]).all():
         aoi_geom_msg = (
             "AOI geometry must be a Polygon or MultiPolygon for PDAL filters.crop."
@@ -336,23 +385,21 @@ def build_usgs_ept_pipeline(
 
     # --- 1. Find the relevant 3DEP workunit for the AOI ---
     if workunit is None:
-        # Assuming resources_url is defined and accessible
         resources_url = "https://raw.githubusercontent.com/hobuinc/usgs-lidar/master/boundaries/resources.geojson"
         try:
             resources = gpd.read_file(resources_url).set_crs("EPSG:4326")
         except Exception as e:
             err_msg = f"Could not read USGS resources GeoJSON from {resources_url}: {e}"
-            raise RuntimeError(err_msg) from e  # Added 'from e' for B904
+            raise RuntimeError(err_msg) from e
 
-        # Ensure AOI is in 4326 for spatial intersect with resources
+        # 4326 for spatial intersect with resources
         aoi_4326 = aoi.to_crs("EPSG:4326")
         aoi_union_4326 = aoi_4326.unary_union
 
         found_workunit = None
-        # Check for intersection with bounds first for slight optimization
         aoi_bounds_4326 = aoi_4326.total_bounds
         for _, row in resources.iterrows():
-            # Combined nested if statement for SIM102
+            # nested if statement for ruff SIM102
             if (
                 row.geometry
                 and row.geometry.bounds.intersects(aoi_bounds_4326)
@@ -367,21 +414,16 @@ def build_usgs_ept_pipeline(
         workunit = found_workunit
 
     # --- 2. Construct and fetch the EPT metadata (ept.json) ---
-    # Construct the EPT URL based on the workunit
     ept_url = (
         f"https://s3-us-west-2.amazonaws.com/usgs-lidar-public/{workunit}/ept.json"
     )
-
-    # Retrieve the dataset metadata to extract the spatial reference and other details.
     try:
         response = requests.get(ept_url)
-        # Raise an HTTPError for bad responses (4xx or 5xx)
         response.raise_for_status()
         ept_data = response.json()
     except requests.exceptions.RequestException as e:
         err_msg = f"Failed to fetch EPT metadata from {ept_url}: {e}"
         raise requests.exceptions.RequestException(err_msg) from e
-    # Catch JSONDecodeError and raise a standard RuntimeError chaining the original error
     except json.JSONDecodeError as e:
         err_msg = f"Failed to decode JSON from EPT metadata at {ept_url}: {e}"
         raise RuntimeError(
@@ -412,20 +454,11 @@ def build_usgs_ept_pipeline(
             err_msg = f"Could not parse SRS WKT from EPT metadata: {e}"
             raise RuntimeError(err_msg) from e
 
-    # Transform the AOI into the point cloud's CRS.
-    # Use the WKT definition for to_crs, pyproj will handle it regardless of EPSG code presence
     aoi_input = aoi.to_crs(pointcloud_input_crs)
 
     # --- 4. Prepare AOI geometry strings/bounds in EPT CRS for PDAL pipeline ---
-    # Union and simplify for the polygon WKT (for filters.crop)
-    # Simplifying helps prevent excessively long WKT strings which can cause issues
-    # The 10-meter tolerance is an example, adjust based on your needs
     aoi_union = aoi_input.union_all()
-
-    # PDAL filters.crop expects a Polygon or MultiPolygon WKT.
-    # We added a check at the start of the function to ensure the input AOI
-    # is already a suitable geometry type. Simplification is appropriate now.
-    aoi_wkt_geom = aoi_union.simplify(10)  # simplify in meters
+    aoi_wkt_geom = aoi_union.simplify(10)  # simplify in meters (UTM zones)
     aoi_wkt = aoi_wkt_geom.wkt
 
     # Derive bounds from AOI envelope (for readers.ept 'bounds' parameter)
@@ -612,14 +645,14 @@ def fetch_neon_lpc_tiles(
 
     # 5. Build GeoDataFrame & reproject
     gdf = gpd.GeoDataFrame(records, crs=utm_crs)
-    gdf_wgs84 = gdf.to_crs(epsg=4326)
+    gdf = gdf.to_crs(epsg=4326)
 
     # 6. Optionally write out
     if output_dir:
         out_path = Path(output_dir) / f"NEON_{site_id}_{datetime_str}_lpc_tiles.geojson"
-        gdf_wgs84.to_file(out_path, driver="GeoJSON")
+        gdf.to_file(out_path, driver="GeoJSON")
 
-    return gdf_wgs84
+    return gdf
 
 
 def download_noaa_dem(
@@ -658,29 +691,16 @@ def download_noaa_dem(
     then filters and processes only those tiles intersecting the AOI. Files are processed concurrently
     to reduce overall network latency.
     """
-    # Ensure the output directory exists.
     output_path = Path(output_dir)
-    output_path.mkdir(parents=True, exist_ok=True)
+    # output_path.mkdir(parents=True, exist_ok=True)
 
     # Step 1: List all .tif files within the NOAA dataset directory using a helper function.
     tif_files = _find_noaa_dem_files(dataset_id)
     tile_urls = [file_info["url"] for file_info in tif_files]
 
-    # Helper function to fetch a tile's bounds and retain its URL.
-    def fetch_tile_geometry(
-        url: str,
-    ) -> tuple[str, Polygon, rasterio.crs.CRS]:
-        # Open the raster header from S3 using rasterio.Env for proper configuration.
-        with rasterio.Env(), rasterio.open(url) as src:
-            bounds = src.bounds
-            tile_crs = src.crs
-        # Create a shapely bounding box polygon from the raster bounds.
-        polygon = box(bounds.left, bounds.bottom, bounds.right, bounds.top)
-        return url, polygon, tile_crs
-
     # Step 2: Retrieve header metadata for each tile concurrently.
     with ThreadPoolExecutor(max_workers=8) as executor:
-        results = list(executor.map(fetch_tile_geometry, tile_urls))
+        results = list(executor.map(_fetch_noaa_tile_geometry, tile_urls))
 
     # Unpack the results into separate lists (url, geometry, and CRS).
     urls, tile_geometries, crs_list = zip(*results, strict=False)

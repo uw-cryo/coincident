@@ -1,8 +1,23 @@
 from __future__ import annotations
 
+import warnings
+from typing import Any
+
 import geopandas as gpd
 import numpy as np
 import xarray as xr
+
+try:
+    from osgeo import gdal, gdal_array
+
+    gdal.UseExceptions()
+except ImportError:
+    warnings.warn(
+        "gdal python bindings not found. `pip install gdal` for gdaldem functions",
+        stacklevel=2,
+    )
+
+from coincident._utils import depends_on_optional
 
 
 # TODO: better to split to separate functions, each with unique return type
@@ -61,42 +76,39 @@ def get_elev_diff(
     raise TypeError(msg_type_error)
 
 
-def hillshade(
-    da: xr.DataArray, azi: int = 45, alt: int = 45
-) -> tuple[tuple[str, ...], np.ndarray]:
+@depends_on_optional("osgeo")
+def gdaldem(
+    da: xr.DataArray, subcommand: str = "hillshade", **kwargs: Any
+) -> xr.DataArray:
     """
-    Create hillshade array from DEM.
-    Pass with dem['hillshade'] = coincident.plot.utils.hillshade(dem.elevation)
+    Use GDAL python bindings to perform gdaldem operations
 
     Parameters
     ----------
     da: xarray.DataArray
         Dataarray containing elevation values
-    azi: int
-        The shading azimuth in degrees (0-360°) going clockwise, starting from north.
-    alt: int
-        The shading altitude in degrees (0-90°). 90° is straight from above.
+    subcommand: str
+        'hillshade' (default), 'aspect', 'slope'
+    kwargs: dict
+        https://gdal.org/en/stable/api/python/utilities.html#osgeo.gdal.DEMProcessingOptions
 
     Returns
     -------
-    tuple
-        (dims, data) tuple where dims are dimension names and data is uint8 array
+    da: xarray.DataArray
+        XArray dataset with result of running GDAL algorithm
     """
-    # Ensure 2D array by squeezing extra dimensions
-    da = da.squeeze()
+    # Ensure we're working with a 2D Array
+    elevation = da.squeeze()
+    src = gdal_array.OpenArray(elevation.to_numpy())
+    geotransform = da.rio.transform().to_gdal()
+    src.SetGeoTransform(geotransform)
 
-    x, y = np.gradient(da)
-    slope = np.pi / 2.0 - np.arctan(np.sqrt(x * x + y * y))
-    aspect = np.arctan2(-x, y)
-    azimuth = 360.0 - azi
-    azimuthrad = azimuth * np.pi / 180.0
-    altituderad = alt * np.pi / 180.0
+    ds_gdal = gdal.DEMProcessing("", src, subcommand, format="MEM", **kwargs)
+    numpy_result = ds_gdal.ReadAsArray()
 
-    shaded = np.sin(altituderad) * np.sin(slope) + np.cos(altituderad) * np.cos(
-        slope
-    ) * np.cos(azimuthrad - aspect)
+    if subcommand != "hillshade":
+        numpy_result[numpy_result == -9999] = np.nan
 
-    data = 255 * (shaded + 1) / 2
-    data[data < 0] = 0  # set hillshade values to min of 0.
+    del ds_gdal
 
-    return da.dims, data.astype(np.uint8)
+    return elevation.copy(data=numpy_result)

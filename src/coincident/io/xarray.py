@@ -164,7 +164,7 @@ def open_maxar_browse(item: pystac.Item, overview_level: int = 0) -> xr.DataArra
 
     env = rasterio.Env(
         GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
-        GDAL_HTTP_HEADERS=f'MAXAR-API-KEY:{os.environ["MAXAR_API_KEY"]}',
+        GDAL_HTTP_HEADERS=f"MAXAR-API-KEY:{os.environ['MAXAR_API_KEY']}",
     )
     with env:
         return xr.open_dataarray(
@@ -360,9 +360,8 @@ def load_neon_dem(
 
     # 2: Determine appropriate UTM CRS for the AOI
     target_crs = aoi.estimate_utm_crs()
-    # Reproject AOI to target CRS
     aoi_utm = aoi.to_crs(target_crs)
-    aoi_geom_utm = aoi_utm.union_all()  # Combined AOI in UTM coordinates
+    aoi_geom_utm = aoi_utm.union_all()
 
     # 3: Query the NEON API
     data_json = query_neon_data_api(site_id, month_str)
@@ -423,7 +422,6 @@ def load_ncalm_dem(
     product: str,
     res: int = 1,
     clip: bool = True,
-    return_single: bool = True,
 ) -> xr.DataArray | list[xr.DataArray]:
     """
     Load NCALM DEM (DTM or DSM) tiles directly from OpenTopography S3 and return as xarray DataArray.
@@ -444,8 +442,6 @@ def load_ncalm_dem(
         Factor to coarsen the DEM (default 1 = no coarsening).
     clip : bool, optional
         Whether to clip final mosaic to the AOI (default True).
-    return_single : bool, optional
-        If True, return a single merged DataArray. If False, return a list of DataArrays.
 
     Returns
     -------
@@ -490,44 +486,44 @@ def load_ncalm_dem(
     pattern = ".tif"
     # file_ext = ".tif"
     # pattern = f"_{file_code}_1M{file_ext}"
-    dem_keys = [obj["Key"] for obj in resp["Contents"] if obj["Key"].endswith(pattern)]
-    if not dem_keys:
+    key = next(
+        (obj["Key"] for obj in resp["Contents"] if obj["Key"].endswith(pattern)), None
+    )
+    if not key:
         msg_no_overlay = f"No DEM files ({pattern}) found for dataset {dataset_id}"
         raise ValueError(msg_no_overlay)
+    url = f"{endpoint_url}/{bucket}/{key}"
+    da = rioxarray.open_rasterio(url, masked=True)
+    # select band1
+    da = da.sel(band=1).drop_vars("band")
 
-    # Load each tile
-    tile_arrays: list[xr.DataArray] = []
-    for key in dem_keys:
-        url = f"{endpoint_url}/{bucket}/{key}"
-        da = rioxarray.open_rasterio(url, masked=True)
-        # select band1
-        da = da.sel(band=1).drop_vars("band")
+    # reproject if needed
+    if da.rio.crs != aoi_crs:
+        da = da.rio.reproject(aoi_crs)
 
-        # reproject if needed
-        if da.rio.crs != aoi_crs:
-            da = da.rio.reproject(aoi_crs)
+    # coarsen if requested
+    if res > 1:
+        da = da.coarsen(x=res, y=res, boundary="trim").mean()
 
-        # coarsen if requested
-        if res > 1:
-            da = da.coarsen(x=res, y=res, boundary="trim").mean()
+    # clip if requested
+    if clip:
+        da = da.rio.clip(aoi_utm.geometry, aoi_crs, drop=True)
 
-        # clip if requested
-        if clip:
-            da = da.rio.clip(aoi_utm.geometry, aoi_crs, drop=True)
+    da.name = "elevation"
+    return da
 
-        da.name = "elevation"
-        tile_arrays.append(da)
 
-        if return_single:
-            # return single first tile if requested
-            return da
-
-    # return list if not merging
-    if not return_single:
-        return tile_arrays
-
-    # merge by stacking bands and taking max
-    return xr.concat(tile_arrays, dim="band").max(dim="band").rename("elevation")
+# Helper function to fetch a tile's bounds and retain its URL.
+def _fetch_noaa_tile_geometry(
+    url: str,
+) -> tuple[str, Polygon, rasterio.crs.CRS]:
+    # Open the raster header from S3 using rasterio.Env for proper configuration.
+    with rasterio.Env(), rasterio.open(url) as src:
+        bounds = src.bounds
+        tile_crs = src.crs
+    # Create a shapely bounding box polygon from the raster bounds.
+    polygon = box(bounds.left, bounds.bottom, bounds.right, bounds.top)
+    return url, polygon, tile_crs
 
 
 # NOTE: NOAA has separate ids and catalogs for their "lidar" and "imagery and elevation raster" datasets
@@ -569,25 +565,13 @@ def load_noaa_dem(
     The header metadata is processed concurrently to reduce I/O latency.
     Tiles are spatially filtered against the AOI and merged into a mosaic using xarray.
     """
-    # Step 1: List all .tif files within the NOAA dataset directory (using a hypothetical helper function)
+    # Step 1: List all .tif files within the NOAA dataset directory
     tif_files = _find_noaa_dem_files(dataset_id)
     tile_urls = [file_info["url"] for file_info in tif_files]
 
-    # Modified function to fetch a tile's bounds and retain its URL
-    def fetch_tile_geometry(
-        url: str,
-    ) -> tuple[str, Polygon, rasterio.crs.CRS]:
-        # Using rasterio.Env ensures proper configuration (e.g., for vsicurl access)
-        with rasterio.Env(), rasterio.open(url) as src:
-            bounds = src.bounds
-            tile_crs = src.crs
-        # Create a shapely polygon (bounding box) from the raster bounds
-        polygon = box(bounds.left, bounds.bottom, bounds.right, bounds.top)
-        return url, polygon, tile_crs
-
     # Use ThreadPoolExecutor to concurrently fetch header metadata from each tile URL
     with ThreadPoolExecutor(max_workers=8) as executor:
-        results = list(executor.map(fetch_tile_geometry, tile_urls))
+        results = list(executor.map(_fetch_noaa_tile_geometry, tile_urls))
 
     # Unpack results: each item is a tuple (url, geometry, crs)
     urls, tile_geometries, crs_list = zip(*results, strict=False)
@@ -603,9 +587,7 @@ def load_noaa_dem(
     aoi = aoi.to_crs(common_crs)
 
     # --- Spatial Filtering ---
-    # Use a union of AOI geometries for efficient intersection testing.
     aoi_union = aoi.union_all()
-    # Filter the tiles by testing for spatial intersection with the AOI.
     selected_tiles = tiles_gdf[tiles_gdf.intersects(aoi_union)]
 
     if selected_tiles.empty:

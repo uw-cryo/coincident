@@ -31,46 +31,40 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
-  "geopandas>=1.0.1,<2",
- "odc-stac>=0.3.11,<0.4.1",
- "pyarrow>=19.0.0,<20",
- "pystac-client>=0.8.6,<0.9",
- "requests>=2.32.3,<3",
- "rioxarray>=0.18.2,<0.19",
-  "cloudpathlib[s3]>=0.20.0,<0.21",
-  "matplotlib>=3.9.4,<4",
-  "maxar-platform>=1.0.6,<2",
-  "stac-geoparquet",
-  "sliderule>=4.7.1,<5",
-  "stac-asset>=0.4.6,<0.5",
-  "matplotlib-scalebar>=0.9.0,<0.10",
-  "dask<2025", # quote (and perhaps even the expected behavior of tokenize) no longer exist in the same location for 2025.3.0
+"geopandas>=1.0",
+"maxar-platform>=1.0.7",
+"pyarrow>=19.0",
+"pystac-client>=0.8",
+"odc-stac>=0.4",
+"requests>=2.32",
+"rioxarray>=0.19",
+"s3fs>=2025.3",
+"sliderule>=4.12",
+"stac-asset>=0.4.5",
+"stac-geoparquet>=0.6",
 ]
 
 [project.optional-dependencies]
 dev = [
-  "ipykernel>=6.29.5,<7",
-  "mypy>=1.11.2,<2",
-  "pre-commit>=3.8.0,<4",
-  "pylint>=3.3.1,<4",
-  "pytest >=6",
-  "pytest-cov >=3",
-  "xdem>=0.1.0,<0.2",
-]
-
-docs = [
+  # packaging pain, assume most people using conda
+  #"gdal>=3.10",
+  "ipykernel>=6.29",
+  "mypy>=1.11",
+  "pre-commit>=4",
+  "pylint>=3.3",
+  "pytest>=6",
+  "pytest-cov>=3",
+  # Docs:
   "folium", # comes w/ geopandas on conda-forge but not pypi
+  "matplotlib>=3.10",
   "mapclassify",
   "myst-nb",
   "myst_parser>=0.13",
   "pydata-sphinx-theme>=0.16.0,<0.17",
-  "sphinx>=7.0",
+  "sphinx>=8.0",
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
   "sphinx_design",
-  "xdem>=0.1.0,<0.2",
-  # TODO: not sure why, but RTD can't import xdem w/o this...
-  "setuptools", # ModuleNotFoundError: No module named 'distutils'
 ]
 
 [project.urls]
@@ -88,22 +82,25 @@ features = ["test"]
 scripts.test = "pytest {args}"
 
 [tool.pytest.ini_options]
-minversion = "6.0"
+minversion = "8.0"
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 xfail_strict = true
 filterwarnings = [
   "error",
   # NOTE: try to remove with maxar-platform>1.0.1
   "ignore::DeprecationWarning:lark",
+  "ignore::DeprecationWarning:sliderule",
   "ignore:maxar_plaform authentication error:UserWarning",
   # https://github.com/microsoft/planetary-computer-sdk-for-python/issues/58
   "ignore::pydantic.warnings.PydanticDeprecatedSince20",
   "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning",
-  # sliderule datetime.datetime.utcnow() is deprecated...
-  "ignore::DeprecationWarning:sliderule",
+  # Coming from slidrule and boto
+  "ignore:datetime.datetime.utcnow().*:DeprecationWarning",
   # Optional imports
   "ignore:Unable to authenticate with Maxar API:UserWarning",
-  "ignore:.* package not found:UserWarning",
+  "ignore:.* not found:UserWarning",
+  # NOTE: should be able to remove with geopandas 1.1
+  "ignore:.*shapely.geos.*:DeprecationWarning:geopandas",
 ]
 log_cli_level = "INFO"
 testpaths = [
@@ -173,8 +170,7 @@ ignore = [
   "PD901",    # df for DataFrame
 ]
 exclude = [
-    "docs/*.ipynb",
-    "docs/ipython_kernel_config.py",
+    "docs/*.ipynb"
 ]
 isort.required-imports = ["from __future__ import annotations"]
 # Uncomment if using a _compat.typing backport
@@ -206,54 +202,49 @@ platforms = ["osx-arm64", "linux-64"]
 [tool.pixi.environments]
 default = { solve-group = "default" }
 dev = { features = ["dev"], solve-group = "default" }
-docs = { features = ["docs"], solve-group = "default" }
 
 # NOTE: pixi will match project.dependencies versions above but get them from conda-forge
 # If a package is listed in project.dependencies but not repeated here, it is installed from pypi
 [tool.pixi.dependencies]
 python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
-geopandas = ">=1.0.1,<2"
-odc-stac = ">=0.3.11,<0.4.1"
-pystac-client = ">=0.8.6,<0.9"
-requests = ">=2.32.3,<3"
-rioxarray = ">=0.18.2,<0.19"
-stac-geoparquet = ">=0.6.0,<0.7"
-pyarrow = ">=19.0.0,<20"
-jsonschema = ">=4.23.0,<5"
-libgdal-arrow-parquet = ">=3.10.1,<4"
-matplotlib-scalebar = ">=0.9.0,<0.10"
-dask = "<2025"
+geopandas = "*"
+gdal = ">=3.10"
+jsonschema = "*"
+libgdal-arrow-parquet = "*"
+# https://github.com/prefix-dev/pixi/issues/3479
+libgfortran5 = ">=14.2.0"
+odc-stac = "*"
+pyarrow = "*"
+pystac-client = "*"
+requests = "*"
+rioxarray = "*"
+stac-geoparquet = "*"
 sliderule = "*"
-xdem = "*"
 
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
-ipykernel = ">=6.29.5,<7"
-matplotlib = ">=3.9.4,<4"
+ipykernel = "*"
+matplotlib-base = ">=3.10"
 mypy = "*"
-# Bug if=*? Because you require pre-commit>=3.8.0,<4 and pre-commit==4.0.0, we can conclude that your requirements are unsatisfiable.
-pre-commit = "<4"
+pre-commit = "*"
 pylint = "*"
 pytest = "*"
 
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = false }
+types-requests = "*"
+#stac-asset = { version = ">=0.4.5"}
 #cloudpathlib = { version = "0.20.0,<0.21", extras = ["s3"]}
 
 [tool.pixi.feature.dev.pypi-dependencies]
 coincident = { path = ".", editable = true }
 
 [tool.pixi.feature.dev.tasks]
-precommit = "pre-commit run --all"
+precommit = "pre-commit run --all-files"
 # NOTE: consider --output-format=github for github actions
 lint = "pylint src"
 test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
 networktest = "pytest --cov --cov-report=xml --cov-report=term --durations=0"
-
-[tool.pixi.feature.docs.pypi-dependencies]
-coincident = { path = ".", editable = true }
-
-[tool.pixi.feature.docs.tasks]
-docs = "python -m sphinx -W --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
-# NOTE: use https://jupyter-cache.readthedocs.io ?
-rebuild_docs = "rm -rf docs/_build ; python -W --keep-going -m sphinx -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html"
+# NOTE: || true to always update readthedocs even if there are errors
+docs = "python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true"
+rebuild_docs = "rm -rf docs/_build ; python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true"

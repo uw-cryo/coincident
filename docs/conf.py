@@ -43,6 +43,7 @@ exclude_patterns = [
 
 html_theme = "pydata_sphinx_theme"
 html_theme_options = {
+    "announcement": "Welcome! Coincident is in early development. APIs may change significantly",
     "use_edit_page_button": True,
     "icon_links": [
         {
@@ -52,6 +53,8 @@ html_theme_options = {
             "type": "fontawesome",
         },
     ],
+    "show_version_warning_banner": True,
+    "footer_center": ["last-updated"],
 }
 html_title = "Coincident"
 html_context = {
@@ -60,6 +63,7 @@ html_context = {
     "github_version": "main",
     "doc_path": "docs",
 }
+html_show_sourcelink = False
 
 # remove sidebar, see GH issue #82
 html_css_files = [
@@ -97,4 +101,5 @@ always_document_param_types = True
 nb_execution_mode = "auto"  # off, on
 nb_execution_show_tb = True
 nb_execution_timeout = 90
+nb_execution_allow_errors = False
 # nb_execution_excludepatterns = ["elevation_plotting.ipynb"]

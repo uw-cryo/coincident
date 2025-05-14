@@ -10,8 +10,6 @@ from typing import Any
 
 import pandas as pd
 import pyogrio
-import requests  # type: ignore[import-untyped]
-from cloudpathlib import S3Client
 from geopandas import GeoDataFrame, read_file
 from pandas import Timedelta, Timestamp
 from shapely.geometry import box
@@ -19,8 +17,6 @@ from shapely.geometry import box
 from coincident.datasets import usgs
 from coincident.overlaps import subset_by_temporal_overlap
 
-# Cloudpath-based S3 client
-client = S3Client(no_sign_request=True)
 # Geopandas S3 Client
 pyogrio.set_gdal_config_options(
     {"AWS_NO_SIGN_REQUEST": True, "GDAL_PAM_ENABLED": False}
@@ -92,8 +88,8 @@ def read_wesm_csv(url: str = wesm_gpkg_url) -> GeoDataFrame:
     GeoDataFrame
         A GeoDataFrame containing the metadata from the CSV file.
     """
-    # Cache CSV locally, so subsequent reads are faster
-    wesm_csv = client.CloudPath(url.replace(".gpkg", ".csv"))
+    # TODO: Cache CSV locally, so subsequent reads are faster
+    wesm_csv = url.replace(".gpkg", ".csv")
     df = pd.read_csv(wesm_csv)
     df.index += 1
     df.index.name = "fid"
@@ -177,7 +173,7 @@ def load_by_fid(
     """
     # Format SQL: # special case for (a) not (a,)
     # Reading a remote WESM by specific FIDs is fast
-    query = f"fid in ({fids[0]})" if len(fids) == 1 else f"fid in {*fids,}"
+    query = f"fid in ({fids[0]})" if len(fids) == 1 else f"fid in {(*fids,)}"
 
     gf = read_file(
         url,
@@ -282,6 +278,9 @@ def query_tnm_api(
     Returns:
       list: A list of JSON items returned from the TNM API.
     """
+    # params is a dict[str, object], but requests expects Mapping[str, Any]
+    import requests  # type: ignore[import-untyped]
+
     items = []
     offset = 0
     url = "https://tnmaccess.nationalmap.gov/api/v1/products"

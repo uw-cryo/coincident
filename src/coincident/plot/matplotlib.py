@@ -146,16 +146,26 @@ def plot_maxar_browse(
     plt.Axes
         The Matplotlib Axes object with the plot.
     """
-
     da = open_maxar_browse(item, overview_level=overview_level)
-    mid_lat = da.y[int(da.y.size / 2)].to_numpy()  # PD011
+    mid_lat = da.y[int(da.y.size / 2)].to_numpy()
 
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 11))
-    da.plot.imshow(rgb="band", add_labels=False, ax=ax)
+
+    nbands = da.band.size
+    if nbands == 1:
+        da_plot = da.squeeze("band")
+        da_plot.plot.imshow(add_labels=False, ax=ax, cmap="gray", add_colorbar=False)
+    elif nbands == 3:
+        da.plot.imshow(rgb="band", add_labels=False, ax=ax, add_colorbar=False)
+    else:
+        error_message = (
+            f"Maxar browse image must have 1 or 3 bands. Found: {nbands} bands."
+        )
+        raise ValueError(error_message)
+
     ax.set_aspect(aspect=1 / np.cos(np.deg2rad(mid_lat)))
     ax.set_title(item.id)
-
     return ax
 
 
