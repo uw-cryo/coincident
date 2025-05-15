@@ -422,7 +422,7 @@ def load_ncalm_dem(
     product: str,
     res: int = 1,
     clip: bool = True,
-) -> xr.DataArray | list[xr.DataArray]:
+) -> xr.DataArray:
     """
     Load NCALM DEM (DTM or DSM) tiles directly from OpenTopography S3 and return as xarray DataArray.
 

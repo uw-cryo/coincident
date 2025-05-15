@@ -330,7 +330,9 @@ def fetch_usgs_lpc_tiles(
 
     # 6. Assemble GeoDataFrame in WGS84
     gdf = gpd.GeoDataFrame(filtered, geometry=geometries, crs="EPSG:4326")
-    gdf = gdf[["sourceId", "downloadURL", "geometry"]]
+    gdf = gdf[["sourceId", "downloadURL", "geometry"]].rename(
+        columns={"sourceId": "name", "downloadURL": "url"}
+    )
 
     # 7. Optionally write out
     if output_dir:
@@ -1090,7 +1092,7 @@ def fetch_ncalm_lpc_tiles(
         if not tile.intersects(union_utm):
             continue
         url = f"{endpoint_url}/{bucket}/{key}"
-        records.append({"key": key, "url": url, "geometry": tile})
+        records.append({"name": key, "url": url, "geometry": tile})
 
     if not records:
         msg_no_overlay = "No LPC tiles intersect your AOI for this dataset."

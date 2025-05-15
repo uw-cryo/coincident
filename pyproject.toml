@@ -41,7 +41,7 @@ dependencies = [
 "s3fs>=2025.3",
 "sliderule>=4.12",
 "stac-asset>=0.4.5",
-"stac-geoparquet>=0.6",
+"stac-geoparquet>=0.6", "boto3",
 ]
 
 [project.optional-dependencies]
@@ -54,6 +54,7 @@ dev = [
   "pylint>=3.3",
   "pytest>=6",
   "pytest-cov>=3",
+  "boto3>=1.26.0",
   # Docs:
   "folium", # comes w/ geopandas on conda-forge but not pypi
   "matplotlib>=3.10",
@@ -64,7 +65,7 @@ dev = [
   "sphinx>=8.0",
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
-  "sphinx_design",
+  "sphinx_design", "tqdm",
 ]
 
 [project.urls]
