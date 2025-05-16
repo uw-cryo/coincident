@@ -23,7 +23,7 @@ from botocore.client import Config
 from pyproj import CRS
 from pystac import Item
 from shapely.geometry import box
-from tqdm import tqdm
+from tqdm.autonotebook import tqdm
 
 from coincident.io.xarray import (
     _aoi_to_polygon_string,
