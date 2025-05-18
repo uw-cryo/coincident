@@ -52,8 +52,21 @@ IO
    sliderule.sample_3dep
    xarray.to_dataset
    xarray.open_maxar_browse
+   xarray.load_usgs_dem
+   xarray.load_neon_dem
+   xarray.load_noaa_dem
+   xarray.load_ncalm_dem
    download.download_item
    download.read_href
+   download.download_usgs_dem
+   download.download_neon_dem
+   download.download_noaa_dem
+   download.download_ncalm_dem
+   download.fetch_usgs_lpc_tiles
+   download.fetch_neon_lpc_tiles
+   download.fetch_noaa_lpc_tiles
+   download.fetch_ncalm_lpc_tiles
+
 
 Plot
 ----

@@ -4,10 +4,7 @@ from __future__ import annotations
 import geopandas as gpd
 import pytest
 import xarray as xr
-
-# import os
-# if not os.environ.get('MAXAR_API_KEY'):
-#    os.environ['MAXAR_API_KEY'] = 'fake-test-key'
+from shapely.geometry import box
 
 
 @pytest.fixture(scope="package")
@@ -66,8 +63,6 @@ def points_tiny_utm():
 
 @pytest.fixture(scope="package")
 def usgs_neon_dem_bbox():
-    from shapely.geometry import box
-
     bbox_geometry = box(
         -102.51096149997586, 39.673538237665866, -102.51058942897973, 39.67378984946736
     )
@@ -76,15 +71,11 @@ def usgs_neon_dem_bbox():
 
 @pytest.fixture(scope="package")
 def ncalm_dem_bbox():
-    from shapely.geometry import box
-
     bbox_geometry = box(-121.39282517, 46.50320809, -121.39262917, 46.50334309)
     return gpd.GeoDataFrame(geometry=[bbox_geometry], crs="EPSG:4326")
 
 
 @pytest.fixture(scope="package")
 def noaa_dem_bbox():
-    from shapely.geometry import box
-
     bbox_geometry = box(-122.50657366, 42.07633832, -122.50637366, 42.07653832)
     return gpd.GeoDataFrame(geometry=[bbox_geometry], crs="EPSG:4326")
