@@ -228,18 +228,20 @@ def search_bboxes(
     if search_start is None and search_end is None:
         search_start = pd.Timestamp("2013-06-01")  # earliest NEON dataset date
         search_end = pd.Timestamp.today()
+
     # Define a global AOI if none is provided
     if intersects is None:
         intersects = gpd.GeoSeries([Point(-180, -90).buffer(360)], crs="EPSG:4326")
 
     sites_url = "http://data.neonscience.org/api/v0/sites"
+
     # Build and temporally filter the NEON site points
     gf_neon = _build_neon_point_gf(sites_url)
     gf_neon = _temporal_filter_neon(gf_neon, search_start, search_end)
 
     # Spatially restrict to sites near the AOI using a nearest join
     gf_neon = (
-        gpd.sjoin_nearest(gf_neon, intersects, max_distance=1)
+        gpd.sjoin_nearest(gf_neon, intersects[["geometry"]], max_distance=1)
         .drop(columns=["index_right"])
         .reset_index(drop=True)
     )
@@ -250,22 +252,14 @@ def search_bboxes(
         lambda row: _get_neon_flight_geometry(row["product_url"], row["geometry"]),
         axis=1,
     )
+
     # Final spatial join to ensure that the flight geometries (now in EPSG:4326) intersect the input AOI.
-    gf_neon = gf_neon.sjoin(intersects)[
-        [
-            "id",
-            "title",
-            "start_datetime_left",
-            "end_datetime_left",
-            "product_url",
-            "geometry",
-        ]
-    ].rename(
-        columns={
-            "start_datetime_left": "start_datetime",
-            "end_datetime_left": "end_datetime",
-        }
+    gf_neon = (
+        gf_neon.sjoin(intersects[["geometry"]])
+        .drop(columns="index_right")
+        .reset_index(drop=True)
     )
+
     # add days in -dd to the start_datetime and end_datetime which are in yyyy-mm
     gf_neon["start_datetime"] = gf_neon["start_datetime"] + "-01"
     gf_neon["end_datetime"] = (
@@ -273,6 +267,7 @@ def search_bboxes(
         .astype(str)
         .apply(lambda m: f"{m}-{pd.Period(m, freq='M').days_in_month:02d}")
     )
+
     return gf_neon
 
 

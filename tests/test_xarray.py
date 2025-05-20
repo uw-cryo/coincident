@@ -21,8 +21,8 @@ def test_to_dataset_with_cop30_lazy(aoi):
         aoi=aoi,
         resolution=0.1,  # ~1km
     )
-    assert isinstance(ds, xr.Dataset), "Expected output to be an xarray Dataset."
-    assert "data" in ds.data_vars, "Expected 'data' variable in the Dataset."
+    assert isinstance(ds, xr.Dataset)
+    assert "data" in ds.data_vars
 
 
 @network
@@ -39,8 +39,8 @@ def test_to_dataset_with_worldcover_lazy(aoi):
         aoi=aoi,
         resolution=0.1,  # ~1km
     )
-    assert isinstance(ds, xr.Dataset), "Expected output to be an xarray Dataset."
-    assert "map" in ds.data_vars, "Expected 'map' variable in the Dataset."
+    assert isinstance(ds, xr.Dataset)
+    assert "map" in ds.data_vars
 
 
 @network
@@ -51,22 +51,14 @@ def test_load_usgs_dem(usgs_neon_dem_bbox):
     da_usgs_dem = coincident.io.xarray.load_usgs_dem(
         usgs_neon_dem_bbox, "CO_CentralEasternPlains_2020_D20"
     )
-    assert da_usgs_dem.name == "elevation", "Expected DataArray name to be 'elevation'"
-    assert da_usgs_dem.shape == (28, 32), (
-        f"Expected shape (28, 32), got {da_usgs_dem.shape}"
-    )
-    assert da_usgs_dem.dtype == "float32", (
-        f"Expected dtype float32, got {da_usgs_dem.dtype}"
-    )
-    assert "x" in da_usgs_dem.coords, "Expected 'x' coordinate in the DataArray"
-    assert "y" in da_usgs_dem.coords, "Expected 'y' coordinate in the DataArray"
-    assert "spatial_ref" in da_usgs_dem.coords, (
-        "Expected 'spatial_ref' coordinate in the DataArray"
-    )
-    assert da_usgs_dem.rio.resolution() == (1.0, -1.0), (
-        "Expected resolution (1.0, -1.0)"
-    )
-    assert da_usgs_dem.notnull().any(), "DataArray contains no valid data"
+    assert da_usgs_dem.name == "elevation"
+    assert da_usgs_dem.shape == (28, 32)
+    assert da_usgs_dem.dtype == "float32"
+    assert "x" in da_usgs_dem.coords
+    assert "y" in da_usgs_dem.coords
+    assert "spatial_ref" in da_usgs_dem.coords
+    assert da_usgs_dem.rio.resolution() == (1.0, -1.0)
+    assert da_usgs_dem.notnull().any()
 
 
 # marks needed for chunks='auto' in rioxarray.open_rasterio() calls
@@ -79,21 +71,13 @@ def test_load_neon_dem(usgs_neon_dem_bbox):
     da_neon_dem = coincident.io.xarray.load_neon_dem(
         usgs_neon_dem_bbox, datetime_str="2020-06-30", site_id="ARIK", product="dsm"
     )
-    assert da_neon_dem.name == "elevation", "Expected DataArray name to be 'elevation'"
-    assert da_neon_dem.shape == (28, 32), (
-        f"Expected shape (28, 32), got {da_neon_dem.shape}"
-    )
-    assert da_neon_dem.dtype == "float32", (
-        f"Expected dtype float32, got {da_neon_dem.dtype}"
-    )
-    assert "x" in da_neon_dem.coords, "Expected 'x' coordinate in the DataArray"
-    assert "y" in da_neon_dem.coords, "Expected 'y' coordinate in the DataArray"
-    assert "spatial_ref" in da_neon_dem.coords, (
-        "Expected 'spatial_ref' coordinate in the DataArray"
-    )
-    assert da_neon_dem.rio.resolution() == (1.0, -1.0), (
-        "Expected resolution (1.0, -1.0)"
-    )
+    assert da_neon_dem.name == "elevation"
+    assert da_neon_dem.shape == (28, 32)
+    assert da_neon_dem.dtype == "float32"
+    assert "x" in da_neon_dem.coords
+    assert "y" in da_neon_dem.coords
+    assert "spatial_ref" in da_neon_dem.coords
+    assert da_neon_dem.rio.resolution() == (1.0, -1.0)
     assert da_neon_dem.notnull().any(), "DataArray contains no valid data"
 
 
@@ -105,21 +89,13 @@ def test_load_ncalm_dem(ncalm_dem_bbox):
     da_ncalm_dtm = coincident.io.xarray.load_ncalm_dem(
         ncalm_dem_bbox, product="dtm", dataset_id="WA18_Wall"
     )
-    assert da_ncalm_dtm.name == "elevation", "Expected DataArray name to be 'elevation'"
-    assert da_ncalm_dtm.shape == (15, 15), (
-        f"Expected shape (15, 15), got {da_ncalm_dtm.shape}"
-    )
-    assert da_ncalm_dtm.dtype == "float32", (
-        f"Expected dtype float32, got {da_ncalm_dtm.dtype}"
-    )
-    assert "x" in da_ncalm_dtm.coords, "Expected 'x' coordinate in the DataArray"
-    assert "y" in da_ncalm_dtm.coords, "Expected 'y' coordinate in the DataArray"
-    assert "spatial_ref" in da_ncalm_dtm.coords, (
-        "Expected 'spatial_ref' coordinate in the DataArray"
-    )
-    assert da_ncalm_dtm.rio.resolution() == (1.0000000000083153, -1.0), (
-        "Expected resolution (1.0000000000083153, -1.0)"
-    )
+    assert da_ncalm_dtm.name == "elevation"
+    assert da_ncalm_dtm.shape == (15, 15)
+    assert da_ncalm_dtm.dtype == "float32"
+    assert "x" in da_ncalm_dtm.coords
+    assert "y" in da_ncalm_dtm.coords
+    assert "spatial_ref" in da_ncalm_dtm.coords
+    assert da_ncalm_dtm.rio.resolution() == (1.0000000000083153, -1.0)
     assert da_ncalm_dtm.notnull().any(), "DataArray contains no valid data"
 
 
@@ -131,19 +107,11 @@ def test_load_ncalm_dem(ncalm_dem_bbox):
 )
 def test_load_noaa_dem(noaa_dem_bbox):
     da_noaa_dem = coincident.io.xarray.load_noaa_dem(noaa_dem_bbox, 8869)
-    assert da_noaa_dem.name == "elevation", "Expected DataArray name to be 'elevation'"
-    assert da_noaa_dem.shape == (25, 19), (
-        f"Expected shape (25, 19), got {da_noaa_dem.shape}"
-    )
-    assert da_noaa_dem.dtype == "float32", (
-        f"Expected dtype float32, got {da_noaa_dem.dtype}"
-    )
-    assert "x" in da_noaa_dem.coords, "Expected 'x' coordinate in the DataArray"
-    assert "y" in da_noaa_dem.coords, "Expected 'y' coordinate in the DataArray"
-    assert "spatial_ref" in da_noaa_dem.coords, (
-        "Expected 'spatial_ref' coordinate in the DataArray"
-    )
-    assert da_noaa_dem.rio.resolution() == (3.0, -3.0), (
-        "Expected resolution (3.0, -3.0)"
-    )
+    assert da_noaa_dem.name == "elevation"
+    assert da_noaa_dem.shape == (25, 19)
+    assert da_noaa_dem.dtype == "float32"
+    assert "x" in da_noaa_dem.coords
+    assert "y" in da_noaa_dem.coords
+    assert "spatial_ref" in da_noaa_dem.coords
+    assert da_noaa_dem.rio.resolution() == (3.0, -3.0)
     assert da_noaa_dem.notnull().any(), "DataArray contains no valid data"

@@ -227,7 +227,7 @@ def search_ncalm_noaa(
                 "id": entry["Dataset"]["identifier"]["value"],
                 "name": entry["Dataset"]["identifier"]["value"]
                 if dataset == "noaa"
-                else entry["Dataset"]["alternateName"],
+                else entry["Dataset"].get("alternateName"),
                 "title": entry["Dataset"]["name"],
                 "start_datetime": datetime.fromisoformat(
                     entry["Dataset"]["temporalCoverage"].split(" / ")[0]

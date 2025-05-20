@@ -17,7 +17,7 @@ class NEON(Dataset):
 
     has_stac_api: bool = False
     search: str = "http://data.neonscience.org/api/v0/sites"
-    start: str = "2005-06-01"
+    start: str = "2005-06-01"  # Or 2013-06-01?
     end: str | None = None
     type: str = "lidar"
     alias: str = "neon"

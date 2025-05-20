@@ -358,11 +358,17 @@ def test_noaa_search(bathy_aoi):
     gf = coincident.search.search(
         dataset="noaa", intersects=bathy_aoi, datetime=["2019-01-01", "2023-12-31"]
     )
-    assert gf.shape == (2, 5)
-    assert all(
-        col in gf.columns
-        for col in ["id", "title", "start_datetime", "end_datetime", "geometry"]
-    )
+
+    expected_columns = {
+        "id",
+        "name",
+        "title",
+        "start_datetime",
+        "end_datetime",
+        "geometry",
+    }
+    assert gf.shape == (2, 6)
+    assert set(gf.columns) == expected_columns
     assert all(isinstance(geom, Polygon) for geom in gf["geometry"])
 
 
@@ -371,11 +377,16 @@ def test_ncalm_search(large_aoi):
     gf = coincident.search.search(
         dataset="ncalm", intersects=large_aoi, datetime=["2019-01-01", "2023-12-31"]
     )
-    assert gf.shape == (6, 5)
-    assert all(
-        col in gf.columns
-        for col in ["id", "title", "start_datetime", "end_datetime", "geometry"]
-    )
+    expected_columns = {
+        "id",
+        "name",
+        "title",
+        "start_datetime",
+        "end_datetime",
+        "geometry",
+    }
+    assert gf.shape == (6, 6)
+    assert set(gf.columns) == expected_columns
     assert all(isinstance(geom, Polygon) for geom in gf["geometry"])
 
 
@@ -391,16 +402,15 @@ def test_neon_search():
     gf = coincident.search.search(
         dataset="neon", intersects=intersects, datetime=["2019"]
     )
+
+    expected_columns = {
+        "id",
+        "title",
+        "start_datetime",
+        "end_datetime",
+        "product_url",
+        "geometry",
+    }
     assert gf.shape == (2, 6)
-    assert all(
-        col in gf.columns
-        for col in [
-            "id",
-            "title",
-            "start_datetime",
-            "end_datetime",
-            "product_url",
-            "geometry",
-        ]
-    )
+    assert set(gf.columns) == expected_columns
     assert all(isinstance(geom, Polygon) for geom in gf["geometry"])
