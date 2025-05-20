@@ -2392,7 +2392,7 @@ packages:
   timestamp: 1736947650712
 - pypi: ./
   name: coincident
-  version: 0.3.dev30+g5dbf1d2
+  version: 0.3.dev30+g5dbf1d2.d20250520
   sha256: 0ebd597db37b776b6f2465696ecfb80048f44734c27271e4df4db5369dcd39f6
   requires_dist:
   - aiobotocore[boto3]

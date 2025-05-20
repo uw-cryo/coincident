@@ -18,6 +18,7 @@ jobs:
           environments: dev
           manifest-path: pyproject.toml
           cache: true
+          frozen: true
 
       # NOTE: https://github.com/prefix-dev/setup-pixi/issues/136
       - name: Ensure Dynamic version
