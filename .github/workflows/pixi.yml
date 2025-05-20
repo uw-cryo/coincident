@@ -17,10 +17,7 @@ jobs:
         with:
           environments: dev
           manifest-path: pyproject.toml
-          cache: false
-          locked: false
-          #cache-write:
-          #  ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+          cache: true
 
       # NOTE: https://github.com/prefix-dev/setup-pixi/issues/136
       - name: Ensure Dynamic version
