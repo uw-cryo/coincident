@@ -104,6 +104,8 @@ filterwarnings = [
   "ignore:.* not found:UserWarning",
   # NOTE: should be able to remove with geopandas 1.1
   "ignore:.*shapely.geos.*:DeprecationWarning:geopandas",
+  # NOTE: only occurring in CI Python 3.10?!
+  "ignore:.*unclosed transport.*:ResourceWarning:asyncio"
 ]
 log_cli_level = "INFO"
 testpaths = [
