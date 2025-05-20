@@ -8,7 +8,10 @@ https://github.com/OpenTopography/Data_Catalog_Spatial_Boundaries/tree/main/NOAA
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 
+import boto3
+import botocore
 import geopandas as gpd
 import pandas as pd
 import requests  # type: ignore[import-untyped]
@@ -16,10 +19,100 @@ from pandas import Timestamp
 from shapely.geometry import shape
 
 
+def _find_noaa_dem_files(
+    dataset_id: str | int, prefix: str = "dem/"
+) -> list[dict[str, str]]:
+    """
+    HELPER FUNCTION FOR coincident.io.xarray.load_noaa_dem()
+
+    Find all TIFF or LAZ files in the S3 directory containing the specified NOAA dataset ID.
+    Supports multiple “geoid” subdirectories under `laz/`.
+
+    Parameters
+    ----------
+    dataset_id : str or int
+        NOAA dataset identifier (e.g., "8431", "6260", or "10196").
+    prefix : str
+        The S3 prefix under which to look. Default is "dem/". Use "laz/" for point clouds.
+
+    Returns
+    -------
+    List[Dict[str, str]]
+        A list of dicts, each with keys:
+          - 'url': full HTTPS download URL
+          - 'name': basename of the object key
+
+    Raises
+    ------
+    ValueError
+        If no directory is found for dataset_id, or if no matching files are found.
+    """
+    # Initialize unsigned S3 client
+    s3 = boto3.client("s3", region_name="us-east-1")
+    s3.meta.events.register("choose-signer.s3.*", botocore.handlers.disable_signing)
+    bucket = "noaa-nos-coastal-lidar-pds"
+    dataset_str = str(dataset_id)
+
+    # 1) If prefix is 'laz/', we must search one level deeper for geoid subfolders
+    search_prefixes = [prefix]
+    if prefix.rstrip("/").endswith("laz"):
+        # list possible geoid*/ top level under 'laz/'
+        resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, Delimiter="/")
+        geoids = [cp["Prefix"] for cp in resp.get("CommonPrefixes", [])]
+        search_prefixes = geoids
+
+    # 2) Find the exact dataset directory under one of the search_prefixes
+    dataset_dir = None
+    for p in search_prefixes:
+        pages = s3.get_paginator("list_objects_v2").paginate(
+            Bucket=bucket,
+            Prefix=p,
+            Delimiter="/",
+        )
+        for page in pages:
+            for cp in page.get("CommonPrefixes", []):
+                if dataset_str + "/" in cp["Prefix"]:
+                    dataset_dir = cp["Prefix"]
+                    break
+            if dataset_dir:
+                break
+        if dataset_dir:
+            break
+
+    if not dataset_dir:
+        msg_no_dir = f"No directory found for dataset ID {dataset_id} under '{prefix}'"
+        raise ValueError(msg_no_dir)
+
+    # 3) List all objects under dataset_dir and filter by extension
+    f_ext = ".laz" if prefix.rstrip("/").endswith("laz") else ".tif"
+    files: list[dict[str, str]] = []
+    pages = s3.get_paginator("list_objects_v2").paginate(
+        Bucket=bucket,
+        Prefix=dataset_dir,
+    )
+    for page in pages:
+        for obj in page.get("Contents", []):
+            key = obj["Key"]
+            if key.lower().endswith(f_ext):
+                files.append(
+                    {
+                        "url": f"https://{bucket}.s3.amazonaws.com/{key}",
+                        "name": Path(key).name,
+                    }
+                )
+
+    if not files:
+        msg_no_files = f"No '{f_ext}' files found for dataset ID {dataset_id}"
+        raise ValueError(msg_no_files)
+
+    return files
+
+
 def search_ncalm_noaa(
     aoi: gpd.GeoDataFrame | gpd.GeoSeries,
     search_start: Timestamp,
     search_end: Timestamp,
+    product: str = "lpc",
     dataset: str | None = None,
 ) -> gpd.GeoDataFrame:
     """
@@ -34,6 +127,9 @@ def search_ncalm_noaa(
         The start datetime for the search, by default searches the entire catalog defined by 'dataset'.
     search_end : Timestamp, optional
         The end datetime for the search, by default searches the entire catalog defined by 'dataset'.
+    product : str
+        The product type, must be either "lpc" for LiDAR Point Cloud or "dem" for Digital Elevation Model.
+        Defaults to "lpc".
     dataset : str
         The dataset type (either "noaa" or "ncalm").
 
@@ -47,6 +143,17 @@ def search_ncalm_noaa(
     ValueError
         If no valid `aoi` is provided or the API request fails.
     """
+    if dataset not in ["noaa", "ncalm"]:
+        msg = f"Unsupported dataset: {dataset}"
+        raise ValueError(msg)
+    if product not in ["lpc", "dem"]:
+        msg_product_arg = "Unsupported 'product' argument"
+        raise ValueError(msg_product_arg)
+    # Convert product shorthand to full description
+    if product == "lpc":
+        product = "PointCloud"
+    elif product == "dem":
+        product = "Raster"
     # If `aoi` is None, set the entire world as the search area
     if aoi is None:
         globe = shape(
@@ -73,10 +180,6 @@ def search_ncalm_noaa(
         search_poly = aoi.to_crs(4326).union_all()
         search_poly_chull = search_poly.convex_hull
         coords = ",".join([f"{x},{y}" for x, y in search_poly_chull.exterior.coords])
-
-    if dataset not in ["noaa", "ncalm"]:
-        msg = f"Unsupported dataset: {dataset}"
-        raise ValueError(msg)
 
     # https://requests.readthedocs.io/en/latest/user/quickstart/#passing-parameters-in-urls
     url_api_base = "https://portal.opentopography.org/API/otCatalog"
@@ -122,6 +225,9 @@ def search_ncalm_noaa(
         [
             {
                 "id": entry["Dataset"]["identifier"]["value"],
+                "name": entry["Dataset"]["identifier"]["value"]
+                if dataset == "noaa"
+                else entry["Dataset"].get("alternateName"),
                 "title": entry["Dataset"]["name"],
                 "start_datetime": datetime.fromisoformat(
                     entry["Dataset"]["temporalCoverage"].split(" / ")[0]

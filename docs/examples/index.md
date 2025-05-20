@@ -56,6 +56,15 @@ Search for NOAA Coastal, NCALM and NEON LiDAR datasets
 :link: elevation_plotting
 :link-type: doc
 :class-header: bg-light
+**Access LiDAR Data from multiple sources**
+^^^
+Stream or Download NOAA, NCALM and NEON DEMs and LPC
+```
+
+```{grid-item-card}
+:link: elevation_plotting
+:link-type: doc
+:class-header: bg-light
 **Comparing elevation measurements**
 ^^^
 Create standardized panel and boxplot figure comparing multiple DEM and altimeter measurements
@@ -72,4 +81,5 @@ sliderule
 contextual_data
 additional_lidar
 elevation_plotting
+dem_and_lpc
 ```

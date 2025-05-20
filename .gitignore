@@ -1,5 +1,6 @@
 *.bak
 notebooks/
+tests/debug.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

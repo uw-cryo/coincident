@@ -258,3 +258,56 @@ def get_swath_polygons(
     gf = swathtime_to_datetime(gf)
     # Swath polygons likely have different CRS (EPSG:6350), so reproject
     return gf.to_crs("EPSG:4326")
+
+
+# NOTE it says that 3DEP elevation products were "lastUpdatedDate": "Sep 11, 2019"?
+# https://tnmaccess.nationalmap.gov/api/v1/datasets?
+def query_tnm_api(
+    polygon_str: str,
+    tnmdataset: str = "Digital Elevation Model (DEM) 1 meter",
+    prodFormats: str = "GeoTIFF",
+) -> list[dict[str, Any]]:
+    """
+    Query the TNM API for USGS DEM products that intersect the given polygon.
+
+    Parameters:
+      polygon_str (str): Polygon coordinates string in the required API format.
+      tnmdataset (str): The dataset name for the TNM API (default is "Digital Elevation Model (DEM) 1 meter").
+      prodFormats (str): The product format filetype to search (default is "GeoTIFF").
+
+    Returns:
+      list: A list of JSON items returned from the TNM API.
+    """
+    # params is a dict[str, object], but requests expects Mapping[str, Any]
+    import requests  # type: ignore[import-untyped]
+
+    items = []
+    offset = 0
+    url = "https://tnmaccess.nationalmap.gov/api/v1/products"
+
+    while True:
+        params = {
+            "datasets": tnmdataset,
+            "polygon": polygon_str,
+            "prodFormats": prodFormats,
+            "outputFormat": "JSON",
+            "max": 200,
+            "offset": offset,
+        }
+        response = requests.get(url, params=params)
+        if response.status_code != 200:
+            msg_status_code = (
+                f"TNM API request failed with status code {response.status_code}"
+            )
+            raise RuntimeError(msg_status_code)
+
+        data = response.json()
+        batch = data.get("items", [])
+        if not batch:
+            # no more products -> exit loop
+            break
+
+        items.extend(batch)
+        offset += len(batch)
+
+    return items

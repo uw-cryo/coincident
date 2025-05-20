@@ -31,7 +31,9 @@ classifiers = [
 dynamic = ["version"]
 
 dependencies = [
+"aiobotocore[boto3]",
 "geopandas>=1.0",
+"ipywidgets>=8.1.7,<9",
 "maxar-platform>=1.0.7",
 "pyarrow>=19.0",
 "pystac-client>=0.8",
@@ -42,6 +44,7 @@ dependencies = [
 "sliderule>=4.12",
 "stac-asset>=0.4.5",
 "stac-geoparquet>=0.6",
+"tqdm>=4.67.1,<5"
 ]
 
 [project.optional-dependencies]
@@ -101,6 +104,8 @@ filterwarnings = [
   "ignore:.* not found:UserWarning",
   # NOTE: should be able to remove with geopandas 1.1
   "ignore:.*shapely.geos.*:DeprecationWarning:geopandas",
+  # NOTE: only occurring in CI Python 3.10?!
+  "ignore:.*unclosed transport.*:ResourceWarning:asyncio"
 ]
 log_cli_level = "INFO"
 testpaths = [
@@ -118,7 +123,7 @@ report.exclude_also = [
 ]
 
 [tool.codespell]
-ignore-words-list="ALOS"
+ignore-words-list="ALOS,ALS"
 skip="pixi.lock,docs/examples/elevation_plotting.ipynb"
 
 [tool.mypy]
@@ -220,6 +225,8 @@ requests = "*"
 rioxarray = "*"
 stac-geoparquet = "*"
 sliderule = "*"
+ipywidgets = "*"
+tqdm = "*"
 
 [tool.pixi.feature.dev.dependencies]
 # NOTE: ipykernel to run notebooks in vscode
@@ -232,6 +239,7 @@ pytest = "*"
 
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = false }
+types-requests = "*"
 #stac-asset = { version = ">=0.4.5"}
 #cloudpathlib = { version = "0.20.0,<0.21", extras = ["s3"]}
 
