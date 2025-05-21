@@ -27,17 +27,46 @@ The process goes as follows:
 
 from __future__ import annotations
 
+import re  # for NEON vendor products, client-side spatial filtering
+from typing import Any
+
 import geopandas as gpd
 import pandas as pd
-import pyogrio
 import requests  # type: ignore[import-untyped]
 from pandas import Timestamp
-from shapely.geometry import Point
+from shapely.geometry import Point, Polygon, box
+from shapely.ops import unary_union
 
 
-def build_neon_point_gf(sites_url: str) -> gpd.GeoDataFrame:
+def _get_tile_bbox(file_name: str, tile_size: int = 1000) -> Polygon | None:
+    """
+    HELPER FUNCTION FOR load_neon_dem()
+    Extract tile lower-left coordinates from the file name and return a shapely box.
+    Assumes file name pattern like: NEON_D17_TEAK_DP3_317000_4104000_CHM.tif
+    - ..._<easting:6digits>_<northing:7digits>_...
+    - ..._<easting:7digits>_<northing:7digits>_...
+    - ..._<easting:7digits>_<northing:6digits>_...
+
+    Note that we have to do client-side spatial filtering for NEON products since
+    their API doesn't allow for this. Assumes that all NEON products are in respective
+    UTM zones.
+    """
+    patterns = [r"(\d{6})_(\d{7})", r"(\d{7})_(\d{7})", r"(\d{7})_(\d{6})"]
+
+    for pattern in patterns:
+        match = re.search(pattern, file_name)
+        if match:
+            easting = int(match.group(1))
+            northing = int(match.group(2))
+            return box(easting, northing, easting + tile_size, northing + tile_size)
+
+    return None  # return None if no match is found
+
+
+def _build_neon_point_gf(sites_url: str) -> gpd.GeoDataFrame:
     """
     Build a GeoDataFrame containing NEON site information, including product URLs and available months.
+    The geometry is defined as the point (site longitude, site latitude).
 
     Parameters
     ----------
@@ -47,9 +76,7 @@ def build_neon_point_gf(sites_url: str) -> gpd.GeoDataFrame:
     Returns
     -------
     gpd.GeoDataFrame
-        A GeoDataFrame with site information and 'centroid' geometries. Note that these centroids
-        are the top left of the center-most tile for each NEON flight. Also note that there is no
-        easy way to pull the flight footprint geometry from NEON.
+        A GeoDataFrame with site information and point geometries.
     """
     sites_request = requests.get(sites_url, timeout=30)
     sites_json = sites_request.json()
@@ -82,29 +109,27 @@ def build_neon_point_gf(sites_url: str) -> gpd.GeoDataFrame:
         ],
         ignore_index=True,
     )
-
     df_neon["geometry"] = df_neon.apply(
         lambda row: Point(row["longitude"], row["latitude"]), axis=1
     )
     gf_neon = gpd.GeoDataFrame(df_neon, geometry="geometry", crs="EPSG:4326")
-
     return gf_neon.drop(columns=["latitude", "longitude"])
 
 
-def temporal_filter_neon(
+def _temporal_filter_neon(
     gf_neon: gpd.GeoDataFrame, search_start: Timestamp, search_end: Timestamp
 ) -> gpd.GeoDataFrame:
     """
-    Filter NEON GeoDataFrame by temporal range.
+    Filter NEON GeoDataFrame by temporal range using the available months information.
 
     Parameters
     ----------
     gf_neon : gpd.GeoDataFrame
-        The GeoDataFrame containing NEON site data from build_neon_point_gf().
+        The GeoDataFrame containing NEON site data.
     search_start : pd.Timestamp
-        The start of the time range to filter by.
+        The start of the time range.
     search_end : pd.Timestamp
-        The end of the time range to filter by.
+        The end of the time range.
 
     Returns
     -------
@@ -123,50 +148,51 @@ def temporal_filter_neon(
     ].reset_index(drop=True)
 
 
-def get_neon_bboxes(url: str, fallback_geometry: gpd.GeoSeries) -> gpd.GeoSeries:
+def _get_neon_flight_geometry(url: str, fallback_geometry: Any) -> Any:
     """
-    Fetch and return bounding boxes for NEON data products.
+    Query the NEON API at the given URL and use regex to extract bounding boxes from TIFF file names.
+    The tile boxes are unioned to form the full flight geometry. If valid tile boxes are found,
+    they are assumed to be in the site's UTM zone. We then reproject them to EPSG:4326 using the
+    site's fallback geometry to estimate the proper UTM CRS. If extraction fails, the fallback is returned.
 
     Parameters
     ----------
     url : str
-        The URL to the NEON product data.
-    fallback_geometry : gpd.GeoSeries
-        A fallback geometry to return if footprint cannot be retrieved.
+        The URL to query NEON product data.
+    fallback_geometry : geometry
+        A fallback geometry (e.g., the site point) if extraction fails.
 
     Returns
     -------
-    gpd.GeoSeries
-        The bounding box geometry for the NEON data product.
+    geometry
+        The unioned flight geometry (in EPSG:4326) or the fallback geometry.
     """
-    response = requests.get(url, timeout=30)
+    try:
+        response = requests.get(url, timeout=30)
+    except Exception:
+        return fallback_geometry
+
     if response.status_code != 200:
         return fallback_geometry
+
     data = response.json().get("data", {})
     files = data.get("files", [])
-    # Find the file that ends with 'merged_tiles.shp' dynamically
-    # I really can't think of a better, more-efficient way to do this after dissecting the NEON API
-    # The merged tiles shapefiles have similar filepaths, but we're missing some extra metadata
-    # that contains another ID needed to hardcode those paths effectively (see 'D02' in commented link below)
-    shp_file_url = next(
-        (f["url"] for f in files if f["name"].endswith("merged_tiles.shp")), None
-    )
-
-    try:
-        df_tiles = pyogrio.read_dataframe(shp_file_url).to_crs(4326)
-    except:  # noqa: E722
-        # TODO: fix provisional footprint grab
-        # the provisional (usually synonymous with new) NEON flights don't typically have merged_tiles.shp
-        # i tried to iterate over all the different tiles and grab bboxes but too inefficient
-        # we'll just return the point geometry for now
-        return fallback_geometry
-
-    try:
-        return df_tiles.union_all().envelope
-    except:  # noqa: E722
-        # see below link for example where make_valid() is necessary
-        # https://storage.googleapis.com/neon-aop-products/2019/FullSite/D02/2019_SCBI_3/Metadata/DiscreteLidar/TileBoundary/shps/2019_SCBI_3_merged_tiles.shp
-        return df_tiles.geometry.make_valid().union_all().envelope
+    tiles = []
+    for f in files:
+        # Process only TIFF files that follow the naming convention
+        if f["name"].endswith(".tif"):
+            tile = _get_tile_bbox(f["name"])
+            if tile is not None:
+                tiles.append(tile)
+    if tiles:
+        # Create a union of all tile boxes (in their native UTM units)
+        flight_union = unary_union(tiles)
+        # Use the fallback (site point) to estimate the correct UTM CRS
+        site_gdf = gpd.GeoDataFrame(geometry=[fallback_geometry], crs="EPSG:4326")
+        target_crs = site_gdf.estimate_utm_crs()
+        # Create a GeoSeries from the union, assign the UTM CRS, then convert to EPSG:4326
+        return gpd.GeoSeries([flight_union], crs=target_crs).to_crs("EPSG:4326")[0]
+    return fallback_geometry
 
 
 def search_bboxes(
@@ -175,54 +201,96 @@ def search_bboxes(
     search_end: Timestamp,
 ) -> gpd.GeoDataFrame:
     """
-    Perform a search for NEON LiDAR metadata and respective bbox footprints. Note that this search
-    will take a while if you denote a large aoi or a large time range.
+    Perform an efficient spatiotemporal search for NEON LiDAR flight geometries by:
+      1. Querying the NEON sites.
+      2. Temporally filtering based on available months.
+      3. Applying a nearest spatial join to restrict to the input AOI.
+      4. For each site, fetching the product data and using regex to extract tile
+         bounding boxes which are unioned to form the full flight geometry. The resulting
+         geometry is reprojected to EPSG:4326.
+      5. Finally, ensuring that the resulting flight geometry intersects the AOI.
 
     Parameters
     ----------
     intersects : gpd.GeoDataFrame | gpd.GeoSeries
-        The geometry to restrict the search. By default does a global search.
+        The area of interest (AOI) geometry (in EPSG:4326).
     search_start : pd.Timestamp
-        The start of the time range to filter by. By default searches all dates in the catalog (don't do this)
+        The start date of the temporal filter.
     search_end : pd.Timestamp
-        The end of the time range to filter by. By default searches all dates in the catalog (don't do this)
+        The end date of the temporal filter.
 
     Returns
     -------
     gpd.GeoDataFrame
-        A GeoDataFrame with NEON metadata and respective bbox footprints
+        A GeoDataFrame containing NEON site metadata with updated flight geometries in EPSG:4326.
     """
+    # Set default time range if not provided
     if search_start is None and search_end is None:
-        search_start = pd.Timestamp(
-            "2013-06-01"
-        )  # Starting from June, 2005 (first NEON dataset)
-        search_end = pd.Timestamp.today()  # Default to today's date
-    # note that the above will result in the search taking a very long time
-    # if you're searching a larger area
+        search_start = pd.Timestamp("2013-06-01")  # earliest NEON dataset date
+        search_end = pd.Timestamp.today()
+
+    # Define a global AOI if none is provided
     if intersects is None:
-        # Define global bounding box
-        intersects = gpd.GeoSeries([Point(-180, -90).buffer(360)])
+        intersects = gpd.GeoSeries([Point(-180, -90).buffer(360)], crs="EPSG:4326")
 
     sites_url = "http://data.neonscience.org/api/v0/sites"
-    # Build NEON point GeoDataFrame
-    gf_neon = build_neon_point_gf(sites_url)
 
-    # Apply temporal filter
-    gf_neon = temporal_filter_neon(gf_neon, search_start, search_end)
+    # Build and temporally filter the NEON site points
+    gf_neon = _build_neon_point_gf(sites_url)
+    gf_neon = _temporal_filter_neon(gf_neon, search_start, search_end)
 
-    # Find nearest footprint 'centroids' within the intersection geometry
-    gf_neon = (
-        gpd.sjoin_nearest(gf_neon, intersects, max_distance=1)
-        .drop(columns=["index_right"])
-        .reset_index(drop=True)
-    )
+    # Spatially restrict to sites near the AOI using a nearest join
+    gf_neon = gpd.sjoin_nearest(
+        gf_neon, intersects[["geometry"]], max_distance=1
+    ).reset_index(drop=True)
+    if "index_right" in gf_neon.columns:
+        gf_neon = gf_neon.drop(columns=["index_right"], errors="ignore")
 
-    # Apply bounding box function
+    # Update each site's geometry by fetching the flight geometry via regex-based extraction.
+    # The fallback (site point) is also used to estimate the appropriate UTM CRS.
     gf_neon["geometry"] = gf_neon.apply(
-        lambda row: get_neon_bboxes(row["product_url"], row["geometry"]), axis=1
+        lambda row: _get_neon_flight_geometry(row["product_url"], row["geometry"]),
+        axis=1,
     )
 
-    # sjoin to make sure geometries actually overlap with input aoi
-    return (
-        gf_neon.sjoin(intersects).drop(columns=["index_right"]).reset_index(drop=True)
+    # Final spatial join to ensure that the flight geometries (now in EPSG:4326) intersect the input AOI.
+    gf_neon = gf_neon.sjoin(intersects[["geometry"]]).reset_index(drop=True)
+    if "index_right" in gf_neon.columns:
+        gf_neon = gf_neon.drop(columns=["index_right"], errors="ignore")
+
+    # add days in -dd to the start_datetime and end_datetime which are in yyyy-mm
+    gf_neon["start_datetime"] = gf_neon["start_datetime"] + "-01"
+    gf_neon["end_datetime"] = (
+        gf_neon["end_datetime"]
+        .astype(str)
+        .apply(lambda m: f"{m}-{pd.Period(m, freq='M').days_in_month:02d}")
     )
+
+    return gf_neon
+
+
+# NOTE: product code DP1.30003.001 is for discrete LiDAR point cloud
+def query_neon_data_api(
+    site_id: str, month_str: str, product_code: str = "DP3.30024.001"
+) -> dict[str, Any]:
+    """
+    Query the NEON API for LiDAR products for a given site and month.
+
+    Parameters:
+      site_id (str): The NEON site ID.
+      month_str (str): The month string in the format YYYY-MM.
+      product_code (str): The NEON product code (default is 'DP3.30024.001').
+
+    Returns:
+      dict: The JSON response from the NEON API.
+    """
+    SERVER = "http://data.neonscience.org/api/v0/"
+    query_url = f"{SERVER}data/{product_code}/{site_id}/{month_str}"
+    response = requests.get(query_url)
+    if response.status_code != 200:
+        msg_neon_fail = (
+            f"NEON API request failed with status code {response.status_code}"
+        )
+        raise RuntimeError(msg_neon_fail)
+    json_data: dict[str, Any] = response.json()  # Explicit cast for MyPy
+    return json_data
