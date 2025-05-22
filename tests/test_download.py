@@ -35,7 +35,7 @@ def test_download_maxar_browse():
 
 @network
 def test_3dep_tile_gdf(usgs_neon_dem_bbox):
-    gf_usgs_lpc_tiles = coincident.io.download.fetch_usgs_lpc_tiles(
+    gf_usgs_lpc_tiles = coincident.io.download._fetch_usgs_lpc_tiles(
         aoi=usgs_neon_dem_bbox, project="CO_CentralEasternPlains_2020_D20"
     )
     assert gf_usgs_lpc_tiles.shape == (1, 3)
@@ -59,7 +59,7 @@ def test_3dep_ept(usgs_neon_dem_bbox):
 
 @network
 def test_neon_tile_gdf(usgs_neon_dem_bbox):
-    gf_neon_lpc_tiles = coincident.io.download.fetch_neon_lpc_tiles(
+    gf_neon_lpc_tiles = coincident.io.download._fetch_neon_lpc_tiles(
         aoi=usgs_neon_dem_bbox, datetime_str="2020-06-30", site_id="ARIK"
     )
     assert gf_neon_lpc_tiles.shape == (1, 3)
@@ -74,7 +74,7 @@ def test_neon_tile_gdf(usgs_neon_dem_bbox):
 
 @network
 def test_ncalm_tile_gdf(ncalm_dem_bbox):
-    gf_ncalm_lpc_tiles = coincident.io.download.fetch_ncalm_lpc_tiles(
+    gf_ncalm_lpc_tiles = coincident.io.download._fetch_ncalm_lpc_tiles(
         aoi=ncalm_dem_bbox, dataset_name="WA18_Wall"
     )
     assert gf_ncalm_lpc_tiles.shape == (1, 3)
@@ -92,7 +92,7 @@ def test_noaa_tile_gdf():
     noaa_dem_bbox = gpd.GeoDataFrame(
         geometry=[box(-83.8468, 29.8067, -83.8308, 29.8227)], crs="EPSG:4326"
     )
-    gf_noaa_lpc_tiles = coincident.io.download.fetch_noaa_lpc_tiles(
+    gf_noaa_lpc_tiles = coincident.io.download._fetch_noaa_lpc_tiles(
         aoi=noaa_dem_bbox, dataset_id="10149"
     )
     assert gf_noaa_lpc_tiles.shape == (3, 3), (

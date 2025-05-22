@@ -53,7 +53,7 @@ Search for NOAA Coastal, NCALM and NEON LiDAR datasets
 ```
 
 ```{grid-item-card}
-:link: elevation_plotting
+:link: dem_and_lpc
 :link-type: doc
 :class-header: bg-light
 **Access LiDAR Data from multiple sources**
