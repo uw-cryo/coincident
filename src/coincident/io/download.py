@@ -8,6 +8,7 @@ import json
 import os
 import re
 from collections import defaultdict
+from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
@@ -122,12 +123,12 @@ async def download_item(
     return await stac_asset.download_item(item.clone(), posixpath, config=config)
 
 
-# Helper function to download files given a list of file dicts.
-def _download_files(
-    files: list[dict[str, Any]],
-    path: str,
-    url_key: str,
-    product: str,
+# download files given a list of file dicts.
+def download_files(
+    files: list[dict[str, Any]] | Sequence[str],
+    output_dir: str,
+    url_key: str | None = None,
+    product: str | None = "",
     chunk_size: int = 65536,  # preset chunk size (64KB)
 ) -> None:
     """
@@ -138,7 +139,7 @@ def _download_files(
     ----------
     files : list
         A list of dictionaries where each dict must contain the URL under the key specified by url_key.
-    path : str
+    output_dir : str
         The directory path where files will be saved.
     url_key : str
         The key in each file dict that holds the download URL.
@@ -152,34 +153,38 @@ def _download_files(
     None
         Files are saved to the specified path.
     """
-    # Set a general description for the outer progress bar based on product if provided.
+    from typing import cast
+
+    if url_key:
+        dicts = cast(list[dict[str, Any]], files)
+        urls = [rec[url_key] for rec in dicts]
+    else:
+        urls = cast(list[str], files)
+
     outer_desc = (
         f"Downloading {product.upper()} tiles..." if product else "Downloading tiles..."
     )
-
-    for file in tqdm(files, desc=outer_desc, position=0):
-        url = file[url_key]
+    for url in tqdm(urls, desc=outer_desc, position=0):
         filename = Path(url).name
-        output_file = Path(path) / filename
+        dest = Path(output_dir) / filename
 
-        # Download the file with streaming and progress tracking.
-        with requests.get(url, stream=True) as response:
-            response.raise_for_status()
-            total_size = int(response.headers.get("content-length", 0))
-            inner_progress = tqdm(
-                total=total_size,
-                unit="iB",
-                unit_scale=True,
-                desc=filename,
-                position=1,
-                leave=False,
-            )
-            with output_file.open("wb") as f:
-                for chunk in response.iter_content(chunk_size=chunk_size):
-                    if chunk:
-                        f.write(chunk)
-                        inner_progress.update(len(chunk))
-            inner_progress.close()
+        resp = requests.get(url, stream=True)
+        resp.raise_for_status()
+        total = int(resp.headers.get("content-length", 0))
+        inner = tqdm(
+            total=total,
+            unit="iB",
+            unit_scale=True,
+            desc=filename,
+            position=1,
+            leave=False,
+        )
+        with dest.open("wb") as f:
+            for chunk in resp.iter_content(chunk_size=chunk_size):
+                if chunk:
+                    f.write(chunk)
+                    inner.update(len(chunk))
+        inner.close()
 
 
 # NOTE: i do not believe the TNM API supports LPC access for 3DEP :(
@@ -266,15 +271,14 @@ def download_usgs_dem(
 
     # Use the helper function to download files.
     # the 'product' argument here is just for the TQDM progress bar statement
-    _download_files(
-        filtered_api_items, path=output_dir, product="DEM", url_key="downloadURL"
+    download_files(
+        filtered_api_items, output_dir=output_dir, product="DEM", url_key="downloadURL"
     )
 
 
-def fetch_usgs_lpc_tiles(
+def _fetch_usgs_lpc_tiles(
     aoi: gpd.GeoDataFrame,
     project: str,
-    tnmdataset: str = "Lidar Point Cloud (LPC)",
     output_dir: str | None = None,
 ) -> gpd.GeoDataFrame:
     """
@@ -293,7 +297,6 @@ def fetch_usgs_lpc_tiles(
     Parameters:
       aoi (gpd.GeoDataFrame): Area of interest.
       project (str): A substring or identifier used to filter product titles.
-      tnmdataset (str): Dataset name for TNM API (default: "Lidar Point Cloud (LPC)", changing this will break the function).
       output_dir (Optional[str]): Directory to write out the GeoJSON. If None,
                                   no file is written.
 
@@ -309,7 +312,9 @@ def fetch_usgs_lpc_tiles(
     polygon_string = _aoi_to_polygon_string(single_geom)
 
     # 3. Query TNM API (only LAS/LAZ for LPC)
-    items = query_tnm_api(polygon_string, tnmdataset=tnmdataset, prodFormats="LAS,LAZ")
+    items = query_tnm_api(
+        polygon_string, tnmdataset="Lidar Point Cloud (LPC)", prodFormats="LAS,LAZ"
+    )
 
     if not items:
         msg_empty_api = "TNM API returned no products for the given AOI/dataset."
@@ -567,10 +572,12 @@ def download_neon_dem(
         raise RuntimeError(msg_neon_empty)
 
     # 5: Use the helper function to download files
-    _download_files(filtered_files, path=output_dir, url_key="url", product=product)
+    download_files(
+        filtered_files, output_dir=output_dir, url_key="url", product=product
+    )
 
 
-def fetch_neon_lpc_tiles(
+def _fetch_neon_lpc_tiles(
     aoi: gpd.GeoDataFrame,
     datetime_str: str,
     site_id: str,
@@ -751,7 +758,7 @@ def download_noaa_dem(
             raise RuntimeError(msg) from error
 
 
-def fetch_noaa_lpc_tiles(
+def _fetch_noaa_lpc_tiles(
     aoi: gpd.GeoDataFrame,
     dataset_id: str,
     output_dir: str | None = None,
@@ -1020,11 +1027,10 @@ def download_ncalm_dem(
         dem_clipped.rio.to_raster(clipped_output_path)
 
 
-def fetch_ncalm_lpc_tiles(
+def _fetch_ncalm_lpc_tiles(
     aoi: gpd.GeoDataFrame,
     dataset_name: str,
     output_dir: str | None = None,
-    download: bool = False,
 ) -> gpd.GeoDataFrame:
     """
     Fetch NCALM LPC (1 km LAZ) tiles intersecting an AOI from the OpenTopography 'pc-bulk' bucket,
@@ -1036,7 +1042,6 @@ def fetch_ncalm_lpc_tiles(
       3. Client-side filter: extract easting/northing from each filename, build a 1 km box,
          keep only tiles that intersect the AOI in UTM.
       4. Build a GeoDataFrame with columns ['key','url','geometry'] and reproject back to EPSG:4326.
-      5. If download=True, write each tile to output_dir.
 
     Parameters
     ----------
@@ -1046,8 +1051,6 @@ def fetch_ncalm_lpc_tiles(
         NCALM project shortname (e.g. "WA18_Wall").
     output_dir : str | None
         If provided, directory to download .laz files into.
-    download : bool
-        If True, download the filtered LAZ files to output_dir.
 
     Returns
     -------
@@ -1103,11 +1106,8 @@ def fetch_ncalm_lpc_tiles(
     gdf = gdf.to_crs(epsg=4326)
 
     # 5. Optionally download
-    if download:
-        if not output_dir:
-            msg_no_output_dir = "`output_dir` must be set when download=True"
-            raise ValueError(msg_no_output_dir)
-        Path(output_dir).mkdir(parents=True, exist_ok=True)
+    if output_dir:
+        # Path(output_dir).mkdir(parents=True, exist_ok=True)
         for key in gdf["key"]:
             local_path = Path(output_dir) / Path(key).name
             s3.download_file(bucket, key, str(local_path))
@@ -1118,3 +1118,78 @@ def fetch_ncalm_lpc_tiles(
         gdf.to_file(geojson_path, driver="GeoJSON")
 
     return gdf
+
+
+def fetch_lpc_tiles(
+    aoi: gpd.GeoDataFrame,
+    dataset_id: str,
+    datetime_str: str | None = None,
+    provider: str | None = None,
+    output_dir: str | None = None,
+) -> gpd.GeoDataFrame:
+    """
+    Unified fetch for LPC tiles across providers: USGS, NOAA, NCALM, NEON.
+
+    Parameters
+    ----------
+    aoi : gpd.GeoDataFrame
+        Area of interest.
+    dataset_id : str
+        Identifier string. Its format determines the provider if not explicitly set:
+          - NOAA: all digits, length 1-5.
+          - NEON: 4-character uppercase string (site ID).
+          - USGS: hard to determine with regex, function tries both USGS and NCALM
+          - NCALM: hard to determine with regex, function tries both USGS and NCALM
+    datetime_str : str, optional
+        For NEON provider only, a date in 'YYYY-MM-DD' format.
+    provider : str, optional
+        Override inferred provider. One of 'usgs', 'noaa', 'ncalm', 'neon'.
+    output_dir : str, optional
+        Directory to write provider-specific GeoJSON output.
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        Tile geometries with 'name', 'url', and 'geometry'.
+
+    Notes
+    -----
+    If provider is 'neon', you must supply datetime_str.
+    """
+    # Infer provider if not provided
+    prov = provider.lower() if provider else None
+    if not prov:
+        if dataset_id.isdigit() and 1 <= len(dataset_id) <= 5:
+            prov = "noaa"
+        elif len(dataset_id) == 4 and dataset_id.isupper():
+            prov = "neon"
+    # that's it given the similarities between usgs 3dep and ncalm ids (hard to regex their differences)
+    # so we'll just try both ncalm and usgs if not noaa or neon
+
+    if prov == "noaa":
+        return _fetch_noaa_lpc_tiles(aoi, dataset_id=dataset_id, output_dir=output_dir)
+    if prov == "neon":
+        if not datetime_str:
+            msg_no_neon_date = "datetime_str is required for NEON provider"
+            raise ValueError(msg_no_neon_date)
+        return _fetch_neon_lpc_tiles(
+            aoi, datetime_str=datetime_str, site_id=dataset_id, output_dir=output_dir
+        )
+    # if users override the provider:
+    if prov == "ncalm":
+        return _fetch_ncalm_lpc_tiles(
+            aoi, dataset_name=dataset_id, output_dir=output_dir
+        )
+    if prov == "usgs":
+        return _fetch_usgs_lpc_tiles(aoi, project=dataset_id, output_dir=output_dir)
+    # try both ncalm and usgs if not noaa or neon given regex issues
+    try:
+        return _fetch_usgs_lpc_tiles(aoi, project=dataset_id, output_dir=output_dir)
+    except:  # noqa: E722
+        try:
+            return _fetch_ncalm_lpc_tiles(
+                aoi, dataset_name=dataset_id, output_dir=output_dir
+            )
+        except ValueError as err:
+            msg_no_provider = f"Unknown provider: {prov}. Must be one of 'usgs', 'noaa', 'ncalm', 'neon'."
+            raise ValueError(msg_no_provider) from err
