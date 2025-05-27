@@ -8,7 +8,6 @@ import json
 import os
 import re
 from collections import defaultdict
-from collections.abc import Sequence
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
@@ -123,26 +122,22 @@ async def download_item(
     return await stac_asset.download_item(item.clone(), posixpath, config=config)
 
 
-# download files given a list of file dicts.
 def download_files(
-    files: list[dict[str, Any]] | Sequence[str],
+    files: list[str],
     output_dir: str,
-    url_key: str | None = None,
     product: str | None = "",
     chunk_size: int = 65536,  # preset chunk size (64KB)
 ) -> None:
     """
-    Download files given a list of file dictionaries.
-    Helper func for download_usgs_dem and download_neon_dem
+    Download files from remote URLs (cloud storage, web servers, etc.)
+    Used in the download_dem and fetch_lpc_tiles functions
 
     Parameters
     ----------
     files : list
-        A list of dictionaries where each dict must contain the URL under the key specified by url_key.
+        A list of file urls to download
     output_dir : str
         The directory path where files will be saved.
-    url_key : str
-        The key in each file dict that holds the download URL.
     product : str, optional
         Product name used for customizing the progress description.
     chunk_size : int, optional
@@ -153,18 +148,10 @@ def download_files(
     None
         Files are saved to the specified path.
     """
-    from typing import cast
-
-    if url_key:
-        dicts = cast(list[dict[str, Any]], files)
-        urls = [rec[url_key] for rec in dicts]
-    else:
-        urls = cast(list[str], files)
-
     outer_desc = (
         f"Downloading {product.upper()} tiles..." if product else "Downloading tiles..."
     )
-    for url in tqdm(urls, desc=outer_desc, position=0):
+    for url in tqdm(files, desc=outer_desc, position=0):
         filename = Path(url).name
         dest = Path(output_dir) / filename
 
@@ -271,9 +258,8 @@ def download_usgs_dem(
 
     # Use the helper function to download files.
     # the 'product' argument here is just for the TQDM progress bar statement
-    download_files(
-        filtered_api_items, output_dir=output_dir, product="DEM", url_key="downloadURL"
-    )
+    download_urls = [item["downloadURL"] for item in filtered_api_items]
+    download_files(download_urls, output_dir=output_dir, product="DEM")
 
 
 def _fetch_usgs_lpc_tiles(
@@ -572,9 +558,8 @@ def download_neon_dem(
         raise RuntimeError(msg_neon_empty)
 
     # 5: Use the helper function to download files
-    download_files(
-        filtered_files, output_dir=output_dir, url_key="url", product=product
-    )
+    download_urls = [item["url"] for item in filtered_files]
+    download_files(download_urls, output_dir=output_dir, product=product)
 
 
 def _fetch_neon_lpc_tiles(
@@ -1123,8 +1108,8 @@ def _fetch_ncalm_lpc_tiles(
 def fetch_lpc_tiles(
     aoi: gpd.GeoDataFrame,
     dataset_id: str,
+    provider: str,
     datetime_str: str | None = None,
-    provider: str | None = None,
     output_dir: str | None = None,
 ) -> gpd.GeoDataFrame:
     """
@@ -1135,15 +1120,15 @@ def fetch_lpc_tiles(
     aoi : gpd.GeoDataFrame
         Area of interest.
     dataset_id : str
-        Identifier string. Its format determines the provider if not explicitly set:
-          - NOAA: all digits, length 1-5.
-          - NEON: 4-character uppercase string (site ID).
-          - USGS: hard to determine with regex, function tries both USGS and NCALM
-          - NCALM: hard to determine with regex, function tries both USGS and NCALM
+        Identifier string for the dataset of interest
+          - NOAA: dataset ID, all digits length 1-5. e.g. 10149
+          - NEON: dataset ID,4-character uppercase string. e.g. 'ARIK'
+          - USGS: 3DEP project name, not to be confused with the workunit, e.g. 'CO_CentralEasternPlains_2020_D20'
+          - NCALM: dataset name, not to be confused with the dataset ID, e.g. 'WA18_Wall'
+    provider : str
+        Provider of LPC data. One of 'usgs', 'noaa', 'ncalm', 'neon'.
     datetime_str : str, optional
         For NEON provider only, a date in 'YYYY-MM-DD' format.
-    provider : str, optional
-        Override inferred provider. One of 'usgs', 'noaa', 'ncalm', 'neon'.
     output_dir : str, optional
         Directory to write provider-specific GeoJSON output.
 
@@ -1156,16 +1141,11 @@ def fetch_lpc_tiles(
     -----
     If provider is 'neon', you must supply datetime_str.
     """
-    # Infer provider if not provided
-    prov = provider.lower() if provider else None
-    if not prov:
-        if dataset_id.isdigit() and 1 <= len(dataset_id) <= 5:
-            prov = "noaa"
-        elif len(dataset_id) == 4 and dataset_id.isupper():
-            prov = "neon"
-    # that's it given the similarities between usgs 3dep and ncalm ids (hard to regex their differences)
-    # so we'll just try both ncalm and usgs if not noaa or neon
+    # provider
+    prov = provider.lower()
 
+    # given the similarities between usgs 3dep and ncalm ids (hard to regex their differences)
+    # so we'll just try both ncalm and usgs if not noaa or neon
     if prov == "noaa":
         return _fetch_noaa_lpc_tiles(aoi, dataset_id=dataset_id, output_dir=output_dir)
     if prov == "neon":
@@ -1175,21 +1155,12 @@ def fetch_lpc_tiles(
         return _fetch_neon_lpc_tiles(
             aoi, datetime_str=datetime_str, site_id=dataset_id, output_dir=output_dir
         )
-    # if users override the provider:
     if prov == "ncalm":
         return _fetch_ncalm_lpc_tiles(
             aoi, dataset_name=dataset_id, output_dir=output_dir
         )
     if prov == "usgs":
         return _fetch_usgs_lpc_tiles(aoi, project=dataset_id, output_dir=output_dir)
-    # try both ncalm and usgs if not noaa or neon given regex issues
-    try:
-        return _fetch_usgs_lpc_tiles(aoi, project=dataset_id, output_dir=output_dir)
-    except:  # noqa: E722
-        try:
-            return _fetch_ncalm_lpc_tiles(
-                aoi, dataset_name=dataset_id, output_dir=output_dir
-            )
-        except ValueError as err:
-            msg_no_provider = f"Unknown provider: {prov}. Must be one of 'usgs', 'noaa', 'ncalm', 'neon'."
-            raise ValueError(msg_no_provider) from err
+
+    msg_invalid_search = "Invalid search, please double check your parameters and function documentation: 'coincident.io.download.fetch_lpc_tiles?'"
+    raise ValueError(msg_invalid_search)
