@@ -240,11 +240,11 @@ def search_bboxes(
     gf_neon = _temporal_filter_neon(gf_neon, search_start, search_end)
 
     # Spatially restrict to sites near the AOI using a nearest join
-    gf_neon = (
-        gpd.sjoin_nearest(gf_neon, intersects[["geometry"]], max_distance=1)
-        .drop(columns=["index_right"])
-        .reset_index(drop=True)
-    )
+    gf_neon = gpd.sjoin_nearest(
+        gf_neon, intersects[["geometry"]], max_distance=1
+    ).reset_index(drop=True)
+    if "index_right" in gf_neon.columns:
+        gf_neon = gf_neon.drop(columns=["index_right"], errors="ignore")
 
     # Update each site's geometry by fetching the flight geometry via regex-based extraction.
     # The fallback (site point) is also used to estimate the appropriate UTM CRS.
@@ -254,11 +254,9 @@ def search_bboxes(
     )
 
     # Final spatial join to ensure that the flight geometries (now in EPSG:4326) intersect the input AOI.
-    gf_neon = (
-        gf_neon.sjoin(intersects[["geometry"]])
-        .drop(columns="index_right")
-        .reset_index(drop=True)
-    )
+    gf_neon = gf_neon.sjoin(intersects[["geometry"]]).reset_index(drop=True)
+    if "index_right" in gf_neon.columns:
+        gf_neon = gf_neon.drop(columns=["index_right"], errors="ignore")
 
     # add days in -dd to the start_datetime and end_datetime which are in yyyy-mm
     gf_neon["start_datetime"] = gf_neon["start_datetime"] + "-01"

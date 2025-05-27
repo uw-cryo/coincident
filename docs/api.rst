@@ -63,10 +63,10 @@ IO
    download.download_neon_dem
    download.download_noaa_dem
    download.download_ncalm_dem
-   download.fetch_usgs_lpc_tiles
-   download.fetch_neon_lpc_tiles
-   download.fetch_noaa_lpc_tiles
-   download.fetch_ncalm_lpc_tiles
+   download.fetch_lpc_tiles
+   download.build_usgs_ept_pipeline
+   download.download_files
+
 
 
 Plot
