@@ -1,3 +1,4 @@
+*.conda
 *.bak
 notebooks/
 tests/debug.ipynb
