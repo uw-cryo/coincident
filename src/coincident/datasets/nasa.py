@@ -47,6 +47,42 @@ class GEDI(Dataset):
     provider: str = "nasa"
 
 
+@dataclass
+class GLiHT(Dataset):
+    """
+    Essential metadata for G-LiHT aerial lidar
+    NOTE: here, we search only the 'GLMETRICS_001' collection for metadata, but there are also product-specific:
+    'GLORTHO_001'
+    'GLCHMK_001'
+    'GLCHMT_001'
+    'GLDSMT_001'
+    'GLDTMK_001'
+    'GLDTMT_001'
+    'GLHYANC_001'
+    'GLRADS_001'
+    'GLREFL_001'
+    'GLHYVI_001'
+    'GLLIDARPC_001'
+    'GLMETRICS_001'
+    'GLTRAJECTORY_001'
+    'GLanCE30_001'
+    """
+
+    # import pystac_client
+    # stac = pystac_client.Client.open('https://cmr.earthdata.nasa.gov/stac/LPCLOUD')
+    # cols = list(stac.get_all_collections())
+    # [c.id for c in cols if c.id.startswith('GL')]
+
+    has_stac_api: bool = True
+    search: str = "https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
+    start: str = "2011-07-28"
+    end: str = "2022-07-28"
+    type: str = "lidar"
+    alias: str = "gliht"
+    collections: list[str] = field(default_factory=lambda: ["GLMETRICS_001"])
+    provider: str = "nasa"
+
+
 # LVIS
 # NOTE: different LVIS catalogs are scattered and only some have STAC support...
 # Accessing LVIS data through an LP DAAC via earthaccess would include the below two
