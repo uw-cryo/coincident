@@ -75,8 +75,7 @@ class GLiHT(Dataset):
 
     has_stac_api: bool = True
     search: str = "https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
-    start: str = "2011-07-28"
-    end: str = "2022-07-28"
+    start: str = "2011-06-30"
     type: str = "lidar"
     alias: str = "gliht"
     collections: list[str] = field(default_factory=lambda: ["GLMETRICS_001"])
