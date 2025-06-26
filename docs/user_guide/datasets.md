@@ -14,6 +14,7 @@ used by this library.
 | GEDI L2A           | gedi       | Altimeter | 2019-04-04 | 2023-03-17 | mid-latitudes  | [NASA](https://lpdaac.usgs.gov/products/gedi02_av002/)                      |
 | 3DEP LiDAR         | 3dep       | LiDAR     | 2000-12-01 |            | CONUS          | [USGS](https://www.usgs.gov/3d-elevation-program)                           |
 | ESA WorldCover     | worldcover | LULC      | 2020-01-01 | 2021-12-31 | global         | [Microsoft](https://planetarycomputer.microsoft.com/dataset/esa-worldcover) |
+| NASA G-LiHT        | gliht      | LiDAR     | 2011-07-28 | 2020-03-12 | US Territories | [NASA G-LiHT](https://gliht.gsfc.nasa.gov/)                                 |
 | NOAA Coastal LiDAR | noaa       | LiDAR     | 1996-10-09 |            | US Territories | [NOAA](https://coast.noaa.gov/digitalcoast/data/coastallidar.html)          |
 | NCALM LiDAR        | ncalm      | LiDAR     | 2003-05-15 |            | US Territories | [NCALM](https://calm.geo.berkeley.edu/ncalm/dtc.html)                       |
 | NEON LiDAR         | neon       | LiDAR     | 2013-06-01 |            | US Territories | [NEON](https://data.neonscience.org/data-products/DP3.30024.001)            |

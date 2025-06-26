@@ -181,6 +181,27 @@ def test_gedi_search(aoi):
     assert isinstance(gf.start_datetime.iloc[0], gpd.pd.Timestamp)
 
 
+@network
+def test_gliht_search():
+    from shapely.geometry import box
+
+    aoi = gpd.GeoDataFrame(
+        geometry=[box(*[-71.907258, 41.097413, -71.088571, 42.018798])], crs="EPSG:4326"
+    )
+    gf = coincident.search.search(dataset="gliht", intersects=aoi, datetime=["2012"])
+    actual_columns = set(gf.columns)
+    data_assets = list(
+        filter(lambda x: x["roles"] == "data", gf.iloc[0].assets.values())
+    )
+    assert gf.iloc[0].stac_version == expected_stac_version
+    assert gf.shape == (10, 13)
+    assert actual_columns == expected_nasa_columns
+    assert "roles" in gf.iloc[0].assets["browse"]
+    assert len(data_assets) == 88
+    assert gf.iloc[0].collection.startswith("GLMETRICS_001")
+    assert isinstance(gf.start_datetime.iloc[0], gpd.pd.Timestamp)
+
+
 # NASA/CSDA
 # =======
 @network

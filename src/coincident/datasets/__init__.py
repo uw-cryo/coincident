@@ -29,6 +29,7 @@ _datasets = [
     usgs.ThreeDEP(),
     nasa.ICESat2(),
     nasa.GEDI(),
+    nasa.GLiHT(),
     nasa.ABLVIS2_1(),
     nasa.AFLVIS2_1(),
     planetary_computer.COP30(),
