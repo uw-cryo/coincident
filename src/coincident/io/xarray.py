@@ -7,18 +7,22 @@ from __future__ import annotations
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from tempfile import NamedTemporaryFile
 from typing import Any
 
 import geopandas as gpd
 import odc.stac
 import pystac
 import rasterio
+import requests  # type: ignore[import-untyped]
 
 # NOTE: must import for odc.stac outputs to have .rio accessor
 import rioxarray
 import xarray as xr
 from shapely.geometry import MultiPolygon, Polygon, box
 
+from coincident.datasets.nasa import GLiHT
+from coincident.search import search
 from coincident.search.neon_api import (
     _get_tile_bbox,
     query_neon_data_api,
@@ -627,3 +631,116 @@ def load_noaa_dem(
         merged_dem = merged_dem.rio.clip(aoi_tile_crs.geometry, tile_crs, drop=True)
 
     return merged_dem
+
+
+def load_gliht_raster(
+    aoi: gpd.GeoDataFrame,
+    datetime_str: str,
+    product_key: str | None = None,
+    clip: bool = True,
+    res: int = 1,
+) -> xr.DataArray:
+    """
+    Load a G-LiHT raster product (e.g., CHM, DTM, DSM) for a given AOI and date.
+
+    This function queries NASA's STAC endpoint for the appropriate G-LiHT product,
+    downloads the raster COG via Earthdata authentication, and returns a
+    Dask-backed clipped DataArray.
+
+    Supported products:
+        - 'ortho': Orthorectified aerial imagery
+        - 'chm': Canopy height model
+        - 'dsm': Digital surface model
+        - 'dtm': Digital terrain model
+        - 'hyperspectral_ancillary': Ancillary HSI data
+        - 'radiance': Hyperspectral aradiance
+        - 'reflectance': Hyperspectral surface reflectance
+        - 'hyperspectral_vegetation': HSI-derived veg indices
+
+    NOTE: Not all G-LiHT flights will contain every single product listed
+    NOTE: Lidar point cloud data is not supported due to coincident's lack of PDAL support
+
+    Parameters:
+        aoi (gpd.GeoDataFrame): Area of interest to intersect with GLiHT tiles.
+        datetime_str (str): Desired acquisition date (format: YYYY or YYYY-MM-DD).
+                            Provided in the 'datetime' field returned by coincident.search.search
+        product_key (str): Key to select product from GLIHT_COLLECTIONS_MAP.
+        clip (bool): Whether to clip result to the AOI geometry.
+        res (int): Optional coarsening factor for x/y resolution.
+
+    Returns:
+        xr.DataArray: Clipped and optionally coarsened raster data.
+    """
+    GLIHT_COLLECTIONS_MAP = {
+        "ortho": "GLORTHO_001",  # Orthorectified aerial imagery
+        #'chm': 'GLCHMK_001',     # Canopy height model (K = ?)
+        "chm": "GLCHMT_001",  # Tiled version of CHM
+        "dsm": "GLDSMT_001",  # Digital surface model (tiled)
+        #'dtm_k': 'GLDTMK_001',   # Digital terrain model (K = ?)
+        "dtm": "GLDTMT_001",  # Tiled version of DTM
+        "hyperspectral_ancillary": "GLHYANC_001",  # Ancillary HSI data
+        "radiance": "GLRADS_001",  # Hyperspectral aradiance
+        "reflectance": "GLREFL_001",  # Hyperspectral surface reflectance
+        "hyperspectral_vegetation": "GLHYVI_001",  # HSI-derived veg indices
+        #'pointcloud': 'GLLIDARPC_001',  # LiDAR point clouds
+        # 'metrics': 'GLMETRICS_001',  # LiDAR summary metrics.
+        #             NOTE: there can be 80+ gridded metric products for a singular site so I'm leaving this out for now
+        #'trajectory': 'GLTRAJECTORY_001',  # Aircraft trajectory
+        #'glance': 'GLanCE30_001',  # Likely a coarse 30m derived product?
+    }
+    if product_key not in GLIHT_COLLECTIONS_MAP:
+        msg_product_key = f"'{product_key}' is not a valid G-LiHT product key."
+        raise ValueError(msg_product_key)
+
+    collection_id = GLIHT_COLLECTIONS_MAP[product_key]
+    gliht_dataset = GLiHT(collections=[collection_id])
+
+    # Search for intersecting items
+    results = search(dataset=gliht_dataset, intersects=aoi, datetime=[datetime_str])
+    if results.empty:
+        msg_empty_gliht = "No GLiHT raster tiles found for the given AOI/date."
+        raise ValueError(msg_empty_gliht)
+
+    item = results.iloc[0]  # Take the first matching tile
+    asset_items = item.assets
+    cog_key = next(k for k, v in asset_items.items() if v["href"].endswith(".tif"))
+    cog_href = asset_items[cog_key]["href"]
+
+    # Download with Earthdata credentials
+    username = os.getenv("EARTHDATA_USER")
+    password = os.getenv("EARTHDATA_PASS")
+    if not username or not password:
+        msg_no_ed_cres = """
+        EARTHDATA_USER and EARTHDATA_PASS must be set in the environment.
+        os.environ["EARTHDATA_USER"] = "username"
+        os.environ["EARTHDATA_PASS"] ="password"
+        """
+        raise OSError(msg_no_ed_cres)
+
+    with requests.get(cog_href, auth=(username, password), stream=True) as r:
+        r.raise_for_status()
+        with NamedTemporaryFile(delete=False, suffix=".tif") as tmp:
+            for chunk in r.iter_content(chunk_size=8192):
+                tmp.write(chunk)
+            tmp_path = tmp.name
+
+    # Open raster with Dask
+    data = rioxarray.open_rasterio(
+        tmp_path,
+        masked=True,
+        chunks={"band": 1, "x": 1024, "y": 1024},
+    )
+
+    # Clip to AOI geometry if requested
+    if clip:
+        aoi_geom = aoi.iloc[0].geometry
+        aoi_gdf = gpd.GeoDataFrame(geometry=[aoi_geom], crs=aoi.crs)
+        if aoi_gdf.crs != data.rio.crs:
+            aoi_gdf = aoi_gdf.to_crs(data.rio.crs)
+        data = data.rio.clip(aoi_gdf.geometry, data.rio.crs, drop=True)
+
+    # Optionally coarsen
+    if res > 1:
+        data = data.coarsen(x=res, y=res, boundary="trim").mean()
+
+    return data.squeeze()
