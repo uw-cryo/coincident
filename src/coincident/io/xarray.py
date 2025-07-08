@@ -633,10 +633,31 @@ def load_noaa_dem(
     return merged_dem
 
 
+def _translate_gliht_id(
+    original_id: str, target_product: str, GLIHT_COLLECTIONS_MAP: dict[str, Any]
+) -> tuple[str, ...]:
+    """
+    Helper function for load_gliht_raster to translate IDs between datasets
+    Because most people will input the search ID for the default GLiHT collection (metadata)
+    rather than the id for what is needed (e.g. dsm vs dtm cvs chm)
+    """
+    collection_code = GLIHT_COLLECTIONS_MAP[target_product].replace("_001", "")
+
+    # Check if the target collection code is already in the original ID
+    if original_id.startswith(collection_code):
+        return (original_id,)
+
+    parts = original_id.split("_", 1)  # Split only on first underscore
+    # Return both possible formats, sometimes a tail is added sometimes not (e.g. CHM vs DSM)
+    format1 = f"{collection_code}_{parts[1]}_{target_product.upper()}"
+    format2 = f"{collection_code}_{parts[1]}"
+    return format1, format2
+
+
 def load_gliht_raster(
     aoi: gpd.GeoDataFrame,
-    datetime_str: str,
-    product_key: str | None = None,
+    dataset_id: str,
+    product: str | None = None,
     clip: bool = True,
     res: int = 1,
 ) -> xr.DataArray:
@@ -688,20 +709,29 @@ def load_gliht_raster(
         #'trajectory': 'GLTRAJECTORY_001',  # Aircraft trajectory
         #'glance': 'GLanCE30_001',  # Likely a coarse 30m derived product?
     }
-    if product_key not in GLIHT_COLLECTIONS_MAP:
-        msg_product_key = f"'{product_key}' is not a valid G-LiHT product key."
+    if product not in GLIHT_COLLECTIONS_MAP:
+        msg_product_key = f"'{product}' is not a valid G-LiHT product key."
         raise ValueError(msg_product_key)
 
-    collection_id = GLIHT_COLLECTIONS_MAP[product_key]
+    collection_id = GLIHT_COLLECTIONS_MAP[product]
     gliht_dataset = GLiHT(collections=[collection_id])
 
     # Search for intersecting items
-    results = search(dataset=gliht_dataset, intersects=aoi, datetime=[datetime_str])
+    results = search(dataset=gliht_dataset, intersects=aoi)
+    possible_ids = _translate_gliht_id(dataset_id, product, GLIHT_COLLECTIONS_MAP)
+    item = None
+    for translated_id in possible_ids:
+        matching_items = results[results.id == translated_id]
+        if not matching_items.empty:
+            item = matching_items.iloc[0]
+            break
+    if item is None:
+        msg_no_match = f"No GLiHT item found with any of these IDs: {possible_ids}"
+        raise ValueError(msg_no_match)
     if results.empty:
-        msg_empty_gliht = "No GLiHT raster tiles found for the given AOI/date."
+        msg_empty_gliht = "No GLiHT raster tiles found for the given AOI and id."
         raise ValueError(msg_empty_gliht)
-
-    item = results.iloc[0]  # Take the first matching tile
+    item = results[results.id == dataset_id].iloc[0]
     asset_items = item.assets
     cog_key = next(k for k, v in asset_items.items() if v["href"].endswith(".tif"))
     cog_href = asset_items[cog_key]["href"]
