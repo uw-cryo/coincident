@@ -19,7 +19,11 @@ from coincident.overlaps import subset_by_temporal_overlap
 
 # Geopandas S3 Client
 pyogrio.set_gdal_config_options(
-    {"AWS_NO_SIGN_REQUEST": True, "GDAL_PAM_ENABLED": False}
+    {
+        "AWS_NO_SIGN_REQUEST": True,
+        "GDAL_PAM_ENABLED": False,
+        "CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".gpkg .geojson .json .tif .shp .shx .dbf .prj .cpg",
+    }
 )
 
 swath_polygon_csv = resources.files("coincident.search") / "swath_polygons.csv"
@@ -127,7 +131,6 @@ def search_bboxes(
     df = pyogrio.read_dataframe(
         url, sql=sql
     )  # , use_arrow=True... arrow probably doesn;t matter for <10000 rows?
-
     bboxes = df.apply(lambda x: box(x.minx, x.miny, x.maxx, x.maxy), axis=1)
     gf = (
         GeoDataFrame(df, geometry=bboxes, crs="EPSG:4326")

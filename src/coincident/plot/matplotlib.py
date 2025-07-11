@@ -467,7 +467,8 @@ def compare_dems(
         gf_wc = search(
             dataset="worldcover",
             intersects=gf_search,
-            datetime=["2020"],
+            datetime=["2021"],
+            # NOTE: 2020 throwing an error...
         )
         # TODO: set requested resolution based on AOI / DEM resolution?
         # Or always keep at native 10m resolution ?
@@ -545,7 +546,7 @@ def compare_dems(
         add_labels=False,
     )
     _style_ax(axd["worldcover"])
-    axd["worldcover"].set_title("ESA WorldCover 2020")
+    axd["worldcover"].set_title("ESA WorldCover 2021")
 
     # raster diffs
     for i, dem in enumerate(dem_list[1:], start=1):
@@ -1036,7 +1037,7 @@ def hist_esa(
     color_dict: dict[str, str] | None = None,
 ) -> plt.Figure:
     """
-    Histogram of elevation differences between DEMs or point data, grouped by ESA World Cover 2020 land cover class.
+    Histogram of elevation differences between DEMs or point data, grouped by ESA World Cover 2021 land cover class.
 
     Parameters
     ----------
@@ -1092,7 +1093,7 @@ def hist_esa(
     gf_search = gpd.GeoDataFrame(
         geometry=[box(*bounds)], crs=dem_list[0].rio.crs
     ).to_crs(epsg=4326)
-    gf_wc = search(dataset="worldcover", intersects=gf_search, datetime=["2020"])
+    gf_wc = search(dataset="worldcover", intersects=gf_search, datetime=["2021"])
     # For tiny datasets (e.g. tests), mask=True can fail..
     # TODO: revisit masking here
     ds_wc = to_dataset(gf_wc, bands=["map"], aoi=gf_search)
@@ -1159,7 +1160,7 @@ def hist_esa(
             ax.axvline(stats_dict["Mean"], color="magenta", lw=0.5)
 
         plt.suptitle(
-            "Elevation Differences by Land Cover (ESA World Cover 2020)", fontsize=14
+            "Elevation Differences by Land Cover (ESA World Cover 2021)", fontsize=14
         )
 
     # plotting logic if second dataset is a GDF
@@ -1221,7 +1222,7 @@ def hist_esa(
             ax.axvline(stats_dict["Mean"], color="magenta", lw=0.5)
 
         plt.suptitle(
-            "Elevation Differences by Land Cover (ESA World Cover 2020)", fontsize=14
+            "Elevation Differences by Land Cover (ESA World Cover 2021)", fontsize=14
         )
 
     return axes
