@@ -42,7 +42,7 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12"]
         # windows-latest,
-        runs-on: [ubuntu-latest, macos-14]
+        runs-on: [ubuntu-latest, macos-latest]
         #include:
         #  - python-version: "pypy-3.10"
         #    runs-on: ubuntu-latest
