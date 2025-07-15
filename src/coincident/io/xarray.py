@@ -7,14 +7,13 @@ from __future__ import annotations
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from tempfile import NamedTemporaryFile
+from pathlib import Path
 from typing import Any
 
 import geopandas as gpd
 import odc.stac
 import pystac
 import rasterio
-import requests  # type: ignore[import-untyped]
 
 # NOTE: must import for odc.stac outputs to have .rio accessor
 import rioxarray
@@ -657,57 +656,30 @@ def _translate_gliht_id(
 def load_gliht_raster(
     aoi: gpd.GeoDataFrame,
     dataset_id: str,
-    product: str | None = None,
-    clip: bool = True,
-    res: int = 1,
-) -> xr.DataArray:
+    product: str,
+) -> xr.Dataset:
     """
     Load a G-LiHT raster product (e.g., CHM, DTM, DSM) for a given AOI and date.
 
     This function queries NASA's STAC endpoint for the appropriate G-LiHT product,
-    downloads the raster COG via Earthdata authentication, and returns a
-    Dask-backed clipped DataArray.
+    downloads the raster COG(s) via Earthdata authentication, and returns a
+    Dask-backed, clipped xarray.Dataset with renamed bands.
 
-    Supported products:
-        - 'ortho': Orthorectified aerial imagery
-        - 'chm': Canopy height model
-        - 'dsm': Digital surface model
-        - 'dtm': Digital terrain model
-        - 'hyperspectral_ancillary': Ancillary HSI data
-        - 'radiance': Hyperspectral aradiance
-        - 'reflectance': Hyperspectral surface reflectance
-        - 'hyperspectral_vegetation': HSI-derived veg indices
+    For products with multiple data assets (e.g., DSM with Aspect, Slope, Rugosity),
+    all assets will be loaded as separate bands in the output Dataset.
 
-    NOTE: Not all G-LiHT flights will contain every single product listed
-    NOTE: Lidar point cloud data is not supported due to coincident's lack of PDAL support
-
-    Parameters:
-        aoi (gpd.GeoDataFrame): Area of interest to intersect with GLiHT tiles.
-        datetime_str (str): Desired acquisition date (format: YYYY or YYYY-MM-DD).
-                            Provided in the 'datetime' field returned by coincident.search.search
-        product_key (str): Key to select product from GLIHT_COLLECTIONS_MAP.
-        clip (bool): Whether to clip result to the AOI geometry.
-        res (int): Optional coarsening factor for x/y resolution.
-
-    Returns:
-        xr.DataArray: Clipped and optionally coarsened raster data.
+    NOTE: many DSM products from G-LiHT do not have an elevation band provided,
+    users should consider searching for CHM products for replacement
     """
     GLIHT_COLLECTIONS_MAP = {
         "ortho": "GLORTHO_001",  # Orthorectified aerial imagery
-        #'chm': 'GLCHMK_001',     # Canopy height model (K = ?)
-        "chm": "GLCHMT_001",  # Tiled version of CHM
-        "dsm": "GLDSMT_001",  # Digital surface model (tiled)
-        #'dtm_k': 'GLDTMK_001',   # Digital terrain model (K = ?)
-        "dtm": "GLDTMT_001",  # Tiled version of DTM
+        "chm": "GLCHMT_001",  # Canopy height model
+        "dsm": "GLDSMT_001",  # Digital surface model
+        "dtm": "GLDTMT_001",  # Digital terrain model
         "hyperspectral_ancillary": "GLHYANC_001",  # Ancillary HSI data
-        "radiance": "GLRADS_001",  # Hyperspectral aradiance
+        "radiance": "GLRADS_001",  # Hyperspectral radiance
         "reflectance": "GLREFL_001",  # Hyperspectral surface reflectance
         "hyperspectral_vegetation": "GLHYVI_001",  # HSI-derived veg indices
-        #'pointcloud': 'GLLIDARPC_001',  # LiDAR point clouds
-        # 'metrics': 'GLMETRICS_001',  # LiDAR summary metrics.
-        #             NOTE: there can be 80+ gridded metric products for a singular site so I'm leaving this out for now
-        #'trajectory': 'GLTRAJECTORY_001',  # Aircraft trajectory
-        #'glance': 'GLanCE30_001',  # Likely a coarse 30m derived product?
     }
     if product not in GLIHT_COLLECTIONS_MAP:
         msg_product_key = f"'{product}' is not a valid G-LiHT product key."
@@ -716,27 +688,41 @@ def load_gliht_raster(
     collection_id = GLIHT_COLLECTIONS_MAP[product]
     gliht_dataset = GLiHT(collections=[collection_id])
 
-    # Search for intersecting items
+    # Search for intersecting items and find the specific one by its ID
     results = search(dataset=gliht_dataset, intersects=aoi)
-    possible_ids = _translate_gliht_id(dataset_id, product, GLIHT_COLLECTIONS_MAP)
-    item = None
-    for translated_id in possible_ids:
-        matching_items = results[results.id == translated_id]
-        if not matching_items.empty:
-            item = matching_items.iloc[0]
-            break
-    if item is None:
-        msg_no_match = f"No GLiHT item found with any of these IDs: {possible_ids}"
-        raise ValueError(msg_no_match)
     if results.empty:
         msg_empty_gliht = "No GLiHT raster tiles found for the given AOI and id."
         raise ValueError(msg_empty_gliht)
-    item = results[results.id == dataset_id].iloc[0]
-    asset_items = item.assets
-    cog_key = next(k for k, v in asset_items.items() if v["href"].endswith(".tif"))
-    cog_href = asset_items[cog_key]["href"]
 
-    # Download with Earthdata credentials
+    possible_ids = _translate_gliht_id(dataset_id, product, GLIHT_COLLECTIONS_MAP)
+    df_item = None
+    for translated_id in possible_ids:
+        matching_items = results[results.id == translated_id]
+        if not matching_items.empty:
+            df_item = matching_items.iloc[[0]]  # Keep as gdf
+            break
+
+    if df_item is None:
+        msg_no_match = f"No GLiHT item found with any of these IDs: {possible_ids}"
+        raise ValueError(msg_no_match)
+
+    asset_items = df_item.assets.item()
+
+    # Find all data assets that are GeoTIFFs
+    data_assets = {
+        key: asset
+        for key, asset in asset_items.items()
+        if "href" in asset
+        and asset["href"].endswith(".tif")
+        and "data" in asset.get("roles", [])
+    }
+    if not data_assets:
+        msg_no_data_assets = f"No .tif data assets found for item {dataset_id}"
+        raise ValueError(msg_no_data_assets)
+
+    asset_keys_to_load = list(data_assets.keys())
+
+    # Check for Earthdata credentials in environment
     username = os.getenv("EARTHDATA_USER")
     password = os.getenv("EARTHDATA_PASS")
     if not username or not password:
@@ -747,30 +733,29 @@ def load_gliht_raster(
         """
         raise OSError(msg_no_ed_cres)
 
-    with requests.get(cog_href, auth=(username, password), stream=True) as r:
-        r.raise_for_status()
-        with NamedTemporaryFile(delete=False, suffix=".tif") as tmp:
-            for chunk in r.iter_content(chunk_size=8192):
-                tmp.write(chunk)
-            tmp_path = tmp.name
+    # Use the href from the first found data asset to create the grid template
+    first_href = data_assets[asset_keys_to_load[0]]["href"]
 
-    # Open raster with Dask
-    data = rioxarray.open_rasterio(
-        tmp_path,
-        masked=True,
-        chunks={"band": 1, "x": 1024, "y": 1024},
-    )
+    # Use a rasterio.Env context to handle authentication for remote access
+    with rasterio.Env(
+        GDAL_HTTP_USERNAME=username,
+        GDAL_HTTP_PASSWORD=password,
+        GDAL_HTTP_COOKIEFILE=Path("~/cookies.txt").expanduser(),
+        GDAL_HTTP_COOKIEJAR=Path("~/cookies.txt").expanduser(),
+    ):
+        # Create a template from the first asset to define the output grid
+        template = rioxarray.open_rasterio(
+            first_href, chunks={"x": 512, "y": 512}, masked=True
+        ).squeeze(drop=True)
 
-    # Clip to AOI geometry if requested
-    if clip:
-        aoi_geom = aoi.iloc[0].geometry
-        aoi_gdf = gpd.GeoDataFrame(geometry=[aoi_geom], crs=aoi.crs)
-        if aoi_gdf.crs != data.rio.crs:
-            aoi_gdf = aoi_gdf.to_crs(data.rio.crs)
-        data = data.rio.clip(aoi_gdf.geometry, data.rio.crs, drop=True)
+        # Load all selected data assets using their keys and the template grid
+        ds = to_dataset(
+            df_item,
+            bands=asset_keys_to_load,
+            mask=True,
+            like=template,
+        )
 
-    # Optionally coarsen
-    if res > 1:
-        data = data.coarsen(x=res, y=res, boundary="trim").mean()
-
-    return data.squeeze()
+    # Create a map to rename the long band names to simpler, more readable names
+    rename_map = {band_name: band_name.split("_")[-1] for band_name in ds.data_vars}
+    return ds.rename(rename_map)

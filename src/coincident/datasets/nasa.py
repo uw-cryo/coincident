@@ -51,7 +51,7 @@ class GEDI(Dataset):
 class GLiHT(Dataset):
     """
     Essential metadata for G-LiHT aerial lidar
-    NOTE: here, we search only the 'GLMETRICS_001' collection for metadata, but there are also product-specific:
+    NOTE: here, we search only the ''GLDSMT_001' collection for tiled DSMs, but there are also product-specific:
     'GLORTHO_001'
     'GLCHMK_001'
     'GLCHMT_001'
@@ -78,7 +78,7 @@ class GLiHT(Dataset):
     start: str = "2011-06-30"
     type: str = "lidar"
     alias: str = "gliht"
-    collections: list[str] = field(default_factory=lambda: ["GLMETRICS_001"])
+    collections: list[str] = field(default_factory=lambda: ["GLDSMT_001"])
     provider: str = "nasa"
 
 
