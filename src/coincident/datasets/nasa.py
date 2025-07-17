@@ -18,9 +18,10 @@ from coincident.datasets.general import Dataset
 class ICESat2(Dataset):
     """Essential metadata for ICESat-2 Alitmeter"""
 
-    # https://cmr.earthdata.nasa.gov/stac/NSIDC_ECS/collections/ATL03_006
+    # NOTE: STAC endpoint moved from NSIDC_ECS to NSIDC_CPRD in July 2025
     has_stac_api: bool = True
-    search: str = "https://cmr.earthdata.nasa.gov/stac/NSIDC_ECS"
+    # search: str = "https://cmr.earthdata.nasa.gov/stac/NSIDC_ECS"
+    search: str = "https://cmr.earthdata.nasa.gov/cloudstac/NSIDC_CPRD"
     start: str | None = "2018-10-13"
     type: str = "altimeter"
     alias: str = "icesat-2"
@@ -40,6 +41,7 @@ class GEDI(Dataset):
     search: str = "https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
     start: str = "2019-04-04"
     # https://www.earthdata.nasa.gov/news/nasa-announces-pause-gedi-mission
+    # https://gedi.umd.edu/mission/timeline/
     end: str = "2023-03-17"
     type: str = "altimeter"
     alias: str = "gedi"
