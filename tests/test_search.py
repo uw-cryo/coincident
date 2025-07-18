@@ -197,8 +197,8 @@ def test_gliht_search():
     assert gf.shape == (10, 13)
     assert actual_columns == expected_nasa_columns
     assert "roles" in gf.iloc[0].assets["browse"]
-    assert len(data_assets) == 88
-    assert gf.iloc[0].collection.startswith("GLMETRICS_001")
+    assert len(data_assets) == 3
+    assert gf.iloc[0].collection.startswith("GLDSMT_001")
     assert isinstance(gf.start_datetime.iloc[0], gpd.pd.Timestamp)
 
 
