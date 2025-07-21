@@ -52,6 +52,7 @@ dev = [
   # packaging pain, assume most people using conda
   #"gdal>=3.10",
   "ipykernel>=6.29",
+  "cql2", # for STAC filtering tests (tests/test_search.py::test_maxar_search)
   "mypy>=1.11",
   "pre-commit>=4",
   "pylint>=3.3",
@@ -240,6 +241,7 @@ pytest = "*"
 [tool.pixi.pypi-dependencies]
 coincident = { path = ".", editable = false }
 types-requests = "*"
+cql2 = "*"
 #stac-asset = { version = ">=0.4.5"}
 #cloudpathlib = { version = "0.20.0,<0.21", extras = ["s3"]}
 
