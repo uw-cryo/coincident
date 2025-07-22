@@ -76,7 +76,9 @@ def search(
 
         # NOTE: not very robust, explode() demotes MultiPolygons to single Polygon (seems many GeoJSONs have this)
         # ANd 'exterior' not available for Multipolygons, just
-        shapely_geometry = intersects.geometry.explode().iloc[0]
+        # NOTE: force_2d as some STAC searches fail with 3D polygons
+        # https://github.com/uw-cryo/coincident/issues/101#issuecomment-3104277451
+        shapely_geometry = intersects.geometry.force_2d().explode().iloc[0]
 
         if not shapely_geometry.exterior.is_ccw:
             shapely_geometry = (
