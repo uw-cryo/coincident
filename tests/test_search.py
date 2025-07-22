@@ -76,6 +76,31 @@ def test_cascading_search(aoi):
     assert actual_max <= expected_max
 
 
+@network
+def test_3d_poly_search():
+    # define a 3D Polygon for search
+    bbox = [-105, 40, -104, 41]
+    gf_polygon_z = gpd.GeoDataFrame(
+        geometry=[
+            Polygon(
+                [
+                    [bbox[0], bbox[1], 0],
+                    [bbox[2], bbox[1], 0],
+                    [bbox[2], bbox[3], 0],
+                    [bbox[0], bbox[3], 0],
+                ]
+            )
+        ]
+    )
+    gf_is2_stac = coincident.search.search(
+        dataset="icesat-2",
+        intersects=gf_polygon_z,
+        datetime=["2020-01-01", "2020-02-01"],
+    )
+    assert isinstance(gf_is2_stac, gpd.GeoDataFrame)
+    assert len(gf_is2_stac) == 4
+
+
 # MAXAR
 # =======
 @network

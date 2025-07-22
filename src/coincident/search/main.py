@@ -7,7 +7,6 @@ import geopandas as gpd
 
 # Used to access formatters
 from pystac_client.item_search import ItemSearch as _ItemSearch
-from shapely.geometry import mapping
 
 from coincident.datasets import _alias_to_Dataset
 from coincident.datasets.general import Dataset
@@ -77,29 +76,16 @@ def search(
 
         # NOTE: not very robust, explode() demotes MultiPolygons to single Polygon (seems many GeoJSONs have this)
         # ANd 'exterior' not available for Multipolygons, just
-        shapely_geometry = intersects.geometry.explode().iloc[0]
-
-        # if not shapely_geometry.exterior.is_ccw:
-        #     shapely_geometry = shapely_geometry.reverse()  # Apparently NASA CMR enforces polygon CCW order
-
-        # aoi = _pystac_client._format_intersects(shapely_geometry) # to JSON geometry
+        # NOTE: force_2d as some STAC searches fail with 3D polygons
+        # https://github.com/uw-cryo/coincident/issues/101#issuecomment-3104277451
+        shapely_geometry = intersects.geometry.force_2d().explode().iloc[0]
 
         if not shapely_geometry.exterior.is_ccw:
             shapely_geometry = (
                 shapely_geometry.reverse()
             )  # Apparently NASA CMR enforces polygon CCW order
 
-        if dataset.alias == "icesat-2":
-            # use the chull of the input geometry
-            # In July 2025, ICESat-2 ATL03 endpoint moved from SIDC_ECS to NSIDC_CPRD
-            # and for whatever reason, the search here is less tolerant for complex geometries
-            shapely_geometry = shapely_geometry.simplify(0.0001, preserve_topology=True)
-
-            aoi = mapping(shapely_geometry)  #  GeoJSON format for new endpoint
-        else:
-            aoi = _pystac_client._format_intersects(
-                shapely_geometry
-            )  # to JSON geometry
+        aoi = _pystac_client._format_intersects(shapely_geometry)  # to JSON geometry
 
     else:
         if "bbox" not in kwargs and "ids" not in kwargs:
