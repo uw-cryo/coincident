@@ -5,6 +5,7 @@ datasets
 
 ```{toctree}
 
+pcd_background
 pcd
 maxar
 ```
