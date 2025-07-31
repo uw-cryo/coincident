@@ -11,7 +11,7 @@ from pystac_client.item_search import ItemSearch as _ItemSearch
 from coincident.datasets import _alias_to_Dataset
 from coincident.datasets.general import Dataset
 from coincident.overlaps import subset_by_minimum_area
-from coincident.search import neon_api, opentopo_api, stac, wesm
+from coincident.search import ground_control, neon_api, opentopo_api, stac, wesm
 
 _pystac_client = _ItemSearch("no_url")
 
@@ -165,6 +165,27 @@ def search(
             search_start=search_start,
             search_end=search_end,
             dataset=dataset.alias,
+        )
+
+    elif dataset.alias == "ngs-stations":
+        if intersects is None:
+            # NGS search requires a spatial component
+            msg_no_search_geom = (
+                "An 'intersects' geometry is required for 'ngs-stations' search."
+            )
+            raise ValueError(msg_no_search_geom)
+        msg_ngs_large_geom = "NGS stations search with large geometries take longer...\nAverage county-level search takes ~20 seconds"
+        warnings.warn(msg_ngs_large_geom, stacklevel=2)
+        gf = ground_control.search_ngs_stations(
+            intersects=intersects,
+            search_start=search_start,
+        )
+
+    elif dataset.alias == "gage-stations":
+        gf = ground_control.search_gage_stations(
+            intersects=intersects,
+            search_start=search_start,
+            search_end=search_end,
         )
 
     # Keep track of dataset alias in geodataframe metadata

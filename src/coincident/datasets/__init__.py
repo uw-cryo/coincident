@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from coincident.datasets import (
     csda,
+    ground_control,
     maxar,
     nasa,
     neon,
@@ -38,9 +39,20 @@ _datasets = [
     opentopo.NOAA(),
     opentopo.NCALM(),
     neon.NEON(),
+    ground_control.NgsStations(),
+    ground_control.GageStations(),
 ]
 
 aliases = [x.alias for x in _datasets]
 _alias_to_Dataset = dict(zip(aliases, _datasets, strict=False))
 
-__all__ = ["Dataset", "csda", "maxar", "nasa", "opentopo", "planetary_computer", "usgs"]
+__all__ = [
+    "Dataset",
+    "csda",
+    "ground_control",
+    "maxar",
+    "nasa",
+    "opentopo",
+    "planetary_computer",
+    "usgs",
+]

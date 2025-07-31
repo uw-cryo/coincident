@@ -124,7 +124,7 @@ report.exclude_also = [
 ]
 
 [tool.codespell]
-ignore-words-list="ALOS,ALS,HSI,als"
+ignore-words-list="ALOS,ALS,HSI,als,GAGE,gage"
 skip="pixi.lock,docs/examples/elevation_plotting.ipynb"
 
 [tool.mypy]
