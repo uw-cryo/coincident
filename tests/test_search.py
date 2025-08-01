@@ -182,7 +182,7 @@ def test_icesat2_search(aoi):
     assert gf.shape == (25, len(expected_nasa_columns))
     assert actual_columns == expected_nasa_columns
     assert "roles" in gf.iloc[0].assets["browse"]
-    assert len(data_assets) == 1
+    assert len(data_assets) == 2
     assert gf.iloc[0].collection.startswith("ATL03")
     assert isinstance(gf.start_datetime.iloc[0], gpd.pd.Timestamp)
 
@@ -202,7 +202,7 @@ def test_gedi_search(aoi):
     assert gf.shape == (33, len(expected_nasa_columns))
     assert actual_columns == expected_nasa_columns
     assert "roles" in gf.iloc[0].assets["browse"]
-    assert len(data_assets) == 1
+    assert len(data_assets) == 2
     assert gf.iloc[0].collection.startswith("GEDI02_A")
     assert isinstance(gf.start_datetime.iloc[0], gpd.pd.Timestamp)
 
@@ -223,7 +223,7 @@ def test_gliht_search():
     assert gf.shape == (10, len(expected_nasa_columns))
     assert actual_columns == expected_nasa_columns
     assert "roles" in gf.iloc[0].assets["browse"]
-    assert len(data_assets) == 3
+    assert len(data_assets) == 6
     assert gf.iloc[0].collection.startswith("GLDSMT_001")
     assert isinstance(gf.start_datetime.iloc[0], gpd.pd.Timestamp)
 
