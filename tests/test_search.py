@@ -162,7 +162,8 @@ expected_nasa_columns = {
     "datetime",
     "end_datetime",
     "start_datetime",
-    "dayofyear",
+    "storage:schemes",
+    "dayofyear",  # added by coincident.search
 }
 
 
@@ -178,7 +179,7 @@ def test_icesat2_search(aoi):
         filter(lambda x: x["roles"] == "data", gf.iloc[0].assets.values())
     )
     assert gf.iloc[0].stac_version == expected_stac_version
-    assert gf.shape == (25, 13)
+    assert gf.shape == (25, len(expected_nasa_columns))
     assert actual_columns == expected_nasa_columns
     assert "roles" in gf.iloc[0].assets["browse"]
     assert len(data_assets) == 1
@@ -198,7 +199,7 @@ def test_gedi_search(aoi):
         filter(lambda x: x["roles"] == "data", gf.iloc[0].assets.values())
     )
     assert gf.iloc[0].stac_version == expected_stac_version
-    assert gf.shape == (33, 13)
+    assert gf.shape == (33, len(expected_nasa_columns))
     assert actual_columns == expected_nasa_columns
     assert "roles" in gf.iloc[0].assets["browse"]
     assert len(data_assets) == 1
@@ -219,7 +220,7 @@ def test_gliht_search():
         filter(lambda x: x["roles"] == "data", gf.iloc[0].assets.values())
     )
     assert gf.iloc[0].stac_version == expected_stac_version
-    assert gf.shape == (10, 13)
+    assert gf.shape == (10, len(expected_nasa_columns))
     assert actual_columns == expected_nasa_columns
     assert "roles" in gf.iloc[0].assets["browse"]
     assert len(data_assets) == 3
