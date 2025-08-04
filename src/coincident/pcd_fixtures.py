@@ -6,12 +6,13 @@ United States (CONUS).
 
 from __future__ import annotations
 
-import io
 import logging
+from pathlib import Path
 from typing import TypedDict
 
 import geopandas as gpd
-import requests  # type: ignore[import-untyped]
+import pandas as pd
+from shapely import wkt
 
 from coincident.search import search, wesm
 
@@ -48,10 +49,11 @@ _PcdFilters = TypedDict(
 
 
 class PcdSiteParams(TypedDict):
-    """Defines the top-level structure for each site in PCD_SITES."""
+    """Defines the top-level structure for each site in PCD_SITES"""
 
     provider: str
     datetime: list[str]
+    overlap_geometry: str
     filters: _PcdFilters
 
 
@@ -59,6 +61,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "CA_SanFrancisco_1_B23": {
         "provider": "USGS",
         "datetime": ["2023-01-17", "2023-07-18"],
+        "overlap_geometry": "POLYGON ((-122.49869579540385 37.7225321435048, -122.51421754728509 37.78265684820127, -122.47378332685508 37.80994995226257, -122.39815883627537 37.80791177118956, -122.4616240341796 37.74745501281027, -122.49869579540385 37.7225321435048))",
         "filters": {
             "3dep": {"workunit": "CA_SanFrancisco_1_B23"},
             "maxar": {"stereo_ids": ["10200100DE097E00", "10200100DC70E900"]},
@@ -80,6 +83,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "AZ_PimaCo_2_2021": {
         "provider": "USGS",
         "datetime": ["2021-09-18", "2021-11-29"],
+        "overlap_geometry": "POLYGON ((-111.0813927224041 31.894609808770994, -111.01953572428549 31.94798227506963, -111.01317668582358 31.947098123594788, -111.01244165184261 31.886079708871957, -111.07866693825639 31.82683230205409, -111.0813927224041 31.894609808770994))",
         "filters": {
             "3dep": {"workunit": "AZ_PimaCo_2_2021"},
             "maxar": {"stereo_ids": ["104001006D788E00", "104001006E942500"]},
@@ -102,6 +106,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "NE_Northeast_Phase2_2_2020": {
         "provider": "USGS",
         "datetime": ["2020-11-02", "2020-12-22"],
+        "overlap_geometry": "POLYGON ((-98.283830547 40.8319992894, -98.28805470114001 41.185077194343826, -98.26500850845709 41.26193292321868, -98.12052091014777 41.26082060738351, -98.16070277564374 40.89950149849092, -98.283830547 40.8319992894))",
         "filters": {
             "3dep": {"workunit": "NE_Northeast_Phase2_2_2020"},
             "maxar": {
@@ -146,6 +151,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "WI_Brown_2_2020": {
         "provider": "USGS",
         "datetime": ["2020-04-07", "2020-05-09"],
+        "overlap_geometry": "POLYGON ((-88.08851055495393 44.65002443734368, -88.07680590851425 44.67237307709082, -88.03832665179429 44.655758940856884, -88.0173511796351 44.62591728077161, -88.03829737314108 44.49921466897285, -88.0855997216971 44.49804855713017, -88.08851055495393 44.65002443734368))",
         "filters": {
             "3dep": {"workunit": "WI_Brown_2_2020"},
             "maxar": {"stereo_ids": ["104001005ACC6E00", "104001005B461800"]},
@@ -162,6 +168,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "GA_Central_3_2019": {
         "provider": "USGS",
         "datetime": ["2020-02-02", "2020-04-01"],
+        "overlap_geometry": "POLYGON ((-84.12671569644924 31.01941095632088, -84.13329816636715 31.568656984115982, -84.11305907559789 31.746612946981553, -84.05059072866084 31.69169387974824, -84.0310090441035 31.606427307310568, -84.02359554302821 31.222141221316225, -84.0384748132213 31.02889768223571, -84.12671569644924 31.01941095632088))",
         "filters": {
             "3dep": {"workunit": "GA_Central_3_2019"},
             "maxar": {"stereo_ids": ["10300100A26FD700", "10300100A132F900"]},
@@ -194,6 +201,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "CA_YosemiteNP_2019": {
         "provider": "USGS",
         "datetime": ["2019-10-06", "2019-11-05"],
+        "overlap_geometry": "POLYGON ((-119.5492575968371 38.06526583204277, -119.53734167552687 38.158315268657255, -119.5179123158 38.142176044699994, -119.51402521180002 38.1612131398, -119.4894348269374 38.16262019618275, -119.4619867552 38.11630312370001, -119.42909732468549 38.120153556330095, -119.41637399179986 38.06973536669182, -119.5492575968371 38.06526583204277))",
         "filters": {
             "3dep": {"workunit": "CA_YosemiteNP_2019"},
             "maxar": {"stereo_ids": ["102001008E543300", "102001008EE06B00"]},
@@ -210,6 +218,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "TX_DesertMountains_B1_2018": {
         "provider": "USGS",
         "datetime": ["2019-08-28", "2019-11-02"],
+        "overlap_geometry": "MULTIPOLYGON (((-105.75648307892891 31.48802043744102, -105.74044466388929 31.628299278519673, -105.66532015794972 31.60785307566191, -105.6817150069322 31.462434793354177, -105.75648307892891 31.48802043744102)), ((-105.71457893360392 31.81479372478263, -105.70834640640595 31.866955289316444, -105.6454916290212 31.825676001630708, -105.64514768085348 31.78739286540503, -105.68387842249429 31.787950501271613, -105.71457893360392 31.81479372478263)))",
         "filters": {
             "3dep": {"workunit": "TX_DesertMountains_B1_2018"},
             "maxar": {"stereo_ids": ["1030010097D5CC00", "10300100984A3A00"]},
@@ -229,6 +238,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "CO_WestCentral_2019": {
         "provider": "USGS",
         "datetime": ["2019-08-16", "2019-10-08"],
+        "overlap_geometry": "MULTIPOLYGON (((-106.8087159664412 38.650074344601826, -106.73016207984253 38.712207247211836, -106.71836013228334 38.708171939366025, -106.72185460200924 38.64390009787436, -106.79085198080406 38.59952250275771, -106.8087159664412 38.650074344601826)), ((-106.80789338847443 38.82538692772677, -106.80703647763674 38.98583952996138, -106.79181281241124 38.997555854547585, -106.75071116255369 38.97004033224472, -106.72765182335152 38.78453016515039, -106.80789338847443 38.82538692772677)))",
         "filters": {
             "3dep": {"workunit": "CO_WestCentral_2019"},
             "maxar": {"stereo_ids": ["102001008BD60800", "1020010088168700"]},
@@ -246,6 +256,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "WY_FEMA_East_B9_2019": {
         "provider": "USGS",
         "datetime": ["2019-07-13", "2019-09-24"],
+        "overlap_geometry": "POLYGON ((-109.63272177563503 43.16570451142812, -109.68179261170016 43.510454255175134, -109.66662928596925 43.53324932573008, -109.50051092431917 43.60620231011112, -109.46371826882357 43.57911683711135, -109.48539679398097 43.182155622226006, -109.63272177563503 43.16570451142812))",
         "filters": {
             "3dep": {"workunit": "WY_FEMA_East_B9_2019"},
             "maxar": {"stereo_ids": ["1020010086976A00", "1020010089403600"]},
@@ -280,6 +291,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "REDB": {
         "provider": "NEON",
         "datetime": ["2021-03-28", "2021-06-28"],
+        "overlap_geometry": "POLYGON ((-111.7469617770448 40.78845879512573, -111.80059326210007 40.76843628665632, -111.79312640671719 40.82830749058919, -111.7439004944288 40.828639975426405, -111.7469617770448 40.78845879512573))",
         "filters": {
             "neon": {"site": "REDB"},
             "maxar": {
@@ -302,6 +314,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "BART": {
         "provider": "NEON",
         "datetime": ["2019-06-10", "2019-09-22"],
+        "overlap_geometry": "POLYGON ((-71.28063099480259 43.987633244325664, -71.29835822129166 44.02732951660264, -71.20408121118402 44.02583039135407, -71.20107586677035 43.98781654969867, -71.28063099480259 43.987633244325664))",
         "filters": {
             "neon": {"site": "BART"},
             "maxar": {
@@ -329,6 +342,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "WREF": {
         "provider": "NEON",
         "datetime": ["2019-05-22", "2019-08-21"],
+        "overlap_geometry": "POLYGON ((-122.00390477808023 45.779209212637085, -122.0344861746451 45.82361234666161, -121.99166117102219 45.845309058661, -121.99238741969438 45.78813979017355, -122.00390477808023 45.779209212637085))",
         "filters": {
             "neon": {"site": "WREF"},
             "maxar": {"stereo_ids": ["10300100965CBA00", "10300100962F3500"]},
@@ -349,6 +363,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
     "OTLAS.092021.32611.1": {
         "provider": "NCALM",
         "datetime": ["2020-01-16", "2020-02-23"],
+        "overlap_geometry": "POLYGON ((-115.73124807944741 33.35440577353728, -115.78901631590048 33.401096326313194, -115.79498918906548 33.42186189441148, -115.74678165992853 33.38575032566509, -115.73124807944741 33.35440577353728))",
         "filters": {
             "neon": {"site": "OTLAS.092021.32611.1"},
             "maxar": {"stereo_ids": ["10300100A178D600", "10300100A3456700"]},
@@ -372,64 +387,64 @@ PCD_SITES: dict[str, PcdSiteParams] = {
 }
 
 
-def load_pcd_geometries() -> gpd.GeoDataFrame:
-    """
-    Loads PCD site geometries by downloading them from the latest GitHub release.
+# def load_pcd_geometries() -> gpd.GeoDataFrame:
+#     """
+#     Loads PCD site geometries by downloading them from the latest GitHub release.
 
-    This function finds the 'pcd_overlap_geometries_2025.parquet' asset from
-    the latest release, downloads it into memory, and loads it into a GeoDataFrame.
+#     This function finds the 'pcd_overlap_geometries_2025.parquet' asset from
+#     the latest release, downloads it into memory, and loads it into a GeoDataFrame.
 
-    Returns:
-        gpd.GeoDataFrame: A GeoDataFrame with 'pcd_id' and 'geometry' columns.
+#     Returns:
+#         gpd.GeoDataFrame: A GeoDataFrame with 'pcd_id' and 'geometry' columns.
 
-    Raises:
-        FileNotFoundError: If the geometry asset is not found in the latest release.
-    """
-    OWNER = "uw-cryo"
-    REPO = "coincident"
-    GEOMETRY_FILENAME = "pcd_overlap_geometries_2025.parquet"
+#     Raises:
+#         FileNotFoundError: If the geometry asset is not found in the latest release.
+#     """
+#     OWNER = "uw-cryo"
+#     REPO = "coincident"
+#     GEOMETRY_FILENAME = "pcd_overlap_geometries_2025.parquet"
 
-    logging.info("Fetching latest release to find geometry file...")
-    api_url = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest"
+#     logging.info("Fetching latest release to find geometry file...")
+#     api_url = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest"
 
-    try:
-        response = requests.get(api_url)
-        response.raise_for_status()
-        assets = response.json().get("assets", [])
-    except requests.exceptions.RequestException as e:
-        msg_git_release = f"Failed to fetch GitHub release info: {e}"
-        logging.error(msg_git_release)
-        raise
+#     try:
+#         response = requests.get(api_url)
+#         response.raise_for_status()
+#         assets = response.json().get("assets", [])
+#     except requests.exceptions.RequestException as e:
+#         msg_git_release = f"Failed to fetch GitHub release info: {e}"
+#         logging.error(msg_git_release)
+#         raise
 
-    asset_url = next(
-        (
-            asset["browser_download_url"]
-            for asset in assets
-            if asset["name"] == GEOMETRY_FILENAME
-        ),
-        None,
-    )
+#     asset_url = next(
+#         (
+#             asset["browser_download_url"]
+#             for asset in assets
+#             if asset["name"] == GEOMETRY_FILENAME
+#         ),
+#         None,
+#     )
 
-    if not asset_url:
-        msg_no_asset = (
-            f"Asset '{GEOMETRY_FILENAME}' not found in the latest GitHub release."
-        )
-        raise FileNotFoundError(msg_no_asset)
+#     if not asset_url:
+#         msg_no_asset = (
+#             f"Asset '{GEOMETRY_FILENAME}' not found in the latest GitHub release."
+#         )
+#         raise FileNotFoundError(msg_no_asset)
 
-    # logging.info(f"Downloading geometry file: {GEOMETRY_FILENAME}")
+#     # logging.info(f"Downloading geometry file: {GEOMETRY_FILENAME}")
 
-    try:
-        response = requests.get(asset_url)
-        response.raise_for_status()
+#     try:
+#         response = requests.get(asset_url)
+#         response.raise_for_status()
 
-        # read downloaded content directly from an in-memory buffer
-        buffer = io.BytesIO(response.content)
-        return gpd.read_parquet(buffer)
+#         # read downloaded content directly from an in-memory buffer
+#         buffer = io.BytesIO(response.content)
+#         return gpd.read_parquet(buffer)
 
-    except requests.exceptions.RequestException as e:
-        msg_no_download = f"Failed to download geometry file: {e}"
-        logging.error(msg_no_download)
-        raise
+#     except requests.exceptions.RequestException as e:
+#         msg_no_download = f"Failed to download geometry file: {e}"
+#         logging.error(msg_no_download)
+#         raise
 
 
 # NOTE: could adjust the below to do a cascading_search but this works easier with how
@@ -439,19 +454,8 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
     """
     Performs on-demand searches to retrieve all data for a given PCD site.
 
-    This function uses the site's overlap geometry and predefined filters
-    from the pcd_fixtures to run live searches against 3DEP, NEON, NCALM,
-    Maxar, ICESat-2, and GEDI.
-
-    Args:
-        pcd_id (str): The identifier for the PCD site (e.g., 'CA_SanFrancisco_1_B23').
-
-    Returns:
-        dict: A dictionary where keys are sensor types ('als', 'maxar', 'is2',
-              'gedi', 'overlap') and values are the corresponding GeoDataFrames.
-
-    Raises:
-        ValueError: If the provided pcd_id is not found in the fixtures.
+    This function now uses the site's hardcoded 'overlap_geometry' from the
+    PCD_SITES fixtures to run live searches.
     """
     if pcd_id not in PCD_SITES:
         msg_invalid_id = f"PCD Site ID '{pcd_id}' not found in fixtures."
@@ -460,23 +464,26 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
     msg_site_id = f"Reading data for PCD Site: {pcd_id}"
     logging.info(msg_site_id)
     site_params = PCD_SITES[pcd_id]
-    # need list() for mypy
     search_date = list(site_params["datetime"])
     provider = site_params["provider"]
     filters = site_params["filters"]
+    wkt_geom = site_params.get("overlap_geometry")
 
-    # load overlap area geoms from parquet the the repo assets
-    gf_overlap_geoms = load_pcd_geometries()
-    gf_overlap_original = gf_overlap_geoms[
-        gf_overlap_geoms.pcd_id == pcd_id
-    ].reset_index(drop=True)
+    if not wkt_geom:
+        msg_no_geom = f"Overlap geometry not found for PCD Site ID '{pcd_id}'."
+        raise ValueError(msg_no_geom)
 
-    # convex hull for a less complex search polygon
-    # using the original geometry will fail for some sites
+    # Create gdf from the hardcoded WKT string in our PCD site class
+    geom = wkt.loads(wkt_geom)
+    gf_overlap_original = gpd.GeoDataFrame(
+        {"pcd_id": [pcd_id], "geometry": [geom]}, crs="EPSG:4326"
+    )
+
+    # less complex search polygon to improve performance and rid errors
     gf_overlap_search = gf_overlap_original.copy()
-    gf_overlap_search.geometry = gf_overlap_search.geometry.convex_hull
+    gf_overlap_search.geometry = gf_overlap_search.geometry.envelope
 
-    # search for lidar
+    # Search for lidar
     ms_als_prov = f"Searching for {provider} data..."
     logging.info(ms_als_prov)
     if provider == "USGS":
@@ -490,20 +497,15 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
         gf_als = search(
             dataset="neon", intersects=gf_overlap_search, datetime=search_date
         )
-        gf_als = gf_als[gf_als.siteID == pcd_id].reset_index(
-            drop=True
-        )  # Assuming column is siteID
+        gf_als = gf_als[gf_als.id == pcd_id].reset_index(drop=True)
     elif provider == "NCALM":
         gf_als = search(
             dataset="ncalm", intersects=gf_overlap_search, datetime=search_date
         )
-        gf_als = gf_als[gf_als.ncalm_id == pcd_id].reset_index(
-            drop=True
-        )  # As requested
+        gf_als = gf_als[gf_als.id == pcd_id].reset_index(drop=True)
     else:
         gf_als = gpd.GeoDataFrame()
 
-    # satellite data
     msg_maxar = "Searching for Maxar data..."
     logging.info(msg_maxar)
     gf_maxar = search(
@@ -530,3 +532,128 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
         "gedi": gf_gedi,
         "overlap": gf_overlap_original,
     }
+
+
+def download_pcd_files(
+    output_dir: str, geoparquet: bool = True, geojson: bool = True
+) -> None:
+    """
+    Downloads all data for every PCD site, groups it by provider and sensor (als, stereo, gedi, icesat-2, overlap area),
+    and saves the results to GeoParquet and/or GeoJSON files.
+
+    Args:
+        output_dir (str): The directory where output files will be saved.
+        geoparquet (bool): If True, saves files in GeoParquet format. Defaults to True.
+        geojson (bool): If True, saves files in GeoJSON format. Defaults to True.
+    """
+    if not (geoparquet or geojson):
+        msg = "No output format selected. Set geoparquet or geojson to True."
+        logging.warning(msg)
+        return
+
+    # Create output dir if it doesn't exist
+    try:
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        msg_dir = f"Output directory '{output_dir}' is ready."
+        logging.info(msg_dir)
+    except OSError as e:
+        msg_dir_fail = f"Failed to create output directory: {e}"
+        logging.error(msg_dir_fail)
+        raise
+
+    # Group sites by provider (USGS, NEON, NCALM)
+    sites_by_provider: dict[str, list[str]] = {}
+    for pcd_id, params in PCD_SITES.items():
+        provider = params.get("provider", "UNKNOWN")
+        if provider not in sites_by_provider:
+            sites_by_provider[provider] = []
+        sites_by_provider[provider].append(pcd_id)
+
+    # iterate over each provider (USGS, NEON, NCALM) group
+    for provider, pcd_ids in sites_by_provider.items():
+        msg_provider = f"Processing provider: {provider}"
+        logging.info(msg_provider)
+
+        # in-memory stores for GeoDataFrames for the current provider
+        provider_data: dict[str, list[gpd.GeoDataFrame]] = {
+            "als": [],
+            "maxar": [],
+            "is2": [],
+            "gedi": [],
+            "overlap": [],
+        }
+
+        for pcd_id in pcd_ids:
+            try:
+                site_data = read_pcd_site(pcd_id)
+                for sensor, gdf in site_data.items():
+                    if not gdf.empty:
+                        # Add the primary PCD ID to each dataframe for consistent tracking
+                        gdf["pcd_id"] = pcd_id
+                        provider_data[sensor].append(gdf)
+            except Exception as e:
+                msg_fail = f"Failed to download data for site '{pcd_id}'. Error: {e}"
+                logging.error(msg_fail)
+                continue  # Move to the next site
+
+        # Write the collected data for the provider to files
+        for sensor, gdf_list in provider_data.items():
+            if not gdf_list:
+                msg_no_data = (
+                    f"No data found for sensor '{sensor}' under provider '{provider}'."
+                )
+                logging.info(msg_no_data)
+                continue
+
+            msg_concat = (
+                f"Concatenating {len(gdf_list)} GeoDataFrames for {provider}-{sensor}."
+            )
+            logging.info(msg_concat)
+            full_gdf = pd.concat(gdf_list, ignore_index=True)
+
+            # provider-specific ID column name
+            id_col_map = {"USGS": "workunit", "NEON": "neon_id", "NCALM": "ncalm_id"}
+            id_col_name = id_col_map.get(provider, "pcd_id")
+
+            if id_col_name in full_gdf.columns and id_col_name != "pcd_id":
+                # 'workunit' already exists from the wesm
+                # so 'pcd_id' column is now redundant, so we drop it.
+                full_gdf = full_gdf.drop(columns=["pcd_id"])
+            else:
+                # The provider-specific column does not exist (e.g., for maxar, gedi, anything not usgs als),
+                # rename our 'pcd_id' column to create it.
+                full_gdf = full_gdf.rename(columns={"pcd_id": id_col_name})
+
+            # ID column first column
+            cols = [id_col_name] + [
+                col for col in full_gdf.columns if col != id_col_name
+            ]
+            full_gdf = full_gdf[cols]
+
+            # quick patch for duplicate 'id' col in NEON and NCALM ALS gdfs because I don't have time to implement a better fix
+            if sensor == "als" and "id" in full_gdf.columns and id_col_name != "id":
+                full_gdf = full_gdf.drop(columns=["id"])
+
+            base_path = Path(output_dir) / f"PCD_{provider}_{sensor}"
+            if geoparquet:
+                try:
+                    pq_path = f"{base_path}.parquet"
+                    msg_write = f"Writing file: {pq_path}"
+                    logging.info(msg_write)
+                    full_gdf.to_parquet(pq_path)
+                except Exception as e:
+                    msg_err = f"Failed to write GeoParquet file {pq_path}: {e}"
+                    logging.error(msg_err)
+
+            if geojson:
+                try:
+                    json_path = f"{base_path}.geojson"
+                    msg_write = f"Writing file: {json_path}"
+                    logging.info(msg_write)
+                    full_gdf.to_file(json_path, driver="GeoJSON")
+                except Exception as e:
+                    msg_err = f"Failed to write GeoJSON file {json_path}: {e}"
+                    logging.error(msg_err)
+
+    msg_done = "All providers processed. File download complete."
+    logging.info(msg_done)
