@@ -17,15 +17,6 @@ from shapely.geometry import box
 from coincident.datasets import usgs
 from coincident.overlaps import subset_by_temporal_overlap
 
-# Geopandas S3 Client
-pyogrio.set_gdal_config_options(
-    {
-        "AWS_NO_SIGN_REQUEST": True,
-        "GDAL_PAM_ENABLED": False,
-        "CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".gpkg .geojson .json .tif .shp .shx .dbf .prj .cpg",
-    }
-)
-
 swath_polygon_csv = resources.files("coincident.search") / "swath_polygons.csv"
 
 defaults = usgs.ThreeDEP()
@@ -127,10 +118,25 @@ def search_bboxes(
         A GeoDataFrame containing the convex hull geometries and FIDs in EPSG:4326
     """
     # NOTE: much faster to JUST read bboxes, not full geometry or other columns
+    # Geopandas S3 Client
+    # warning: this overrides global GDAL config
+    gdal_config = {
+        "AWS_NO_SIGN_REQUEST": True,
+        "GDAL_PAM_ENABLED": False,
+        "CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".gpkg",
+    }
+
+    pyogrio.set_gdal_config_options(gdal_config)
     sql = "select * from rtree_WESM_geometry"
     df = pyogrio.read_dataframe(
         url, sql=sql
     )  # , use_arrow=True... arrow probably doesn;t matter for <10000 rows?
+
+    # "context manager exit for GDAL env"
+    for key in gdal_config:
+        gdal_config[key] = None
+    pyogrio.set_gdal_config_options(gdal_config)
+
     bboxes = df.apply(lambda x: box(x.minx, x.miny, x.maxx, x.maxy), axis=1)
     gf = (
         GeoDataFrame(df, geometry=bboxes, crs="EPSG:4326")
