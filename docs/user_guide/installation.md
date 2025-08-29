@@ -8,7 +8,9 @@ versions of dependencies managed by [pixi.sh](https://pixi.sh/latest/):
 ```bash
 gh repo clone uw-cryo/coincident
 cd coincident
+```
 
+```
 export PIXI_FROZEN=true
 pixi install
 pixi shell # type "exit" to deactivate environment
