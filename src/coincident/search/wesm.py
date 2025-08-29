@@ -26,6 +26,7 @@ wesm_gpkg_url = defaults.search
 gdal_config = {
     "AWS_NO_SIGN_REQUEST": True,
     "GDAL_PAM_ENABLED": False,
+    "GDAL_DISABLE_READDIR_ON_OPEN": True,
 }
 
 
@@ -130,8 +131,8 @@ def search_bboxes(
     df = pyogrio.read_dataframe(
         url, sql=sql
     )  # , use_arrow=True... arrow probably doesn;t matter for <10000 rows?
-    # Unset
-    pyogrio.set_gdal_config_options({"CPL_VSIL_CURL_ALLOWED_EXTENSIONS": None})
+    # Unset / allow anything
+    pyogrio.set_gdal_config_options({"CPL_VSIL_CURL_ALLOWED_EXTENSIONS": "*"})
 
     bboxes = df.apply(lambda x: box(x.minx, x.miny, x.maxx, x.maxy), axis=1)
     gf = (
