@@ -33,6 +33,7 @@ dynamic = ["version"]
 dependencies = [
 "aiobotocore[boto3]",
 "geopandas>=1.0",
+"ipykernel>=6.29",
 "ipywidgets>=8.1.7,<9",
 "matplotlib>=3.10",
 "maxar-platform>=1.0.7",
@@ -53,7 +54,6 @@ dependencies = [
 dev = [
   # packaging pain, assume most people using conda
   #"gdal>=3.10",
-  "ipykernel>=6.29",
   "cql2", # for STAC filtering tests (tests/test_search.py::test_maxar_search)
   "mypy>=1.11",
   "pre-commit>=4",
@@ -215,10 +215,13 @@ dev = { features = ["docs", "dev"], solve-group = "default"}
 python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
 geopandas = "*"
 gdal = ">=3.10"
+ipykernel = "*"
+ipywidgets = "*"
 jsonschema = "*"
 libgdal-arrow-parquet = "*"
 # https://github.com/prefix-dev/pixi/issues/3479
 libgfortran5 = ">=14.2.0"
+matplotlib-base = ">=3.10"
 odc-stac = "*"
 pyarrow = "*"
 pystac-client = "*"
@@ -227,12 +230,9 @@ rioxarray = "*"
 scipy = "*"
 stac-geoparquet = "*"
 sliderule = "*"
-ipywidgets = "*"
 tqdm = "*"
 
 [tool.pixi.feature.dev.dependencies]
-ipykernel = "*"
-matplotlib-base = ">=3.10"
 mypy = "*"
 pre-commit = "*"
 pylint = "*"

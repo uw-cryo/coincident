@@ -25,10 +25,12 @@ of the data used by this library.
 <sup>\*</sup> These datasets only have search available, not download or
 in-memory read supported.
 
-### Other data sources
+### Integrating additional datasets
 
-If you are interested in working with additional data, feel free to open an
-[issue](https://github.com/uw-cryo/coincident/issues).
+If you'd like to suggest an additional dataset that would be useful, feel free
+to open an [issue](https://github.com/uw-cryo/coincident/issues).
+
+### Example notebooks
 
 ```{toctree}
 
