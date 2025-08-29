@@ -22,12 +22,13 @@ swath_polygon_csv = resources.files("coincident.search") / "swath_polygons.csv"
 defaults = usgs.ThreeDEP()
 wesm_gpkg_url = defaults.search
 
-# NOTE: this overrides global GDAL config
+# NOTE: this overrides *global* GDAL config
 gdal_config = {
-    "AWS_NO_SIGN_REQUEST": True,
-    "GDAL_PAM_ENABLED": False,
-    "GDAL_DISABLE_READDIR_ON_OPEN": True,
+    "AWS_NO_SIGN_REQUEST": "YES",
+    "GDAL_PAM_ENABLED": "NO",
+    "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR",
 }
+pyogrio.set_gdal_config_options(gdal_config)
 
 
 def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
@@ -131,8 +132,8 @@ def search_bboxes(
     df = pyogrio.read_dataframe(
         url, sql=sql
     )  # , use_arrow=True... arrow probably doesn;t matter for <10000 rows?
-    # Unset / allow anything
-    pyogrio.set_gdal_config_options({"CPL_VSIL_CURL_ALLOWED_EXTENSIONS": "*"})
+    # Unset
+    pyogrio.set_gdal_config_options({"CPL_VSIL_CURL_ALLOWED_EXTENSIONS": None})
 
     bboxes = df.apply(lambda x: box(x.minx, x.miny, x.maxx, x.maxy), axis=1)
     gf = (
