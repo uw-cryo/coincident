@@ -22,6 +22,12 @@ swath_polygon_csv = resources.files("coincident.search") / "swath_polygons.csv"
 defaults = usgs.ThreeDEP()
 wesm_gpkg_url = defaults.search
 
+# NOTE: this overrides global GDAL config
+gdal_config = {
+    "AWS_NO_SIGN_REQUEST": True,
+    "GDAL_PAM_ENABLED": False,
+}
+
 
 def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
     """
@@ -118,24 +124,14 @@ def search_bboxes(
         A GeoDataFrame containing the convex hull geometries and FIDs in EPSG:4326
     """
     # NOTE: much faster to JUST read bboxes, not full geometry or other columns
-    # Geopandas S3 Client
-    # warning: this overrides global GDAL config
-    gdal_config = {
-        "AWS_NO_SIGN_REQUEST": True,
-        "GDAL_PAM_ENABLED": False,
-        "CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".gpkg",
-    }
-
-    pyogrio.set_gdal_config_options(gdal_config)
+    # Fix for https://github.com/uw-cryo/coincident/issues/96
+    pyogrio.set_gdal_config_options({"CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".gpkg"})
     sql = "select * from rtree_WESM_geometry"
     df = pyogrio.read_dataframe(
         url, sql=sql
     )  # , use_arrow=True... arrow probably doesn;t matter for <10000 rows?
-
-    # "context manager exit for GDAL env"
-    for key in gdal_config:
-        gdal_config[key] = None
-    pyogrio.set_gdal_config_options(gdal_config)
+    # Unset
+    pyogrio.set_gdal_config_options({"CPL_VSIL_CURL_ALLOWED_EXTENSIONS": None})
 
     bboxes = df.apply(lambda x: box(x.minx, x.miny, x.maxx, x.maxy), axis=1)
     gf = (
