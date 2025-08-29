@@ -1,53 +1,66 @@
 # Installation
 
-We recommend working with coincident in an isolated environment, managed by
-[pixi.sh](https://pixi.sh/latest/):
+## Pixi (recommended)
 
-## Pixi
-
-Alternatively, you can install the latest development version using the
-[GitHub CLI](https://cli.github.com) and :
+We recommend working with coincident in an isolated environment, with specific
+versions of dependencies managed by [pixi.sh](https://pixi.sh/latest/):
 
 ```bash
 gh repo clone uw-cryo/coincident
 cd coincident
-pixi install
-pixi shell
 ```
 
-### Pixi + JupyterLab
+```
+export PIXI_FROZEN=true
+pixi install
+pixi shell # type "exit" to deactivate environment
+```
 
-To expose the pixi environment as a "notebook kernel" in JupyterLab, you can
-either install JupyterLab into your pixi environment (`pixi add jupyterlab`) and
-lunch jupyterlab from that environment. Or if you are running code on a remote
-JupyterHub you can use an extension to expose the pixi environment to JupyterLab
-with the [pixi-kernel extension](https://github.com/renan-r-santos/pixi-kernel).
+### Executing Jupyter Notebooks
 
-For example, on the [CryoCloud JupyterHub](https://hub.cryointhecloud.com/), we
-use the following steps to create an environment for running the `coincident`
-example notebooks:
+You can run and modify coincident example notebooks (in the `docs/examples/`
+folder) using your editor of choice. VSCode automatically detects pixi
+environments, but JupyterLab requires the
+[pixi-kernel extension](https://github.com/renan-r-santos/pixi-kernel).
+
+#### Local workstations
+
+If working on your personal computer it can be convenient to install a global
+jupyterlab executable that can be used with any pixi environment:
+
+```
+pixi global install --environment jupyterlab jupyterlab jupyterlab-myst pixi-kernel
+```
+
+#### Remote workstations
+
+If you're using a remote JupyterHub, like
+[CryoCloud JupyterHub](https://hub.cryointhecloud.com/), use the following
+command to create an environment for running the `coincident` example notebooks
+(you only need to run this once):
 
 ```bash
 pip install pixi-kernel --user
 ```
 
 You will then be able to select the `Pixi (Python)` kernel from the JupyterLab
-interface. You may need to run `pixi shell` in a terminal before the environment
-is available in JupyterLab.
+interface. Note that you may need to run `pixi shell` in a terminal before the
+environment is available in JupyterLab.
 
 ```{note}
 Pixi environments are scoped to folders, so you will only be able to use this environment for notebooks under the `coincident/` repository folder.
 ```
 
-## pip
+## pip install (not recommended)
 
-The latest release of `coincident` can be installed from PyPi:
+The latest release of `coincident` can be installed from PyPi, but this is not
+recommended because exact dependency versions are not guaranteed.
 
 ```bash
 pip install coincident
 ```
 
-## conda
+### conda
 
 We do yet have a conda-forge package for coincident. In the meantime, you can
 try installing coincident with pip _into_ an existing conda environment, but

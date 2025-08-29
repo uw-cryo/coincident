@@ -13,10 +13,10 @@ build:
     install:
       # Install specific pixi environment and list packages
       - curl -fsSL https://pixi.sh/install.sh | bash
-      - $HOME/.pixi/bin/pixi list -e dev
+      - $HOME/.pixi/bin/pixi list -e docs
     build:
       html:
-        - $HOME/.pixi/bin/pixi run docs
+        - $HOME/.pixi/bin/pixi run --environment docs docs
     post_build:
       # Report full size of html folder
       - du -sh docs/_build/html

@@ -160,13 +160,13 @@ def download_files(
     # Handle Earthdata authentication if needed
     auth = None
     if earthdata_auth:
-        username = os.getenv("EARTHDATA_USER")
-        password = os.getenv("EARTHDATA_PASS")
+        username = os.getenv("EARTHDATA_USERNAME")
+        password = os.getenv("EARTHDATA_PASSWORD")
         if not username or not password:
             msg_no_ed_cres = """
-            EARTHDATA_USER and EARTHDATA_PASS must be set in the environment.
-            os.environ["EARTHDATA_USER"] = "username"
-            os.environ["EARTHDATA_PASS"] ="password"
+            EARTHDATA_USERNAME and EARTHDATA_PASSWORD must be set in the environment.
+            os.environ["EARTHDATA_USERNAME"] = "username"
+            os.environ["EARTHDATA_PASSWORD"] ="password"
             """
             raise OSError(msg_no_ed_cres)
         auth = (username, password)
@@ -1213,13 +1213,13 @@ def _process_gliht_files(
         return
 
     # Get Earthdata credentials
-    username = os.getenv("EARTHDATA_USER")
-    password = os.getenv("EARTHDATA_PASS")
+    username = os.getenv("EARTHDATA_USERNAME")
+    password = os.getenv("EARTHDATA_PASSWORD")
     if not username or not password:
         msg_no_ed_cres = """
-        EARTHDATA_USER and EARTHDATA_PASS must be set in the environment.
-        os.environ["EARTHDATA_USER"] = "username"
-        os.environ["EARTHDATA_PASS"] ="password"
+    EARTHDATA_USERNAME and EARTHDATA_PASSWORD must be set in the environment.
+    os.environ["EARTHDATA_USERNAME"] = "username"
+    os.environ["EARTHDATA_PASSWORD"] ="password"
         """
         raise OSError(msg_no_ed_cres)
 

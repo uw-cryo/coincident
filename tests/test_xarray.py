@@ -121,8 +121,10 @@ def test_load_noaa_dem(noaa_dem_bbox):
 def test_load_gliht_raster():
     import os
 
-    if not os.getenv("EARTHDATA_USER") or not os.getenv("EARTHDATA_PASS"):
-        pytest.skip("EARTHDATA_USER and EARTHDATA_PASS environment variables required")
+    if not os.getenv("EARTHDATA_USERNAME") or not os.getenv("EARTHDATA_PASSWORD"):
+        pytest.skip(
+            "EARTHDATA_USERNAME and EARTHDATA_PASSWORD environment variables required"
+        )
     import geopandas as gpd
     from shapely.geometry import box
 

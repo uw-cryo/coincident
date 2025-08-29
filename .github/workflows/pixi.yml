@@ -33,5 +33,7 @@ jobs:
       - name: Run Pytest
         env:
           MAXAR_API_KEY: ${{ secrets.MAXAR_API_KEY}}
+          EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_USERNAME}}
+          EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD}}
         run: |
           pixi run networktest

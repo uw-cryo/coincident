@@ -16,14 +16,6 @@ io
 ```{toctree}
 :maxdepth: 1
 :hidden:
-:caption: Datasets
-
-datasets
-```
-
-```{toctree}
-:maxdepth: 1
-:hidden:
 :caption: Contributing
 
 contribute
