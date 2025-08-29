@@ -26,7 +26,7 @@ wesm_gpkg_url = defaults.search
 gdal_config = {
     "AWS_NO_SIGN_REQUEST": "YES",
     "GDAL_PAM_ENABLED": "NO",
-    "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR",
+    "CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".gpkg .geojson .json .tif .shp .shx .dbf .prj .cpg .vrt",
 }
 pyogrio.set_gdal_config_options(gdal_config)
 
@@ -126,14 +126,10 @@ def search_bboxes(
         A GeoDataFrame containing the convex hull geometries and FIDs in EPSG:4326
     """
     # NOTE: much faster to JUST read bboxes, not full geometry or other columns
-    # Fix for https://github.com/uw-cryo/coincident/issues/96
-    pyogrio.set_gdal_config_options({"CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".gpkg"})
     sql = "select * from rtree_WESM_geometry"
     df = pyogrio.read_dataframe(
         url, sql=sql
     )  # , use_arrow=True... arrow probably doesn;t matter for <10000 rows?
-    # Unset
-    pyogrio.set_gdal_config_options({"CPL_VSIL_CURL_ALLOWED_EXTENSIONS": None})
 
     bboxes = df.apply(lambda x: box(x.minx, x.miny, x.maxx, x.maxy), axis=1)
     gf = (
