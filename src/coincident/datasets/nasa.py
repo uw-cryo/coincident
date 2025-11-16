@@ -106,7 +106,7 @@ class ABLVIS2_1(Dataset):
     """
 
     has_stac_api: bool = True
-    search: str = "https://cmr.earthdata.nasa.gov/stac/NSIDC_ECS"
+    search: str = "https://cmr.earthdata.nasa.gov/cloudstac/NSIDC_CPRD"
     start: str = "2017-06-29"
     end: str = "2017-07-17"
     type: str = "lidar"
@@ -130,7 +130,7 @@ class AFLVIS2_1(Dataset):
     """
 
     has_stac_api: bool = True
-    search: str = "https://cmr.earthdata.nasa.gov/stac/NSIDC_ECS"
+    search: str = "https://cmr.earthdata.nasa.gov/cloudstac/NSIDC_CPRD"
     start: str = "2016-02-20"
     end: str = "2016-03-08"
     type: str = "lidar"

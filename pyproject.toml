@@ -201,7 +201,7 @@ platforms = ["osx-arm64", "linux-64"]
 [tool.pixi.environments]
 # solve_group ensures same dependency versions *across* environments
 default = {features = [], solve-group = "default"}
-dev = {features = ["docs", "dev"], solve-group = "default"}
+dev = {features = ["dev"], solve-group = "default"}
 docs = {features = ["docs"], solve-group = "default"}
 
 # NOTE: pixi will match project.dependencies versions above but get them from conda-forge
