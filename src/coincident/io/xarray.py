@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import boto3
 import geopandas as gpd
 import odc.stac
 import pystac
@@ -18,6 +19,8 @@ import rasterio
 # NOTE: must import for odc.stac outputs to have .rio accessor
 import rioxarray
 import xarray as xr
+from botocore import UNSIGNED
+from botocore.client import Config
 from shapely.geometry import MultiPolygon, Polygon, box
 
 from coincident.datasets.nasa import GLiHT
@@ -451,10 +454,6 @@ def load_ncalm_dem(
     xarray.DataArray or list of xarray.DataArray
         DEM tile arrays or merged mosaic with name 'elevation'.
     """
-    import boto3
-    from botocore import UNSIGNED
-    from botocore.client import Config
-
     # Validate product
     product = product.lower()
     if product not in ("dtm", "dsm"):

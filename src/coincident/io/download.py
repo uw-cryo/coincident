@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import re
+import tempfile
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -1203,8 +1204,6 @@ def _process_gliht_files(
     res: int,
 ) -> None:
     """Helper function to downloads G-LiHT files with optional clipping and coarsening."""
-    import tempfile
-
     # If no processing needed, just download normally
     if not clip and res == 1:
         download_files(

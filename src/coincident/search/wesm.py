@@ -10,6 +10,7 @@ from typing import Any
 
 import pandas as pd
 import pyogrio
+import requests  # type: ignore[import-untyped]
 from geopandas import GeoDataFrame, read_file
 from pandas import Timedelta, Timestamp
 from shapely.geometry import box
@@ -282,8 +283,6 @@ def query_tnm_api(
       list: A list of JSON items returned from the TNM API.
     """
     # params is a dict[str, object], but requests expects Mapping[str, Any]
-    import requests  # type: ignore[import-untyped]
-
     items = []
     offset = 0
     url = "https://tnmaccess.nationalmap.gov/api/v1/products"

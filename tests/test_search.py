@@ -6,7 +6,7 @@ from importlib.metadata import version
 import geopandas as gpd
 import pytest
 from geopandas.testing import assert_geodataframe_equal
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, box
 
 import coincident
 
@@ -209,8 +209,6 @@ def test_gedi_search(aoi):
 
 @network
 def test_gliht_search():
-    from shapely.geometry import box
-
     aoi = gpd.GeoDataFrame(
         geometry=[box(*[-71.907258, 41.097413, -71.088571, 42.018798])], crs="EPSG:4326"
     )

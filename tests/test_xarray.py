@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import os
+
+import geopandas as gpd
 import pytest
 import xarray as xr
+from shapely.geometry import box
 
 import coincident
 from coincident.io.xarray import to_dataset
@@ -119,14 +123,10 @@ def test_load_noaa_dem(noaa_dem_bbox):
 
 @network
 def test_load_gliht_raster():
-    import os
-
     if not os.getenv("EARTHDATA_USERNAME") or not os.getenv("EARTHDATA_PASSWORD"):
         pytest.skip(
             "EARTHDATA_USERNAME and EARTHDATA_PASSWORD environment variables required"
         )
-    import geopandas as gpd
-    from shapely.geometry import box
 
     mini_aoi = gpd.GeoDataFrame(
         geometry=[box(*[-76.55240202, 38.8885878, -76.54340202, 38.8975878])],
