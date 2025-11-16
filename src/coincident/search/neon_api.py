@@ -286,7 +286,7 @@ def query_neon_data_api(
     """
     SERVER = "http://data.neonscience.org/api/v0/"
     query_url = f"{SERVER}data/{product_code}/{site_id}/{month_str}"
-    response = requests.get(query_url)
+    response = requests.get(query_url, timeout=30)
     if response.status_code != 200:
         msg_neon_fail = (
             f"NEON API request failed with status code {response.status_code}"

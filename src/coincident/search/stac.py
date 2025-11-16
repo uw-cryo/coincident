@@ -10,7 +10,7 @@ from typing import Any
 import geopandas as gpd
 import pystac
 import pystac_client
-import stac_geoparquet
+import rustac
 from pystac_client.stac_api_io import StacApiIO
 
 # Any import that requires auth to work will be optional
@@ -47,9 +47,7 @@ def to_geopandas(
 ) -> gpd.GeoDataFrame:
     """
     Convert a STAC ItemCollection to a GeoDataFrame.
-    This function converts a given STAC ItemCollection to a GeoDataFrame using the
-    `stac_geoparquet.arrow.parse_stac_items_to_arrow` method. It also adds an additional
-    column 'dayofyear' for convenience.
+    It also adds an additional column 'dayofyear' for convenience.
 
     Parameters
     ----------
@@ -71,8 +69,9 @@ def to_geopandas(
         message = "ItemCollection is empty, cannot convert to GeoDataFrame"
         raise ValueError(message)
 
-    record_batch_reader = stac_geoparquet.arrow.parse_stac_items_to_arrow(collection)
-    gf = gpd.GeoDataFrame.from_arrow(record_batch_reader)  # doesn't keep arrow dtypes
+    table = rustac.to_arrow(collection.to_dict())
+    # NOTE: I believe all STAC footprints are expected as EPSG:4326 (proj:geometry is optional)
+    gf = gpd.GeoDataFrame.from_arrow(table).set_crs(epsg=4326)
 
     # Workaround stac-geoparquet limitation https://github.com/stac-utils/stac-geoparquet/issues/82
     gf["assets"] = gf["assets"].apply(_filter_assets)
@@ -99,9 +98,11 @@ def to_pystac_items(gf: gpd.GeoDataFrame) -> list[pystac.Item]:
         A list of PySTAC Items created from the GeoDataFrame.
     """
 
-    batch = stac_geoparquet.arrow.stac_table_to_items(gf.to_arrow())
-
-    return [pystac.Item.from_dict(x) for x in batch]
+    feature_collection = rustac.from_arrow(gf.to_arrow())
+    item_collection = pystac.item_collection.ItemCollection.from_dict(
+        feature_collection
+    )
+    return item_collection.items  # type: ignore[no-any-return]
 
 
 def search(

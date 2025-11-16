@@ -296,7 +296,7 @@ def query_tnm_api(
             "max": 200,
             "offset": offset,
         }
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=60)
         if response.status_code != 200:
             msg_status_code = (
                 f"TNM API request failed with status code {response.status_code}"

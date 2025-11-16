@@ -28,7 +28,7 @@ def fetch_and_convert_PCD_assets() -> None:
             f"https://api.github.com/repos/{OWNER}/{REPO}/releases/tags/{RELEASE_TAG}"
         )
 
-    response = requests.get(api_url)
+    response = requests.get(api_url, timeout=60)
     response.raise_for_status()  # raise an exception for HTTP errors
     assets = response.json().get("assets", [])
 
@@ -57,7 +57,7 @@ def fetch_and_convert_PCD_assets() -> None:
 
         msg_download_asset = f"\nDownloading {asset_name}..."
         logging.debug(msg_download_asset)
-        with requests.get(download_url, stream=True) as r:
+        with requests.get(download_url, stream=True, timeout=60) as r:
             r.raise_for_status()
             with Path(temp_path).open("wb") as f:
                 for chunk in r.iter_content():

@@ -183,7 +183,7 @@ def download_files(
         if dest.exists():
             continue
 
-        resp = requests.get(url, stream=True, auth=auth)
+        resp = requests.get(url, stream=True, auth=auth, timeout=60)
         resp.raise_for_status()
         total = int(resp.headers.get("content-length", 0))
         inner = tqdm(
@@ -439,7 +439,7 @@ def build_usgs_ept_pipeline(
         f"https://s3-us-west-2.amazonaws.com/usgs-lidar-public/{workunit}/ept.json"
     )
     try:
-        response = requests.get(ept_url)
+        response = requests.get(ept_url, timeout=60)
         response.raise_for_status()
         ept_data = response.json()
     except requests.exceptions.RequestException as e:
@@ -1240,7 +1240,7 @@ def _process_gliht_files(
             with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp_file:
                 temp_path = tmp_file.name
 
-            resp = requests.get(url, stream=True, auth=(username, password))
+            resp = requests.get(url, stream=True, auth=(username, password), timeout=60)
             resp.raise_for_status()
 
             with Path(temp_path).open("wb") as f:
