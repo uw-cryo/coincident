@@ -44,10 +44,10 @@ dependencies = [
   "rioxarray>=0.19",
   "s3fs>=2025.3",
   "scipy>=1.15.2",
-  "sliderule",
+  "sliderule>=4.20",
   "stac-asset>=0.4.5",
   "stac-geoparquet>=0.6",
-  "tqdm>=4.67.1,<5", "pre-commit",
+  "tqdm>=4.67.1,<5",
 ]
 
 [project.optional-dependencies]
@@ -55,11 +55,11 @@ dev = [
   # packaging pain, assume most people using conda
   #"gdal>=3.10",
   "cql2", # for STAC filtering tests (tests/test_search.py::test_maxar_search)
-  "mypy>=1.11",
-  "pre-commit>=4",
+  "mypy>=1.15",
+  "pre-commit>=4.4.0",
   "pylint>=3.3",
-  "pytest>=6",
-  "pytest-cov>=3",
+  "pytest>=8",
+  "pytest-cov>=6",
 ]
 docs = [
   "folium", # comes w/ geopandas on conda-forge but not pypi
