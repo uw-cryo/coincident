@@ -14,12 +14,7 @@ classifiers = [
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
-  "Programming Language :: Python",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering",
   "Typing :: Typed",
 ]
@@ -28,10 +23,11 @@ dynamic = ["version"]
 license = {file = "LICENSE"}
 name = "coincident"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 dependencies = [
   "aiobotocore[boto3]",
+  "arro3-core>=0.6",
   "geopandas>=1.0",
   "ipykernel>=6.29",
   "ipywidgets>=8.1.7,<9",
@@ -46,7 +42,7 @@ dependencies = [
   "scipy>=1.15.2",
   "sliderule>=4.20",
   "stac-asset>=0.4.5",
-  "stac-geoparquet>=0.6",
+  "rustac>=0.6",
   "tqdm>=4.67.1,<5",
 ]
 
@@ -193,9 +189,13 @@ messages_control.disable = [
 ]
 reports.output-format = "colorized"
 similarities.ignore-imports = "yes"
+#  E1101: Module 'rustac' has no 'to_arrow' member (no-member)
+generated-member = ["rustac.to_arrow","rustac.from_arrow"]
+max-module-lines=1500
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
+# linux arm = "linux-aarch64"
 platforms = ["osx-arm64", "linux-64"]
 
 [tool.pixi.environments]
@@ -207,15 +207,14 @@ docs = {features = ["docs"], solve-group = "default"}
 # NOTE: pixi will match project.dependencies versions above but get them from conda-forge
 # If a package is listed in project.dependencies but not repeated here, it is installed from pypi
 [tool.pixi.dependencies]
+arro3-core = "*"
 gdal = ">=3.10"
 geopandas = "*"
 ipykernel = "*"
 ipywidgets = "*"
 jsonschema = "*"
 libgdal-arrow-parquet = "*"
-python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
-# https://github.com/prefix-dev/pixi/issues/3479
-libgfortran5 = ">=14.2.0"
+python = "*"
 matplotlib-base = ">=3.10"
 odc-stac = "*"
 pyarrow = "*"
@@ -224,7 +223,7 @@ requests = "*"
 rioxarray = "*"
 scipy = "*"
 sliderule = ">=4.20.0,<5"
-stac-geoparquet = "*"
+rustac = "*"
 tqdm = "*"
 
 [tool.pixi.feature.dev.dependencies]

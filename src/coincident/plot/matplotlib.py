@@ -8,13 +8,10 @@ import warnings
 from typing import Any
 
 import geopandas as gpd
-import matplotlib.figure
 import numpy as np
 import pandas as pd
 import pystac
 import xarray as xr
-
-# from matplotlib_scalebar.scalebar import ScaleBar
 from scipy import stats
 from shapely.geometry import box
 

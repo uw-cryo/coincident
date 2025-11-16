@@ -86,6 +86,7 @@ def test_load_neon_dem(usgs_neon_dem_bbox):
 # NOTE: this test takes 26 seconds on my local laptop to run
 # this is because NCALM DEM products are not tiled or COG'd, so no matter how small your AOI is,
 # the entire DEM will be loaded into memory. Hoping to find a better use case for this test
+@pytest.mark.skip(reason="temporarily skip b/c very slow :(")
 @network
 def test_load_ncalm_dem(ncalm_dem_bbox):
     da_ncalm_dtm = coincident.io.xarray.load_ncalm_dem(
