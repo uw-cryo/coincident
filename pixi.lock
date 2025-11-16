@@ -3076,8 +3076,8 @@ packages:
   timestamp: 1736947650712
 - pypi: ./
   name: coincident
-  version: 0.5.dev7+gfacb0dc9c.d20250829
-  sha256: 0d8adcfa070d66677edec84cb907966c6a717a77886ae3b0c759904b2851b21b
+  version: 0.4.2.dev2+g7ecae0915.d20251116
+  sha256: d5dde6ffcd71fe770c22e332b7af5ebf8d9d32a0833840c3ced7094f681f2a62
   requires_dist:
   - aiobotocore[boto3]
   - geopandas>=1.0
