@@ -63,8 +63,7 @@ jobs:
       - name: Test package
         env:
           MAXAR_API_KEY: ${{ secrets.MAXAR_API_KEY}}
-          EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_USERNAME}}
-          EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD}}
+          EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN}}
         run: >-
           python -m pytest -ra --cov --cov-report=xml --cov-report=term
           --durations=20

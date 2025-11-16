@@ -7,7 +7,6 @@ from __future__ import annotations
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
 import boto3
@@ -725,8 +724,11 @@ def load_gliht_raster(
     # Use a rasterio.Env context to handle authentication for remote NASA access
     with rasterio.Env(
         GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
-        GDAL_HTTP_COOKIEFILE=Path("~/cookies.txt").expanduser(),
-        GDAL_HTTP_COOKIEJAR=Path("~/cookies.txt").expanduser(),
+        CPL_VSIL_CURL_USE_HEAD="NO",
+        GDAL_HTTP_AUTH="BEARER",
+        GDAL_HTTP_BEARER=os.environ.get("EARTHDATA_TOKEN", ""),
+        GDAL_HTTP_COOKIEFILE="/tmp/cookies.txt",
+        GDAL_HTTP_COOKIEJAR="/tmp/cookies.txt",
     ):
         # Unfortunately NASA STAC doesn't have proj extension, so we have to open one...
         template = rioxarray.open_rasterio(
