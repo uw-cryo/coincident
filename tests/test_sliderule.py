@@ -25,7 +25,6 @@ def test_gdf_to_sliderule_polygon():
 
 
 @network
-@pytest.mark.skip(reason="https://github.com/uw-cryo/coincident/issues/35")
 class TestSlideRule:
     def test_subset_gedi02a(self, tinyaoi):
         gf_gedi = coincident.search.search(
@@ -34,20 +33,61 @@ class TestSlideRule:
         data = coincident.io.sliderule.subset_gedi02a(
             gf_gedi, aoi=tinyaoi, include_worldcover=True
         )
+
+        expected_columns = {
+            "orbit",
+            "beam",
+            "elevation_lm",
+            "solar_elevation",
+            "elevation_hr",
+            "sensitivity",
+            "track",
+            "flags",
+            "geometry",
+            "worldcover.flags",
+            "worldcover.file_id",
+            "worldcover.value",
+            "worldcover.time",
+        }
+
         assert isinstance(data, gpd.GeoDataFrame)
-        assert "elevation_lm" in data.columns
-        assert "elevation_hr" in data.columns
+        assert set(data.columns) == expected_columns
         assert data.iloc[0].name.toordinal() == 738192
         assert data.iloc[0]["worldcover.value"] == "Tree cover"
-        assert data.shape == (262, 11)
+        assert data.shape == (262, 13)
 
     def test_subset_atl06(self, tinyaoi):
         gf_is2 = coincident.search.search(
             dataset="icesat-2", intersects=tinyaoi, datetime="2022"
         )
         data = coincident.io.sliderule.subset_atl06(gf_is2, aoi=tinyaoi)
+
+        expected_columns = {
+            "bsnow_h",
+            "w_surface_window_final",
+            "h_robust_sprd",
+            "r_eff",
+            "n_fit_photons",
+            "sigma_geo_h",
+            "segment_id",
+            "gt",
+            "cycle",
+            "y_atc",
+            "atl06_quality_summary",
+            "spot",
+            "dh_fit_dx",
+            "h_li_sigma",
+            "seg_azimuth",
+            "h_li",
+            "bsnow_conf",
+            "rgt",
+            "x_atc",
+            "tide_ocean",
+            "geometry",
+        }
+
         assert isinstance(data, gpd.GeoDataFrame)
-        assert "h_li" in data.columns
+        assert set(data.columns) == expected_columns
         assert 1034 in data.rgt.unique()
         assert data.iloc[0].name.toordinal() == 738304
         assert data.shape == (413, 21)

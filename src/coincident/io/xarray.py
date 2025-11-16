@@ -7,9 +7,9 @@ from __future__ import annotations
 import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from pathlib import Path
 from typing import Any
 
+import boto3
 import geopandas as gpd
 import odc.stac
 import pystac
@@ -18,6 +18,8 @@ import rasterio
 # NOTE: must import for odc.stac outputs to have .rio accessor
 import rioxarray
 import xarray as xr
+from botocore import UNSIGNED
+from botocore.client import Config
 from shapely.geometry import MultiPolygon, Polygon, box
 
 from coincident.datasets.nasa import GLiHT
@@ -451,10 +453,6 @@ def load_ncalm_dem(
     xarray.DataArray or list of xarray.DataArray
         DEM tile arrays or merged mosaic with name 'elevation'.
     """
-    import boto3
-    from botocore import UNSIGNED
-    from botocore.client import Config
-
     # Validate product
     product = product.lower()
     if product not in ("dtm", "dsm"):
@@ -713,6 +711,7 @@ def load_gliht_raster(
         key: asset
         for key, asset in asset_items.items()
         if "href" in asset
+        and asset["href"].startswith("https://")  # ignore s3:// links
         and asset["href"].endswith(".tif")
         and "data" in asset.get("roles", [])
     }
@@ -722,33 +721,21 @@ def load_gliht_raster(
 
     asset_keys_to_load = list(data_assets.keys())
 
-    # Check for Earthdata credentials in environment
-    username = os.getenv("EARTHDATA_USERNAME")
-    password = os.getenv("EARTHDATA_PASSWORD")
-    if not username or not password:
-        msg_no_ed_cres = """
-    EARTHDATA_USERNAME and EARTHDATA_PASSWORD must be set in the environment.
-    os.environ["EARTHDATA_USERNAME"] = "username"
-    os.environ["EARTHDATA_PASSWORD"] ="password"
-        """
-        raise OSError(msg_no_ed_cres)
-
-    # Use the href from the first found data asset to create the grid template
-    first_href = data_assets[asset_keys_to_load[0]]["href"]
-
-    # Use a rasterio.Env context to handle authentication for remote access
+    # Use a rasterio.Env context to handle authentication for remote NASA access
     with rasterio.Env(
-        GDAL_HTTP_USERNAME=username,
-        GDAL_HTTP_PASSWORD=password,
-        GDAL_HTTP_COOKIEFILE=Path("~/cookies.txt").expanduser(),
-        GDAL_HTTP_COOKIEJAR=Path("~/cookies.txt").expanduser(),
+        GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+        CPL_VSIL_CURL_USE_HEAD="NO",
+        GDAL_HTTP_AUTH="BEARER",
+        GDAL_HTTP_BEARER=os.environ.get("EARTHDATA_TOKEN", ""),
+        GDAL_HTTP_COOKIEFILE="/tmp/cookies.txt",
+        GDAL_HTTP_COOKIEJAR="/tmp/cookies.txt",
     ):
-        # Create a template from the first asset to define the output grid
+        # Unfortunately NASA STAC doesn't have proj extension, so we have to open one...
         template = rioxarray.open_rasterio(
-            first_href, chunks={"x": 512, "y": 512}, masked=True
+            data_assets[asset_keys_to_load[0]]["href"], masked=True
         ).squeeze(drop=True)
 
-        # Load all selected data assets using their keys and the template grid
+        # NOTE: may want to allow user to specify chunks or allow for **kwargs to odc.stac
         ds = to_dataset(
             df_item,
             bands=asset_keys_to_load,

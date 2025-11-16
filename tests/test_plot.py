@@ -72,7 +72,7 @@ def test_hillshade_tiny(dem_tiny_utm):
 def test_clear_labels():
     """Test that _clear_labels removes axis labels correctly"""
 
-    fig, ax = plt.subplots()
+    _fig, ax = plt.subplots()
     coincident.plot.matplotlib._clear_labels(ax)
     assert isinstance(ax.xaxis.get_major_formatter(), plt.NullFormatter), (
         "x-axis abels not cleared"
@@ -85,7 +85,7 @@ def test_clear_labels():
 def test_plot_dem_no_hillshade(dem_tiny):
     """Test plot_dem with tiny DEM input without hillshade"""
 
-    fig, ax = plt.subplots()
+    _fig, ax = plt.subplots()
     ax = coincident.plot.plot_dem(dem_tiny.elevation.squeeze(), ax, title="Test DEM")
     # Check basic plot properties
     assert ax.get_title() == "Test DEM", "Plot title does not match expected value"
@@ -97,7 +97,7 @@ def test_plot_dem_with_hillshade(dem_tiny):
     """Test plot_dem with tiny DEM input with hillshade"""
 
     hillshade = coincident.plot.gdaldem(dem_tiny.elevation, "hillshade")
-    fig, ax = plt.subplots()
+    _fig, ax = plt.subplots()
     coincident.plot.plot_dem(
         dem_tiny.elevation.squeeze(),
         ax,
@@ -113,7 +113,7 @@ def test_plot_dem_with_hillshade(dem_tiny):
 
 def test_plot_altimeter_points_no_hillshade(points_tiny):
     """Test plot_altimeter_points with point data without hillshade"""
-    fig, ax = plt.subplots()
+    _fig, ax = plt.subplots()
     ax = coincident.plot.plot_altimeter_points(
         points_tiny, "h_li", ax=ax, title="Test Points"
     )
@@ -127,7 +127,7 @@ def test_plot_altimeter_points_with_hillshade(dem_tiny, points_tiny):
     """Test plot_altimeter_points with point data and hillshade background"""
     dem_tiny["hillshade"] = coincident.plot.gdaldem(dem_tiny.elevation, "hillshade")
 
-    fig, ax = plt.subplots()
+    _fig, ax = plt.subplots()
     ax = coincident.plot.plot_altimeter_points(
         points_tiny, "h_li", ax=ax, da_hillshade=dem_tiny.hillshade, alpha=0.5
     )
@@ -177,7 +177,7 @@ def test_plot_diff_hist_raster(dem_tiny_utm):
     dem_tiny_2["elevation"] = (("band", "y", "x"), random_elevations)
     ds_diff = coincident.plot.get_elev_diff(dem_tiny_2, dem_tiny_utm)
 
-    f, ax = plt.subplots()
+    _f, ax = plt.subplots()
     ax = coincident.plot.plot_diff_hist(ds_diff.elev_diff, ax=ax)
     assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
     assert len(ax.get_children()) > 0, "Figure should exist"
@@ -188,7 +188,7 @@ def test_plot_diff_hist_point(points_tiny, dem_tiny):
     """Test get_elev_diff with both point data source"""
 
     gf_diff = coincident.plot.get_elev_diff(points_tiny, dem_tiny, source_col="h_li")
-    f, ax = plt.subplots()
+    _f, ax = plt.subplots()
     ax = coincident.plot.plot_diff_hist(gf_diff.elev_diff, ax=ax)
     assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
     assert len(ax.get_children()) > 0, "Figure should exist"

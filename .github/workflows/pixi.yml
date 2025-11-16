@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: prefix-dev/setup-pixi@v0.9.1
+      - uses: prefix-dev/setup-pixi@v0.9.3
         with:
           environments: dev
           manifest-path: pyproject.toml
@@ -33,7 +33,6 @@ jobs:
       - name: Run Pytest
         env:
           MAXAR_API_KEY: ${{ secrets.MAXAR_API_KEY}}
-          EARTHDATA_USERNAME: ${{ secrets.EARTHDATA_USERNAME}}
-          EARTHDATA_PASSWORD: ${{ secrets.EARTHDATA_PASSWORD}}
+          EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN}}
         run: |
           pixi run networktest

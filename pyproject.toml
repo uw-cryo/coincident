@@ -1,18 +1,13 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
+requires = ["hatchling", "hatch-vcs"]
 
 [project]
-name = "coincident"
 authors = [
-  { name = "Scott Henderson", email = "scottyh@uw.edu" },
-  { name = "David Shean", email = "dshean@uw.edu" },
-  { name = "Jack Hayes", email = "jehayes@uw.edu" },
+  {name = "Scott Henderson", email = "scottyh@uw.edu"},
+  {name = "David Shean", email = "dshean@uw.edu"},
+  {name = "Jack Hayes", email = "jehayes@uw.edu"},
 ]
-description = "Search and analysis of STV Precursor Coincident Datasets"
-readme = "README.md"
-license.file = "LICENSE"
-requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 1 - Planning",
   "Intended Audience :: Science/Research",
@@ -28,26 +23,31 @@ classifiers = [
   "Topic :: Scientific/Engineering",
   "Typing :: Typed",
 ]
+description = "Search and analysis of STV Precursor Coincident Datasets"
 dynamic = ["version"]
+license = {file = "LICENSE"}
+name = "coincident"
+readme = "README.md"
+requires-python = ">=3.10"
 
 dependencies = [
-"aiobotocore[boto3]",
-"geopandas>=1.0",
-"ipykernel>=6.29",
-"ipywidgets>=8.1.7,<9",
-"matplotlib>=3.10",
-"maxar-platform>=1.0.7",
-"pyarrow>=19.0",
-"pystac-client>=0.8",
-"odc-stac>=0.4",
-"requests>=2.32",
-"rioxarray>=0.19",
-"s3fs>=2025.3",
-"scipy>=1.15.2",
-"sliderule>=4.12",
-"stac-asset>=0.4.5",
-"stac-geoparquet>=0.6",
-"tqdm>=4.67.1,<5"
+  "aiobotocore[boto3]",
+  "geopandas>=1.0",
+  "ipykernel>=6.29",
+  "ipywidgets>=8.1.7,<9",
+  "matplotlib>=3.10",
+  "maxar-platform>=1.0.7",
+  "pyarrow>=19.0",
+  "pystac-client>=0.8",
+  "odc-stac>=0.4",
+  "requests>=2.32",
+  "rioxarray>=0.19",
+  "s3fs>=2025.3",
+  "scipy>=1.15.2",
+  "sliderule>=4.20",
+  "stac-asset>=0.4.5",
+  "stac-geoparquet>=0.6",
+  "tqdm>=4.67.1,<5",
 ]
 
 [project.optional-dependencies]
@@ -55,11 +55,11 @@ dev = [
   # packaging pain, assume most people using conda
   #"gdal>=3.10",
   "cql2", # for STAC filtering tests (tests/test_search.py::test_maxar_search)
-  "mypy>=1.11",
-  "pre-commit>=4",
+  "mypy>=1.15",
+  "pre-commit>=4.4.0",
   "pylint>=3.3",
-  "pytest>=6",
-  "pytest-cov>=3",
+  "pytest>=8",
+  "pytest-cov>=6",
 ]
 docs = [
   "folium", # comes w/ geopandas on conda-forge but not pypi
@@ -74,109 +74,104 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/uw-cryo/coincident"
 "Bug Tracker" = "https://github.com/uw-cryo/coincident/issues"
-Discussions = "https://github.com/uw-cryo/coincident/discussions"
 Changelog = "https://github.com/uw-cryo/coincident/releases"
+Discussions = "https://github.com/uw-cryo/coincident/discussions"
+Homepage = "https://github.com/uw-cryo/coincident"
 
 [tool.hatch]
-version.source = "vcs"
 build.hooks.vcs.version-file = "src/coincident/_version.py"
+version.source = "vcs"
 
 [tool.pytest.ini_options]
-minversion = "8.0"
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
-xfail_strict = true
 filterwarnings = [
-  "error",
-  # NOTE: try to remove with maxar-platform>1.0.1
+  "error", # NOTE: try to remove with maxar-platform>1.0.1
   "ignore::DeprecationWarning:lark",
   "ignore::DeprecationWarning:sliderule",
-  "ignore:maxar_plaform authentication error:UserWarning",
-  # https://github.com/microsoft/planetary-computer-sdk-for-python/issues/58
+  "ignore:maxar_platform authentication error:UserWarning", # https://github.com/microsoft/planetary-computer-sdk-for-python/issues/58
   "ignore::pydantic.warnings.PydanticDeprecatedSince20",
-  "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning",
-  # Coming from slidrule and boto
-  "ignore:datetime.datetime.utcnow().*:DeprecationWarning",
-  # Optional imports
+  "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning", # Coming from sliderule and boto
+  "ignore:datetime.datetime.utcnow().*:DeprecationWarning", # Optional imports
   "ignore:Unable to authenticate with Maxar API:UserWarning",
-  "ignore:.* not found:UserWarning",
-  # NOTE: should be able to remove with geopandas 1.1
-  "ignore:.*shapely.geos.*:DeprecationWarning:geopandas",
-  # NOTE: only occurring in CI Python 3.10?!
-  "ignore:.*unclosed transport.*:ResourceWarning:asyncio"
+  "ignore:.* not found:UserWarning", # NOTE: should be able to remove with geopandas 1.1
+  "ignore:.*shapely.geos.*:DeprecationWarning:geopandas", # NOTE: only occurring in CI Python 3.10?!
+  "ignore:.*unclosed transport.*:ResourceWarning:asyncio",
 ]
 log_cli_level = "INFO"
+markers = [
+  "network: marks test requiring internet (select with -o markers=network)",
+]
+minversion = "8.0"
 testpaths = [
   "tests",
 ]
-markers = [
-    "network: marks test requiring internet (select with -o markers=network)",
-]
+xfail_strict = true
 
 [tool.coverage]
-run.source = ["coincident"]
 report.exclude_also = [
   '\.\.\.',
   'if typing.TYPE_CHECKING:',
 ]
+run.source = ["coincident"]
 
 [tool.codespell]
-ignore-words-list="ALOS,ALS,HSI,als"
-skip="pixi.lock,docs/examples/elevation_plotting.ipynb"
+ignore-words-list = "ALOS,ALS,HSI,als"
+skip = "pixi.lock,docs/examples/elevation_plotting.ipynb"
 
 [tool.mypy]
-files = ["src", "tests"]
-warn_unused_configs = true
-strict = true
-enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
-warn_unreachable = true
-disallow_untyped_defs = false
 disallow_incomplete_defs = false
+disallow_untyped_defs = false
+enable_error_code = ["ignore-without-code", "redundant-expr", "truthy-bool"]
+files = ["src", "tests"]
+strict = true
+warn_unreachable = true
+warn_unused_configs = true
 # NOTE: not sure why mypy not finding dependency libraries, so disabling this check...
 # error: Cannot find implementation or library stub for module named "geopandas"  [import-not-found]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = "coincident.*"
-disallow_untyped_defs = true
 disallow_incomplete_defs = true
+disallow_untyped_defs = true
+module = "coincident.*"
 
 [tool.ruff.lint]
+exclude = [
+  "docs/*.ipynb",
+]
 extend-select = [
-  "B",        # flake8-bugbear
-  "I",        # isort
-  "ARG",      # flake8-unused-arguments
-  "C4",       # flake8-comprehensions
-  "EM",       # flake8-errmsg
-  "ICN",      # flake8-import-conventions
-  "G",        # flake8-logging-format
-  "PGH",      # pygrep-hooks
-  "PIE",      # flake8-pie
-  "PL",       # pylint
-  "PT",       # flake8-pytest-style
-  "PTH",      # flake8-use-pathlib
-  "RET",      # flake8-return
-  "RUF",      # Ruff-specific
-  "SIM",      # flake8-simplify
-  "T20",      # flake8-print
-  "UP",       # pyupgrade
-  "YTT",      # flake8-2020
-  "EXE",      # flake8-executable
-  "NPY",      # NumPy specific rules
-  "PD",       # pandas-vet
+  "B", # flake8-bugbear
+  "I", # isort
+  "ARG", # flake8-unused-arguments
+  "C4", # flake8-comprehensions
+  "EM", # flake8-errmsg
+  "ICN", # flake8-import-conventions
+  "G", # flake8-logging-format
+  "PGH", # pygrep-hooks
+  "PIE", # flake8-pie
+  "PL", # pylint
+  "PT", # flake8-pytest-style
+  "PTH", # flake8-use-pathlib
+  "RET", # flake8-return
+  "RUF", # Ruff-specific
+  "SIM", # flake8-simplify
+  "T20", # flake8-print
+  "UP", # pyupgrade
+  "YTT", # flake8-2020
+  "EXE", # flake8-executable
+  "NPY", # NumPy specific rules
+  "PD", # pandas-vet
 ]
 ignore = [
-  "PLR09",    # Too many <...>
-  "PLR2004",  # Magic value used in comparison
-  "ISC001",   # Conflicts with formatter
-  "PLC0414",  # explicit re-export
-  "PD901",    # df for DataFrame
+  "PLR09", # Too many <...>
+  "PLR2004", # Magic value used in comparison
+  "ISC001", # Conflicts with formatter
+  "PLC0414", # explicit re-export
 ]
-exclude = [
-    "docs/*.ipynb"
-]
-isort.required-imports = ["from __future__ import annotations"]
+
+[tool.ruff.lint.isort]
+required-imports = ["from __future__ import annotations"]
 # Uncomment if using a _compat.typing backport
 # typing-modules = ["coincident._compat.typing"]
 
@@ -185,8 +180,6 @@ isort.required-imports = ["from __future__ import annotations"]
 
 [tool.pylint]
 ignore-paths = [".*/_version.py"]
-reports.output-format = "colorized"
-similarities.ignore-imports = "yes"
 messages_control.disable = [
   "design",
   "fixme",
@@ -198,27 +191,29 @@ messages_control.disable = [
   "W0212", # Access to a protected member
   "W0102", # Dangerous default value as argument []
 ]
+reports.output-format = "colorized"
+similarities.ignore-imports = "yes"
 
-[tool.pixi.project]
+[tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["osx-arm64", "linux-64"]
 
 [tool.pixi.environments]
 # solve_group ensures same dependency versions *across* environments
 default = {features = [], solve-group = "default"}
-docs = { features = ["docs"], solve-group = "default" }
-dev = { features = ["docs", "dev"], solve-group = "default"}
+dev = {features = ["docs", "dev"], solve-group = "default"}
+docs = {features = ["docs"], solve-group = "default"}
 
 # NOTE: pixi will match project.dependencies versions above but get them from conda-forge
 # If a package is listed in project.dependencies but not repeated here, it is installed from pypi
 [tool.pixi.dependencies]
-python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
-geopandas = "*"
 gdal = ">=3.10"
+geopandas = "*"
 ipykernel = "*"
 ipywidgets = "*"
 jsonschema = "*"
 libgdal-arrow-parquet = "*"
+python = "<3.13" # https://github.com/stac-utils/stac-geoparquet/issues/81
 # https://github.com/prefix-dev/pixi/issues/3479
 libgfortran5 = ">=14.2.0"
 matplotlib-base = ">=3.10"
@@ -228,13 +223,13 @@ pystac-client = "*"
 requests = "*"
 rioxarray = "*"
 scipy = "*"
+sliderule = ">=4.20.0,<5"
 stac-geoparquet = "*"
-sliderule = "*"
 tqdm = "*"
 
 [tool.pixi.feature.dev.dependencies]
 mypy = "*"
-pre-commit = "*"
+pre-commit = ">=4.4.0,<5"
 pylint = "*"
 pytest = "*"
 
@@ -250,9 +245,9 @@ sphinx-design = "*"
 
 [tool.pixi.pypi-dependencies]
 # Stuff not on conda-forge
-coincident = { path = ".", editable = true }
-types-requests = "*"
+coincident = {path = ".", editable = true}
 cql2 = "*"
+types-requests = "*"
 #stac-asset = { version = ">=0.4.5"}
 #cloudpathlib = { version = "0.20.0,<0.21", extras = ["s3"]}
 
@@ -260,8 +255,8 @@ cql2 = "*"
 precommit = "pre-commit run --all-files"
 # NOTE: consider --output-format=github for github actions
 lint = "pylint src"
-test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
 networktest = "pytest --cov --cov-report=xml --cov-report=term --durations=0"
+test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
 
 [tool.pixi.feature.docs.tasks]
 # NOTE: || true to always update readthedocs even if there are errors

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import geopandas as gpd
 import pytest
 import xarray as xr
+from shapely.geometry import box
 
 import coincident
 from coincident.io.xarray import to_dataset
@@ -119,15 +121,6 @@ def test_load_noaa_dem(noaa_dem_bbox):
 
 @network
 def test_load_gliht_raster():
-    import os
-
-    if not os.getenv("EARTHDATA_USERNAME") or not os.getenv("EARTHDATA_PASSWORD"):
-        pytest.skip(
-            "EARTHDATA_USERNAME and EARTHDATA_PASSWORD environment variables required"
-        )
-    import geopandas as gpd
-    from shapely.geometry import box
-
     mini_aoi = gpd.GeoDataFrame(
         geometry=[box(*[-76.55240202, 38.8885878, -76.54340202, 38.8975878])],
         crs="EPSG:4326",
@@ -136,12 +129,11 @@ def test_load_gliht_raster():
         aoi=mini_aoi,
         dataset_id="GLMETRICS_SERC_CalTarps_31July2017_am_l0s0",
         product="chm",
-    )
-    assert da_chm.shape == (1010, 637)
+    )["CHM"]
+
+    assert da_chm.shape == (1, 4589, 637)
     assert da_chm.dtype == "float32"
-    assert "x" in da_chm.coords
-    assert "y" in da_chm.coords
-    assert "spatial_ref" in da_chm.coords
+    assert {"x", "y", "time", "spatial_ref"} == set(da_chm.coords)
     assert da_chm.rio.resolution() == (1.0, -1.0)
     assert da_chm.rio.crs.to_epsg() == 32618
     assert da_chm.notnull().any(), "DataArray contains no valid data"
