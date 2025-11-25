@@ -312,4 +312,7 @@ def query_tnm_api(
         items.extend(batch)
         offset += len(batch)
 
+    # for debugging:
+    # print(response.url)
+
     return items

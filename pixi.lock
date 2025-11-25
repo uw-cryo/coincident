@@ -51,6 +51,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cloudpickle-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/comm-0.2.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/contextily-1.6.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/contourpy-1.3.3-py313h7037e92_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_101.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cycler-0.12.1-pyhd8ed1ab_1.conda
@@ -68,8 +69,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/freexl-2.0.0-h9dce30a_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fsspec-2025.3.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/gdal-3.10.3-py313h60f829d_26.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geographiclib-2.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-1.0.1-pyhd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-base-1.0.1-pyha770c72_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geopy-2.4.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/geos-3.13.1-h97f6797_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/geotiff-1.7.4-h239500f_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/gflags-2.2.2-h5888daf_1005.conda
@@ -170,7 +173,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/markupsafe-3.0.3-py313h3dea7bd_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.10.8-py313h683a580_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-inline-0.1.7-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-scalebar-0.9.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mercantile-1.2.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/minizip-4.0.10-h05a5f5f_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/msgpack-python-1.1.2-py313h7037e92_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/munkres-1.1.4-pyh9f0ad1d_0.tar.bz2
@@ -350,6 +355,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cloudpickle-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/comm-0.2.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/contextily-1.6.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/contourpy-1.3.3-py313ha61f8ec_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_101.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cycler-0.12.1-pyhd8ed1ab_1.conda
@@ -367,8 +373,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/freexl-2.0.0-h3ab3353_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fsspec-2025.3.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/gdal-3.10.3-py313h976e3e5_26.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geographiclib-2.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-1.0.1-pyhd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-base-1.0.1-pyha770c72_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geopy-2.4.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/geos-3.13.1-hc9a1286_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/geotiff-1.7.4-h1d7e6e1_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/gflags-2.2.2-hf9b8971_1005.conda
@@ -462,7 +470,9 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/markupsafe-3.0.3-py313h7d74516_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/matplotlib-base-3.10.8-py313h58042b9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-inline-0.1.7-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-scalebar-0.9.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mercantile-1.2.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/minizip-4.0.10-hff1a8ea_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/msgpack-python-1.1.2-py313ha61f8ec_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/munkres-1.1.4-pyh9f0ad1d_0.tar.bz2
@@ -650,6 +660,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cloudpickle-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/comm-0.2.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/contextily-1.6.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/contourpy-1.3.3-py313h7037e92_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_101.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cycler-0.12.1-pyhd8ed1ab_1.conda
@@ -670,8 +681,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/freexl-2.0.0-h9dce30a_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fsspec-2025.3.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/gdal-3.10.3-py313h60f829d_26.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geographiclib-2.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-1.0.1-pyhd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-base-1.0.1-pyha770c72_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geopy-2.4.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/geos-3.13.1-h97f6797_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/geotiff-1.7.4-h239500f_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/gflags-2.2.2-h5888daf_1005.conda
@@ -775,8 +788,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/markupsafe-3.0.3-py313h3dea7bd_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.10.8-py313h683a580_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-inline-0.1.7-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-scalebar-0.9.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mccabe-0.7.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mercantile-1.2.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/minizip-4.0.10-h05a5f5f_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/msgpack-python-1.1.2-py313h7037e92_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/munkres-1.1.4-pyh9f0ad1d_0.tar.bz2
@@ -972,6 +987,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cloudpickle-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/comm-0.2.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/contextily-1.6.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/contourpy-1.3.3-py313ha61f8ec_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_101.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cycler-0.12.1-pyhd8ed1ab_1.conda
@@ -992,8 +1008,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/freexl-2.0.0-h3ab3353_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fsspec-2025.3.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/gdal-3.10.3-py313h976e3e5_26.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geographiclib-2.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-1.0.1-pyhd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-base-1.0.1-pyha770c72_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geopy-2.4.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/geos-3.13.1-hc9a1286_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/geotiff-1.7.4-h1d7e6e1_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/gflags-2.2.2-hf9b8971_1005.conda
@@ -1090,8 +1108,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/markupsafe-3.0.3-py313h7d74516_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/matplotlib-base-3.10.8-py313h58042b9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-inline-0.1.7-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-scalebar-0.9.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mccabe-0.7.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mercantile-1.2.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/minizip-4.0.10-hff1a8ea_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/msgpack-python-1.1.2-py313ha61f8ec_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/munkres-1.1.4-pyh9f0ad1d_0.tar.bz2
@@ -1295,6 +1315,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cloudpickle-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/comm-0.2.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/contextily-1.6.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/contourpy-1.3.3-py313h7037e92_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_101.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cycler-0.12.1-pyhd8ed1ab_1.conda
@@ -1313,8 +1334,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/freexl-2.0.0-h9dce30a_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fsspec-2025.3.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/gdal-3.10.3-py313h60f829d_26.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geographiclib-2.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-1.0.1-pyhd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-base-1.0.1-pyha770c72_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geopy-2.4.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/geos-3.13.1-h97f6797_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/geotiff-1.7.4-h239500f_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/gflags-2.2.2-h5888daf_1005.conda
@@ -1418,8 +1441,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/markupsafe-3.0.3-py313h3dea7bd_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.10.8-py313h683a580_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-inline-0.1.7-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-scalebar-0.9.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.5.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mercantile-1.2.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/minizip-4.0.10-h05a5f5f_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/msgpack-python-1.1.2-py313h7037e92_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/munkres-1.1.4-pyh9f0ad1d_0.tar.bz2
@@ -1624,6 +1649,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/cloudpickle-3.1.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/colorama-0.4.6-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/comm-0.2.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/contextily-1.6.2-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/contourpy-1.3.3-py313ha61f8ec_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cpython-3.13.9-py313hd8ed1ab_101.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/cycler-0.12.1-pyhd8ed1ab_1.conda
@@ -1642,8 +1668,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/freexl-2.0.0-h3ab3353_2.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/fsspec-2025.3.2-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/gdal-3.10.3-py313h976e3e5_26.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geographiclib-2.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-1.0.1-pyhd8ed1ab_3.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-base-1.0.1-pyha770c72_3.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/geopy-2.4.1-pyhd8ed1ab_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/geos-3.13.1-hc9a1286_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/geotiff-1.7.4-h1d7e6e1_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/gflags-2.2.2-hf9b8971_1005.conda
@@ -1740,8 +1768,10 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/markupsafe-3.0.3-py313h7d74516_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/matplotlib-base-3.10.8-py313h58042b9_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-inline-0.1.7-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-scalebar-0.9.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdit-py-plugins-0.5.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/mdurl-0.1.2-pyhd8ed1ab_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/mercantile-1.2.1-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/minizip-4.0.10-hff1a8ea_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/msgpack-python-1.1.2-py313ha61f8ec_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/munkres-1.1.4-pyh9f0ad1d_0.tar.bz2
@@ -3036,14 +3066,16 @@ packages:
   timestamp: 1736947650712
 - pypi: ./
   name: coincident
-  version: 0.4.2.dev10+g0df07e651.d20251116
-  sha256: 9e684562897d8bbdd46f98ae1fc652c6c9c0c4863634a42d1de3e8287555eb0e
+  version: 0.4.2.dev13+g166f6f738.d20251125
+  sha256: c6790a882e89269cf9242853d0417cf764ec695aa2405c6603515575c21823b1
   requires_dist:
   - aiobotocore[boto3]
   - arro3-core>=0.6
+  - contextily>=1.6.2,<2
   - geopandas>=1.0
   - ipykernel>=6.29
   - ipywidgets>=8.1.7,<9
+  - matplotlib-scalebar>=0.9.0,<0.10
   - matplotlib>=3.10
   - maxar-platform>=1.0.7
   - odc-stac>=0.4
@@ -3097,6 +3129,25 @@ packages:
   - pkg:pypi/comm?source=hash-mapping
   size: 12103
   timestamp: 1733503053903
+- conda: https://conda.anaconda.org/conda-forge/noarch/contextily-1.6.2-pyhd8ed1ab_1.conda
+  sha256: 3f0a1518e35e090070e7da76609d11ef8dafb655eda3ab9d4956fa85554e8513
+  md5: 04c0d3c54ae90b9aedccebd30e09cab8
+  depends:
+  - geopy
+  - joblib
+  - matplotlib-base
+  - mercantile
+  - pillow
+  - python >=3.9
+  - rasterio
+  - requests
+  - xyzservices
+  license: BSD-3-Clause
+  license_family: BSD
+  purls:
+  - pkg:pypi/contextily?source=hash-mapping
+  size: 20742
+  timestamp: 1734596266575
 - conda: https://conda.anaconda.org/conda-forge/linux-64/contourpy-1.3.3-py313h7037e92_3.conda
   sha256: c545751fd48f119f2c28635514e6aa6ae784d9a1d4eb0e10be16c776e961f333
   md5: 6186382cb34a9953bf2a18fc763dc346
@@ -3531,6 +3582,17 @@ packages:
   - pkg:pypi/gdal?source=hash-mapping
   size: 1745275
   timestamp: 1762047420568
+- conda: https://conda.anaconda.org/conda-forge/noarch/geographiclib-2.1-pyhd8ed1ab_0.conda
+  sha256: 4bcebe8f5f449b728bd0140e38c036060f22d31048e0c7980bf4cd6acdad2b62
+  md5: 43dd16b113cc7b244d923b630026ff4f
+  depends:
+  - python >=3.10
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/geographiclib?source=hash-mapping
+  size: 40836
+  timestamp: 1755865181359
 - conda: https://conda.anaconda.org/conda-forge/noarch/geopandas-1.0.1-pyhd8ed1ab_3.conda
   sha256: 04f7e616ebbf6352ff852b53c57901e43f14e2b3c92411f99b5547f106bc192e
   md5: 1baca589eb35814a392eaad6d152447e
@@ -3563,6 +3625,18 @@ packages:
   - pkg:pypi/geopandas?source=hash-mapping
   size: 239261
   timestamp: 1734346217454
+- conda: https://conda.anaconda.org/conda-forge/noarch/geopy-2.4.1-pyhd8ed1ab_2.conda
+  sha256: ac453c9558c48febe452c79281c632b3749baef7c04ed4b62f871709aee2aa03
+  md5: 40182a8d62a61d147ec7d3e4c5c36ac2
+  depends:
+  - geographiclib >=1.52
+  - python >=3.9
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/geopy?source=hash-mapping
+  size: 72999
+  timestamp: 1734342056836
 - conda: https://conda.anaconda.org/conda-forge/linux-64/geos-3.13.1-h97f6797_0.conda
   sha256: 3a9c854fa8cf1165015b6ee994d003c3d6a8b0f532ca22b6b29cd6e8d03942ed
   md5: 5bc18c66111bc94532b0d2df00731c66
@@ -6126,6 +6200,18 @@ packages:
   - pkg:pypi/matplotlib-inline?source=hash-mapping
   size: 14467
   timestamp: 1733417051523
+- conda: https://conda.anaconda.org/conda-forge/noarch/matplotlib-scalebar-0.9.0-pyhd8ed1ab_0.conda
+  sha256: 20085f78b3fca5e8696264bd47fdd4c76bf2085ebf819bddda27cd6cf2c31117
+  md5: 05cf7fe9bbd45b12eb6c0ea8fd747307
+  depends:
+  - matplotlib-base
+  - python >=3.9
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/matplotlib-scalebar?source=hash-mapping
+  size: 21170
+  timestamp: 1737197680653
 - pypi: https://files.pythonhosted.org/packages/f0/2a/b15c3529cbabf011fa27746175ddc4eeb6a4e975eea79dcc8c830887b1d3/maxar_platform-1.0.7-py3-none-any.whl
   name: maxar-platform
   version: 1.0.7
@@ -6175,6 +6261,19 @@ packages:
   - pkg:pypi/mdurl?source=hash-mapping
   size: 14465
   timestamp: 1733255681319
+- conda: https://conda.anaconda.org/conda-forge/noarch/mercantile-1.2.1-pyhd8ed1ab_1.conda
+  sha256: 42ab9a82c4e4686d7c2a2d511877895bfe946ec2c2ec66e4e1593006fa32445f
+  md5: 9820756deea38bd213240fd0556d44b8
+  depends:
+  - click >=3.0
+  - python >=3.9
+  - setuptools
+  license: BSD-3-Clause
+  license_family: BSD
+  purls:
+  - pkg:pypi/mercantile?source=hash-mapping
+  size: 19720
+  timestamp: 1734075446811
 - conda: https://conda.anaconda.org/conda-forge/linux-64/minizip-4.0.10-h05a5f5f_0.conda
   sha256: 0c3700d15377156937ddc89a856527ad77e7cf3fd73cb0dffc75fce8030ddd16
   md5: da01bb40572e689bd1535a5cee6b1d68
