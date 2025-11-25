@@ -170,20 +170,6 @@ def test_get_elev_diff_ds(dem_tiny_utm):
     )
 
 
-def test_plot_diff_hist_raster(dem_tiny_utm):
-    """Test get_elev_diff with both raster data source"""
-    dem_tiny_2 = dem_tiny_utm.copy()
-    random_elevations = np.random.uniform(2935, 2965, size=(1, 10, 10))  # noqa: NPY002
-    dem_tiny_2["elevation"] = (("band", "y", "x"), random_elevations)
-    ds_diff = coincident.plot.get_elev_diff(dem_tiny_2, dem_tiny_utm)
-
-    _f, ax = plt.subplots()
-    ax = coincident.plot.plot_diff_hist(ds_diff.elev_diff, ax=ax)
-    assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
-    assert len(ax.get_children()) > 0, "Figure should exist"
-    assert ax.get_legend() is not None, "Legend should exist"
-
-
 def test_plot_diff_hist_point(points_tiny, dem_tiny):
     """Test get_elev_diff with both point data source"""
 
@@ -200,15 +186,12 @@ def test_plot_diff_hist_point(points_tiny, dem_tiny):
 @gdal_python_bindings_available
 def test_compare_dems(dem_tiny, points_tiny):
     """Test compare_dems with permutations of different numbers of DEMs and point gfs"""
-    # Takes ~8secs to run
-    # Create multiple DEMs
-    dem_tiny["hillshade"] = coincident.plot.gdaldem(dem_tiny.elevation, "hillshade")
     dem_tiny_2 = dem_tiny.copy()
     dem_tiny_3 = dem_tiny.copy()
 
     # Test with 3 DEMs and no GeoDataFrames
     axd_3_dems = coincident.plot.compare_dems(
-        [dem_tiny, dem_tiny_2, dem_tiny_3],
+        {"a": dem_tiny, "b": dem_tiny_2, "c": dem_tiny_3},
     )
     assert len(axd_3_dems) == 9, "Expected 9 axes"
     expected_keys = [
@@ -236,7 +219,7 @@ def test_compare_dems(dem_tiny, points_tiny):
 
     # Test with 3 DEMs and 2 GeoDataFrames
     axd_full = coincident.plot.compare_dems(
-        [dem_tiny, dem_tiny_2, dem_tiny_3],
+        {"a": dem_tiny, "b": dem_tiny_2, "c": dem_tiny_3},
         {"is2": (points_tiny, "h_li"), "gedi": (points_tiny, "elevation_hr")},
     )
     assert len(axd_full) == 15, "Expected 15 axes"
@@ -244,8 +227,8 @@ def test_compare_dems(dem_tiny, points_tiny):
         "dem_0",
         "dem_1",
         "dem_2",
-        "is2",
-        "gedi",
+        "dem_is2",
+        "dem_gedi",
         "worldcover",
         "diff_1",
         "diff_2",

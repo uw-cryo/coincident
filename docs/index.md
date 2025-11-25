@@ -6,9 +6,9 @@ these datasets are now publicly available from cloud storage, enabling
 efficient, on-demand search, subsetting, and data access.
 
 This Python package provides functions to conveniently _search_ across different
-[data providers](./user_guide/datasets.md) for coincident elevation
-measurements. It also provides utilities to efficiently load measurements into
-GeoPandas and Xarray for intercomparison.
+[data providers](./datasets/index.md) for coincident elevation measurements. It
+also provides utilities to efficiently load measurements into GeoPandas and
+Xarray for intercomparison.
 
 ![intro](./images/intro.png)
 
