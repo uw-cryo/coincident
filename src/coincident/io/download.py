@@ -135,7 +135,7 @@ def download_files(
     product: str | None = "",
     chunk_size: int = 65536,  # preset chunk size (64KB)
     earthdata_auth: bool = False,
-) -> None:
+) -> list[str]:
     """
     Download files from remote URLs (cloud storage, web servers, etc.)
     Used in the download_dem and fetch_lpc_tiles functions
@@ -155,8 +155,8 @@ def download_files(
 
     Returns
     -------
-    None
-        Files are saved to the specified path.
+    list
+        A list of local file paths to each downloaded file
     """
     # Handle Earthdata authentication if needed
     auth = None
@@ -175,9 +175,12 @@ def download_files(
     outer_desc = (
         f"Downloading {product.upper()} tiles..." if product else "Downloading tiles..."
     )
+
+    local_paths = []
     for url in tqdm(files, desc=outer_desc, position=0):
         filename = Path(url).name
         dest = Path(output_dir) / filename
+        local_paths.append(str(dest))
 
         # Skip if file already exists
         if dest.exists():
@@ -200,6 +203,8 @@ def download_files(
                     f.write(chunk)
                     inner.update(len(chunk))
         inner.close()
+
+    return local_paths
 
 
 # NOTE: i do not believe the TNM API supports LPC access for 3DEP :(
