@@ -41,7 +41,8 @@ jobs:
       fail-fast: false
       matrix:
         # Test against at least 3 most recent Python versions
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        # NOTE: 3.14 waiting on rasterio 1.4.4 release
+        python-version: ["3.11", "3.12", "3.13"]
         runs-on: [ubuntu-latest, macos-latest]
 
     steps:

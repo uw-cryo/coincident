@@ -371,6 +371,23 @@ def test_round_trip_parquet(aoi):
 # USGS
 # =======
 @network
+def test_wesm_search_bboxes(aoi):
+    # Efficiently reads only bboxes from remote GPKG
+    gf = coincident.search.wesm.search_bboxes(intersects=aoi)
+    expected_columns = {
+        "minx",
+        "miny",
+        "maxx",
+        "maxy",
+    }
+    actual_columns = set(gf.columns)
+    assert isinstance(gf, gpd.GeoDataFrame)
+    assert gf.index.name == "fid"
+    assert expected_columns.issubset(actual_columns)
+    assert gf.shape == (5, 37)
+
+
+@network
 def test_wesm_search(aoi):
     gf = coincident.search.search(
         dataset="3dep",

@@ -11,6 +11,7 @@ from typing import Any
 # import rustac
 import pandas as pd
 import pyogrio
+import rasterio
 import requests  # type: ignore[import-untyped]
 from geopandas import GeoDataFrame, read_file
 from pandas import Timedelta, Timestamp
@@ -23,14 +24,6 @@ swath_polygon_csv = resources.files("coincident.search") / "swath_polygons.csv"
 
 defaults = usgs.ThreeDEP()
 wesm_gpkg_url = defaults.search
-
-# NOTE: this overrides *global* GDAL config
-gdal_config = {
-    "AWS_NO_SIGN_REQUEST": "YES",
-    "GDAL_PAM_ENABLED": "NO",
-    "CPL_VSIL_CURL_ALLOWED_EXTENSIONS": ".gpkg .geojson .json .tif .shp .shx .dbf .prj .cpg .vrt",
-}
-pyogrio.set_gdal_config_options(gdal_config)
 
 
 def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
@@ -129,9 +122,14 @@ def search_bboxes(
     """
     # NOTE: much faster to JUST read bboxes, not full geometry or other columns
     sql = "select * from rtree_WESM_geometry"
-    df = pyogrio.read_dataframe(
-        url, sql=sql
-    )  # , use_arrow=True... arrow probably doesn;t matter for <10000 rows?
+    with rasterio.Env(
+        aws_unsigned=True,
+        GDAL_PAM_ENABLED="NO",
+        CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg",
+    ):
+        df = pyogrio.read_dataframe(
+            url, sql=sql
+        )  # , use_arrow=True... arrow probably doesn;t matter for <10000 rows?
 
     bboxes = df.apply(lambda x: box(x.minx, x.miny, x.maxx, x.maxy), axis=1)
     gf = (
