@@ -135,6 +135,7 @@ module = "coincident.*"
 [tool.ruff.lint]
 exclude = [
   "docs/*.ipynb",
+  "notebooks/*.ipynb",
 ]
 extend-select = [
   "B", # flake8-bugbear
