@@ -1,14 +1,30 @@
 from __future__ import annotations
 
+import os
+import pprint
+
 import geopandas as gpd
 import pytest
+import sliderule
 
 import coincident
 
-# import sliderule
-# sliderule.init(verbose=True)
-
 network = pytest.mark.network
+
+
+@network
+# Always dump sliderule version info to stdout for debugging
+def test_sliderule_versions(capsys):
+    with capsys.disabled():
+        if os.environ.get("PS_GITHUB_TOKEN"):
+            message = (
+                "PS_GITHUB_TOKEN is set, so using UW Cluster instead of public cluster"
+            )
+            print("\n-------\n" + message + "\n-------\n")
+        version_dict = sliderule.get_version()
+        print("\nSliderule Version Info:\n")
+        pprint.pprint(version_dict)
+    assert True
 
 
 def test_gdf_to_sliderule_polygon():
@@ -25,6 +41,7 @@ def test_gdf_to_sliderule_polygon():
 
 
 @network
+@pytest.mark.usefixtures("initialize_sliderule")
 class TestSlideRule:
     def test_subset_gedi02a(self, tinyaoi):
         gf_gedi = coincident.search.search(

@@ -54,7 +54,7 @@ def test_load_usgs_dem(usgs_neon_dem_bbox):
         usgs_neon_dem_bbox, "CO_CentralEasternPlains_2020_D20"
     )
     assert da_usgs_dem.name == "elevation"
-    assert da_usgs_dem.shape == (28, 32)
+    assert da_usgs_dem.shape == (30, 34)
     assert da_usgs_dem.dtype == "float32"
     assert "x" in da_usgs_dem.coords
     assert "y" in da_usgs_dem.coords

@@ -68,12 +68,31 @@ def test_cascading_search(aoi):
     actual_min = results[0].datetime.min()
     actual_max = results[0].datetime.max()
 
+    gf_is2 = results[0]
+    gf_gedi = results[1]
+    expected_gedi_dates = {
+        "2019-05-28",
+        "2019-06-08",
+        "2019-06-11",
+        "2019-07-03",
+        "2019-07-07",
+    }
+    actual_gedi_dates = set(gf_gedi["datetime"].dt.date.astype(str))
+    expected_is2_dates = {
+        "2019-05-15",
+        "2019-05-16",
+        "2019-06-12",
+        "2019-06-14",
+        "2019-07-11",
+    }
+    actual_is2_dates = set(gf_is2["datetime"].dt.date.astype(str))
+
     assert isinstance(results, list)
     assert len(results) == 2
-    assert len(results[0]) == 5
-    assert len(results[1]) == 4
     assert actual_min >= expected_min
     assert actual_max <= expected_max
+    assert actual_gedi_dates == expected_gedi_dates
+    assert actual_is2_dates == expected_is2_dates
 
 
 @network

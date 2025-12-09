@@ -4,6 +4,7 @@ import geopandas as gpd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import pytest
 import xarray as xr
 from matplotlib.collections import QuadMesh
@@ -43,8 +44,7 @@ def test_plot_esa_worldcover_valid(aoi):
         aoi=aoi,
         resolution=0.1,  # ~1km
     ).compute()
-    ds = ds.rename(map="landcover")
-    ax = coincident.plot.plot_esa_worldcover(ds)
+    ax = coincident.plot.plot_esa_worldcover(ds["map"])
     assert ax is not None, "Expected a valid Matplotlib Axes object."
     # https://matplotlib.org/stable/users/prev_whats_new/whats_new_3.4.0.html
     # https://github.com/matplotlib/matplotlib/blob/main/lib/matplotlib/tests/test_contour.py#L146
@@ -56,7 +56,7 @@ def test_plot_esa_worldcover_valid(aoi):
 @gdal_python_bindings_available
 def test_hillshade_tiny(dem_tiny_utm):
     """Test 'hillshade' with a tiny DEM (10x10 cop30)"""
-    hillshade = coincident.plot.gdaldem(dem_tiny_utm.elevation, "hillshade")
+    hillshade = coincident.io.gdal.gdaldem(dem_tiny_utm.elevation, "hillshade")
     assert hillshade.dims[0] == "y"
     assert hillshade.dims[1] == "x"
     assert hillshade.shape == (
@@ -96,7 +96,7 @@ def test_plot_dem_no_hillshade(dem_tiny):
 def test_plot_dem_with_hillshade(dem_tiny):
     """Test plot_dem with tiny DEM input with hillshade"""
 
-    hillshade = coincident.plot.gdaldem(dem_tiny.elevation, "hillshade")
+    hillshade = coincident.io.gdal.gdaldem(dem_tiny.elevation, "hillshade")
     _fig, ax = plt.subplots()
     coincident.plot.plot_dem(
         dem_tiny.elevation.squeeze(),
@@ -125,7 +125,7 @@ def test_plot_altimeter_points_no_hillshade(points_tiny):
 @gdal_python_bindings_available
 def test_plot_altimeter_points_with_hillshade(dem_tiny, points_tiny):
     """Test plot_altimeter_points with point data and hillshade background"""
-    dem_tiny["hillshade"] = coincident.plot.gdaldem(dem_tiny.elevation, "hillshade")
+    dem_tiny["hillshade"] = coincident.io.gdal.gdaldem(dem_tiny.elevation, "hillshade")
 
     _fig, ax = plt.subplots()
     ax = coincident.plot.plot_altimeter_points(
@@ -138,42 +138,26 @@ def test_plot_altimeter_points_with_hillshade(dem_tiny, points_tiny):
     assert ax.collections[0].get_alpha() == 0.5, "Points layer alpha should be 0.5"
 
 
-def test_get_elev_diff_gf(dem_tiny_utm, points_tiny_utm):
-    """Test get_elev_diff with point data source"""
+def test_sample_dem_at_points_gf(dem_tiny_utm, points_tiny_utm):
+    """Test sample_dem_at_points with point data source"""
     # TODO: add test to make sure differencing returns expected values
-    gf_diff = coincident.plot.get_elev_diff(
-        points_tiny_utm, dem_tiny_utm, source_col="h_li"
+    gf_diff = coincident.plot.sample_dem_at_points(
+        dem_tiny_utm.to_dataarray(), points_tiny_utm, "h_li"
     )
-    assert type(gf_diff) is gpd.GeoDataFrame, "Returned object should be a GeoDataFrame"
+    assert type(gf_diff) is pd.DataFrame, "Returned object should be a GeoDataFrame"
     assert len(gf_diff) == 10, "Returned GeoDataFrame should have 10 rows"
     assert "elev_diff" in gf_diff.columns, (
         "GeoDataFrame should contain elev_diff column"
     )
-    assert all(geom.geom_type == "Point" for geom in gf_diff.geometry), (
-        "All geometries should be Points"
-    )
     assert gf_diff["elev_diff"].dtype == float, "elev_diff column should be float type"
 
 
-def test_get_elev_diff_ds(dem_tiny_utm):
-    """Test get_elev_diff with raster data source"""
-    # TODO: add test to make sure differencing returns expected values
-    dem_tiny_2 = dem_tiny_utm.copy()
-    random_elevations = np.random.uniform(2935, 2965, size=(1, 10, 10))  # noqa: NPY002
-    dem_tiny_2["elevation"] = (("band", "y", "x"), random_elevations)
-    ds_diff = coincident.plot.get_elev_diff(dem_tiny_2, dem_tiny_utm)
-    assert type(ds_diff) is xr.Dataset, "Returned object should be an xr dataset"
-    assert "elev_diff" in ds_diff.data_vars, "Dataset should contain elev_diff variable"
-    assert ds_diff.elev_diff.shape == (1, 10, 10), "elev_diff should have 10x10 grid"
-    assert ds_diff["elev_diff"].dtype == float, (
-        "elev_diff variable should be float type"
-    )
-
-
 def test_plot_diff_hist_point(points_tiny, dem_tiny):
-    """Test get_elev_diff with both point data source"""
+    """Test sample_dem_at_points with both point data source"""
 
-    gf_diff = coincident.plot.get_elev_diff(points_tiny, dem_tiny, source_col="h_li")
+    gf_diff = coincident.plot.sample_dem_at_points(
+        dem_tiny.elevation, points_tiny, "h_li"
+    )
     _f, ax = plt.subplots()
     ax = coincident.plot.plot_diff_hist(gf_diff.elev_diff, ax=ax)
     assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
@@ -186,6 +170,7 @@ def test_plot_diff_hist_point(points_tiny, dem_tiny):
 @gdal_python_bindings_available
 def test_compare_dems(dem_tiny, points_tiny):
     """Test compare_dems with permutations of different numbers of DEMs and point gfs"""
+    dem_tiny = dem_tiny.elevation.squeeze()
     dem_tiny_2 = dem_tiny.copy()
     dem_tiny_3 = dem_tiny.copy()
 
