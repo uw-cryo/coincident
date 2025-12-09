@@ -20,13 +20,14 @@ from matplotlib_scalebar.scalebar import ScaleBar
 from shapely.geometry import box
 
 from coincident.datasets.planetary_computer import WorldCover
+from coincident.io.gdal import gdaldem
 from coincident.io.xarray import open_maxar_browse, to_dataset
 from coincident.plot import utils
 from coincident.search import search
 
 
 def plot_esa_worldcover(
-    ds: xr.Dataset,
+    da: xr.DataArray,
     ax: plt.Axes | None = None,
     cax: plt.Axes | None = None,
     add_colorbar: bool = True,
@@ -40,8 +41,8 @@ def plot_esa_worldcover(
 
     Parameters
     ----------
-    ds : xr.Dataset
-        An xarray Dataset containing the ESA WorldCover data.
+    da : xr.DataArray
+        An xarray DataArray containing the ESA WorldCover data.
     ax : plt.Axes
         The Matplotlib Axes on which the plot will be drawn.
     cax : plt.Axes
@@ -63,6 +64,10 @@ def plot_esa_worldcover(
     # Custom categorical colormap for ESA WorldCover
     classmap = WorldCover().classmap
 
+    # Filter classmap to only include classes present in the data
+    unique_values = np.unique(da.to_numpy())
+    classmap = {k: v for k, v in classmap.items() if int(k) in unique_values}
+
     colors = ["#000000" for r in range(256)]
     for key, value in classmap.items():
         colors[int(key)] = value["hex"]
@@ -76,7 +81,7 @@ def plot_esa_worldcover(
     tick_labels = [value["description"] for value in classmap.values()]
     normalizer = matplotlib.colors.Normalize(vmin=0, vmax=255)
 
-    da = ds.to_dataarray().squeeze()
+    da = da.squeeze()
 
     if ax is None:
         fig, ax = plt.subplots()
@@ -138,9 +143,6 @@ def plot_maxar_browse(
 
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 11))
-        mid_lat = da.latitude[int(da.latitude.size / 2)].to_numpy()  # PD011
-        ax.set_aspect(aspect=utils.get_lonlat_aspect(mid_lat))
-        ax.set_title(item.id)
 
     nbands = da.band.size
     if nbands == 1:
@@ -153,6 +155,11 @@ def plot_maxar_browse(
             f"Maxar browse image must have 1 or 3 bands. Found: {nbands} bands."
         )
         raise ValueError(error_message)
+
+    if da.rio.crs.is_geographic:
+        mid_lat = da.y[int(da.y.size / 2)].to_numpy()  # PD011
+        ax.set_aspect(aspect=utils.get_lonlat_aspect(mid_lat))
+        ax.set_title(item.id)
 
     return ax
 
@@ -250,7 +257,7 @@ def plot_altimeter_points(
     gf: geopandas.GeoDataFrame
         GeoDataFrame containing altimeter point data
     ax: matplotlib.axes._axes.Axes
-        Axis on which to plot the points
+        Axis on whichx to plot the points
     column: str
         Name of the GeoDataFrame elevation column to plot (e.g. 'h_li' for ICESat-2 ATL06)
     cmap: str
@@ -289,14 +296,15 @@ def plot_altimeter_points(
         )
         if "alpha" not in kwargs:
             kwargs["alpha"] = 0.5
+
     # NOTE: geopandas automatically scales aspect ratio
-    gf.plot(ax=ax, column=column, cmap=cmap, **kwargs)
+    gf.plot(ax=ax, column=column, cmap=cmap, linewidth=0, **kwargs)
     ax.set_title(title)
     return ax
 
 
 def plot_diff_hist(
-    s: pd.Series,
+    differences: pd.Series,
     ax: plt.Axes | None = None,
     range: tuple[float, float] | None = None,
     add_stats: bool = True,
@@ -307,7 +315,7 @@ def plot_diff_hist(
 
     Parameters
     ----------
-    s: pd.Series
+    differences: pd.Series
         Pandas Series containing elevation differences to plot
     ax: plt.Axes
         Axis on which to plot the histogram
@@ -328,11 +336,11 @@ def plot_diff_hist(
         _, ax = plt.subplots()
         ax.set_xlabel("Elevation difference (m)")
 
-    s.hist(ax=ax, bins=100, range=range, color="gray", **kwargs)
+    differences.hist(ax=ax, bins=100, range=range, color="gray", **kwargs)
     ax.axvline(0, color="k", lw=1)
 
     if add_stats:
-        stats_dict = utils.calc_stats(s)
+        stats_dict = utils.calc_stats(differences)
 
         median = stats_dict["Median"]
         mean = stats_dict["Mean"]
@@ -356,15 +364,17 @@ def plot_diff_hist(
 
 
 def compare_dems(
-    dem_dict: dict[str, xr.Dataset],
+    dem_dict: dict[str, xr.DataArray],
     gdf_dict: dict[str, tuple[gpd.GeoDataFrame, str]] | None = None,
     add_hillshade: bool = False,
     altimetry_basemap: str | None = None,
     elevation_cmap: str = "plasma",
     elevation_clim: tuple[float, float] | None = None,
-    diff_cmap: str = "RdBu",
+    diff_cmap: str = "RdBu_r",
     diff_clim: tuple[float, float] = (-10, 10),
+    altimetry_pointsize: float = 1.0,
     figsize: tuple[float, float] | None = None,
+    suptitle: str | None = None,
 ) -> dict[str, plt.Axes]:
     """
     Create a panel figure comparing DEM and altimetry elevations.
@@ -376,7 +386,7 @@ def compare_dems(
     Parameters
     ----------
     dem_dict: dict
-        Dictionary of xr.Datasets. Each Dataset should have .elevation and .hillshade variables.
+        Dictionary of xr.DataArrays.
         The first DEM in this list will be the 'source' DEM and will served as a reference for differencing
         e.g.  {'dem_1':ds1,'dem_2':ds2,'dem_3':d3} will result in diff_1 = dem_2 - dem_1 and diff_2 = dem_3 - dem_1
     gdf_dict: Optional Dict[str, Tuple[gpd.GeoDataFrame, str]]
@@ -394,6 +404,8 @@ def compare_dems(
         Colormap for elevation differences. Default: 'RdBu'
     diff_clim: Optional Tuple[float, float]
         Tuple for difference color limits. Default (-10,10)
+    altimetry_pointsize: Optional float
+        Point size for altimetry points. Default 1.0
     figsize: Optional Tuple[int, int]
         Figure size (width, height) tuple.
 
@@ -404,8 +416,6 @@ def compare_dems(
     Notes
     -----
     All inputs assumed to have the same CRS and to be aligned
-    All DEMs must have variable 'elevation'
-    A minimum requirement of 2 DEMs
     A maximum of 5 total datasets (dem_list + gdf_dict) to be passed
     """
     # FIGURE SETUP
@@ -418,8 +428,32 @@ def compare_dems(
     dem_names = list(dem_dict.keys())
     first_dem = dem_list[0]
     gdf_keys = list(gdf_dict.keys()) if gdf_dict else []
-    n_columns = max(2, n_dems) + len(gdf_keys)
-    n_columns = min(n_columns, 5)
+    n_columns = n_dems + len(gdf_keys)
+
+    # Fail-fast sanity checks
+    for dem in dem_list:
+        assert isinstance(dem, xr.DataArray), (
+            "dem_dict values must be xarray DataArrays."
+        )
+    assert n_columns <= 5, (
+        "A maximum of 5 datasets (DEMs + GeoDataFrames) can be compared."
+    )
+    for name, dem in dem_dict.items():
+        if dem.rio.crs != first_dem.rio.crs:
+            error_message = (
+                f"All DEMs must have the same CRS. "
+                f"DEM {name} has CRS {dem.rio.crs}, but first DEM has CRS {first_dem.rio.crs}"
+            )
+            raise ValueError(error_message)
+
+    if gdf_dict:
+        for name, (gf, _) in gdf_dict.items():
+            if gf.crs != first_dem.rio.crs:
+                error_message = (
+                    f"All datasets must have the same CRS. "
+                    f"GeoDataFrame {name} has CRS {gf.crs}, but first DEM has CRS {first_dem.rio.crs}"
+                )
+                raise ValueError(error_message)
 
     # Scale figure size with number of columns
     if figsize is None:
@@ -452,6 +486,7 @@ def compare_dems(
 
     reference_ax = axd["dem_0"]
 
+    # Maps share axes settings
     for key in axd:
         if key.startswith(("dem_", "diff_", "worldcover")):
             axd[key].sharex(reference_ax)
@@ -466,6 +501,8 @@ def compare_dems(
         """Helper function to style axes (remove ticks and set face color)."""
         ax.set_xticks([])
         ax.set_yticks([])
+        ax.set_xlabel("")
+        ax.set_ylabel("")
         if facecolor:
             ax.set_facecolor(facecolor)
         if aspect:
@@ -478,12 +515,12 @@ def compare_dems(
                 source=utils.get_tiles(altimetry_basemap),
             )
 
-    # Get Landcover for sceene
+    # Get Landcover for scene
     bounds = first_dem.rio.bounds()
     gf_search = gpd.GeoDataFrame(
         geometry=[box(*bounds)],
         crs=first_dem.rio.crs,
-    )
+    ).to_crs("EPSG:4326")
     gf_wc = search(
         dataset="worldcover",
         intersects=gf_search,
@@ -497,43 +534,61 @@ def compare_dems(
         bands=["map"],
         aoi=gf_search,
     ).compute()
+    if first_dem.rio.crs.is_projected:
+        # NOTE: no reproject_match here since just for visualization
+        ds_wc = ds_wc.rio.reproject(first_dem.rio.crs)
 
-    # Calculate colorbar limits
+    if add_hillshade:
+        da_hillshade = gdaldem(first_dem, subcommand="hillshade")
+
+    # COLORBARS
+    # NOTE: do the same for diffs?
     if elevation_clim is None:
-        vmin = np.nanpercentile(first_dem.elevation.to_numpy(), 2)
-        vmax = np.nanpercentile(first_dem.elevation.to_numpy(), 98)
+        vmin = np.nanpercentile(first_dem.to_numpy(), 2)
+        vmax = np.nanpercentile(first_dem.to_numpy(), 98)
     else:
         vmin, vmax = elevation_clim
+    elevation_norm = matplotlib.colors.Normalize(vmin=vmin, vmax=vmax)
+    elevation_mappable = cm.ScalarMappable(norm=elevation_norm, cmap=elevation_cmap)
+    diff_norm = matplotlib.colors.Normalize(vmin=diff_clim[0], vmax=diff_clim[1])
+    diff_mappable = cm.ScalarMappable(norm=diff_norm, cmap=diff_cmap)
 
     # TOP ROW: Elevation maps
     # ---------------------------
     # raster elevs
     for i, (title, dem) in enumerate(dem_dict.items()):
+        # Plot each DEM with its respective hillshade
+        if add_hillshade:
+            hillshade = da_hillshade if i == 0 else gdaldem(dem, subcommand="hillshade")
+        else:
+            hillshade = None
         axi = axd[f"dem_{i}"]
         plot_dem(
-            da=dem.elevation,
+            da=dem,
             ax=axi,
             cmap=elevation_cmap,
-            da_hillshade=dem.hillshade if add_hillshade else None,
+            da_hillshade=hillshade,
             add_colorbar=False,
             vmin=vmin,
             vmax=vmax,
             title=title,
         )
-        _clear_labels(axi)
         _style_ax(axi, aspect=aspect)
         # Add a scalebar to first plot
         if i == 0:
-            rotation = "horizontal-only" if aspect != 0 else None
+            if first_dem.rio.crs.is_geographic:
+                rotation = "horizontal-only"
+                scale = utils.get_scale(axi)
+            else:
+                rotation = None
+                scale = 1.0  # units are in meters already
             scalebar = ScaleBar(
-                utils.get_scale(axi),
+                scale,
                 units="m",
                 location="lower right",
                 rotation=rotation,
             )
             axi.add_artist(scalebar)
-            # Keep track of mappable for row colorbar
-            elevation_mappable = axi.images[1] if add_hillshade else axi.images[0]
 
     # point elevs
     # need this for MyPy to handle the chance the gdf_dict is None
@@ -547,14 +602,11 @@ def compare_dems(
                 column,
                 ax=axi,
                 title=key,
-                da_hillshade=first_dem.hillshade
-                if altimetry_basemap == "hillshade"
-                else None,
+                da_hillshade=da_hillshade if altimetry_basemap == "hillshade" else None,
                 cmap=elevation_cmap,
                 vmin=vmin,
                 vmax=vmax,
-                s=(figsize[0] * figsize[1])
-                / n_columns**2,  # Dynamic point size based on figure dimensions
+                s=altimetry_pointsize,
             )
             _style_ax(
                 axi,
@@ -566,55 +618,57 @@ def compare_dems(
     # Add colorbar to last plot in top row
     # https://matplotlib.org/stable/users/explain/axes/colorbar_placement.html#colorbars-attached-to-fixed-aspect-ratio-axes
     cax = axi.inset_axes([1.04, 0.1, 0.1, 0.8])  # [x0, y0, width, height]
-    fig.colorbar(elevation_mappable, cax=cax, label="Elevation (m)")
+    cbar = fig.colorbar(elevation_mappable, cax=cax, label="Elevation (m)")
+    if add_hillshade:
+        cbar.solids.set(alpha=0.5)
 
     # MIDDLE ROW: Differences
     # ---------------------------
     plot_esa_worldcover(
-        ds_wc.isel(time=0),
+        ds_wc.isel(time=0).to_dataarray(),
         ax=axd["worldcover"],
         cax=axd["wc_legend"],
         add_colorbar=True,
-        add_labels=False,
+        # add_labels=False,
     )
     _style_ax(axd["worldcover"], aspect=aspect)
     axd["worldcover"].set_title("ESA WorldCover 2021")
 
     # raster diffs
-    for i, dem in enumerate(dem_list[1:], start=1):
-        diff = utils.get_elev_diff(dem, first_dem)
-        axi = axd[f"diff_{i}"]
-        diff.elev_diff.squeeze().plot.imshow(
-            ax=axi,
-            cmap=diff_cmap,
-            add_colorbar=False,
-            add_labels=False,
-            vmin=diff_clim[0],
-            vmax=diff_clim[1],
-        )
-        _style_ax(axi, aspect=aspect, facecolor="black")
-        axi.set_title(f"{dem_names[i]} minus {dem_names[0]}")
-        if i == 1:
-            # keep track of mappable for colorbar
-            diff_mappable = axi.images[0]
+    if len(dem_list) > 1:
+        for i, dem in enumerate(dem_list[1:], start=1):
+            diff = dem - first_dem
+            axi = axd[f"diff_{i}"]
+            diff.squeeze().plot.imshow(
+                ax=axi,
+                cmap=diff_cmap,
+                add_colorbar=False,
+                # add_labels=False,
+                vmin=diff_clim[0],
+                vmax=diff_clim[1],
+            )
+            _style_ax(axi, aspect=aspect, facecolor="black")
+            axi.set_title(f"{dem_names[i]} minus {dem_names[0]}")
 
     if gdf_dict:
         for _, (key, (gdf, column)) in enumerate(gdf_dict.items() if gdf_dict else []):
             axi = axd[f"diff_{key}"]
-            gf_diff = utils.get_elev_diff(gdf, first_dem, source_col=column)
+
+            gdf["elev_diff"] = utils.sample_dem_at_points(
+                first_dem, gdf, diff_col=column
+            )["elev_diff"]
+
             plot_altimeter_points(
-                gf_diff,
+                gdf,
                 "elev_diff",
                 axi,
-                da_hillshade=first_dem.hillshade
-                if altimetry_basemap == "hillshade"
-                else None,
+                da_hillshade=da_hillshade if altimetry_basemap == "hillshade" else None,
                 cmap=diff_cmap,
                 vmin=diff_clim[0],
                 vmax=diff_clim[1],
                 title=f"{column} minus {dem_names[0]}",
-                s=(figsize[0] * figsize[1])
-                / n_columns**2,  # Dynamic sizing based on figure dimensions
+                s=altimetry_pointsize,
+                alpha=0.5 if add_hillshade else 1.0,
             )
             _style_ax(
                 axi,
@@ -625,38 +679,44 @@ def compare_dems(
 
     # Add colorbar to last plot in middle row
     cax = axi.inset_axes([1.04, 0.1, 0.1, 0.8])  # [x0, y0, width, height]
-    fig.colorbar(
+    cbar = fig.colorbar(
         diff_mappable,
         cax=cax,
         label="Elevation Difference (m)",
     )
+    if altimetry_basemap == "hillshade":
+        cbar.solids.set(alpha=0.5)
 
     # BOTTOM ROW: Histograms
     # ---------------------------
     axd["wc_legend"].axis("off")
 
     # raster hists
-    for i, dem in enumerate(dem_list[1:], start=1):
-        axi = axd[f"hist_{i}"]
-        diff = utils.get_elev_diff(dem, first_dem).elev_diff.to_series()
-        plot_diff_hist(
-            diff,
-            ax=axi,
-            range=(diff_clim[0], diff_clim[1]),
-            add_stats=False,
-        )
-        axi.set_xlabel("Elevation Difference (m)")
-        stats = utils.calc_stats(diff)
-        stats_title = rf"$\mu$={stats['Mean']:.2f}, $\sigma$={stats['Std']:.2f}, $n$={stats['Count']:.1e}".replace(
-            "e+0", "e"
-        )
-        axi.set_title(stats_title, fontsize=8)
+    if len(dem_list) > 1:
+        for i, dem in enumerate(dem_list[1:], start=1):
+            axi = axd[f"hist_{i}"]
+            diff = (dem - first_dem).to_series()
+            plot_diff_hist(
+                diff,
+                ax=axi,
+                range=(diff_clim[0], diff_clim[1]),
+                add_stats=False,
+            )
+            axi.set_xlabel("Elevation Difference (m)")
+            stats = utils.calc_stats(diff)
+            stats_title = rf"$\mu$={stats['Mean']:.2f}, $\sigma$={stats['Std']:.2f}, $n$={stats['Count']:.1e}".replace(
+                "e+0", "e"
+            )
+            axi.set_title(stats_title, fontsize=8)
 
     # gdf hists
     if gdf_dict:
         for _, (key, (gdf, column)) in enumerate(gdf_dict.items() if gdf_dict else []):
             axi = axd[f"hist_{key}"]
-            diff = utils.get_elev_diff(gdf, first_dem, source_col=column).elev_diff
+
+            diff = utils.sample_dem_at_points(first_dem, gdf, diff_col=column)[
+                "elev_diff"
+            ]
             plot_diff_hist(
                 diff,
                 ax=axi,
@@ -668,6 +728,9 @@ def compare_dems(
                 "e+0", "e"
             )
             axi.set_title(stats_title, fontsize=8)
+
+    if suptitle:
+        plt.suptitle(suptitle, y=1.03, fontsize=14)
 
     return axd  # type: ignore[no-any-return]
 
