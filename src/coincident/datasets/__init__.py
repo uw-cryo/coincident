@@ -27,6 +27,7 @@ from coincident.datasets.general import Dataset
 _datasets = [
     maxar.Stereo(),
     usgs.ThreeDEP(),
+    usgs.ThreeDEP_1m(),
     nasa.ICESat2(),
     nasa.GEDI(),
     nasa.GLiHT(),

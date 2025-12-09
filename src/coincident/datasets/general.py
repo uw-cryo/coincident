@@ -1,10 +1,5 @@
 """
-Supported datasets:
-
-ATL03_v6: https://cmr.earthdata.nasa.gov/search/concepts/C2596864127-NSIDC_CPRD
-ATL06_v6: https://cmr.earthdata.nasa.gov/search/concepts/C2564427300-NSIDC_ECS
-GEDI_2a_v2: https://cmr.earthdata.nasa.gov/search/concepts/C1908348134-LPDAAC_ECS
-USGS_3DEP: https://cmr.earthdata.nasa.gov/search/concepts/C2021957295-LPCLOUD
+Basic dataset metadata structure
 """
 
 # from pydantic.dataclasses import dataclass, Field # type: ignore[attr-defined]
@@ -27,7 +22,11 @@ class Dataset:
     search: str | None = None  # search API endpoint
     start: str | None = None  # first acquisition date
     end: str | None = None  # last acquisition date (or None if ongoing)
+    spatial_ref: str | None = (
+        None  # override spatial reference system (EPSG code or WKT2/PROJJSON string)
+    )
     type: str | None = None  # lidar | stereo | altimeter | sar
     provider: str | None = None  # usgs, maxar, nasa, microsoft, csda
+    provider_docs: str | None = None  # URL to provider documentation
     # Pystac client default limit=100, but seems set by API endpoint as well (nasa cmr-stac=25)
     stac_kwargs: dict[str, Any] = field(default_factory=lambda: {"limit": 1000})

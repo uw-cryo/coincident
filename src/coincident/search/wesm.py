@@ -8,6 +8,7 @@ from __future__ import annotations
 from importlib import resources
 from typing import Any
 
+# import rustac
 import pandas as pd
 import pyogrio
 import requests  # type: ignore[import-untyped]
@@ -216,6 +217,10 @@ def swathtime_to_datetime(
     GeoDataFrame
         The GeoDataFrame with additional 'start_ 'dayofyear' column.
     """
+    if start_col not in gf.columns or end_col not in gf.columns:
+        available_cols = ", ".join(gf.columns.tolist())
+        message = f"Columns {start_col} and/or {end_col} not found in GeoDataFrame. Available columns: {available_cols}"
+        raise KeyError(message)
     gf["collect_start"] = Timestamp("1980-01-06") + gf[start_col].apply(
         lambda x: Timedelta(seconds=x + 1e9)
     )
@@ -229,6 +234,8 @@ def swathtime_to_datetime(
 
 def get_swath_polygons(
     workunit: str,
+    start_col: str = "START_TIME",
+    end_col: str = "END_TIME",
 ) -> GeoDataFrame:
     """
     Retrieve swath polygons from a remote URL and convert swath time to datetime.
@@ -237,6 +244,10 @@ def get_swath_polygons(
     ----------
     fid : int
         A pandas Series containing WESM feature ID (FID)
+    start_col : str, optional
+        The name of the column containing the start times, by default 'START_TIME'.
+    end_col : str, optional
+        The name of the column containing the end times, by default 'END_TIME'.
 
     Returns
     -------
@@ -259,7 +270,7 @@ def get_swath_polygons(
     # Actually read from S3!
     gf = read_file(url)
 
-    gf = swathtime_to_datetime(gf)
+    gf = swathtime_to_datetime(gf, start_col=start_col, end_col=end_col)
     # Swath polygons likely have different CRS (EPSG:6350), so reproject
     return gf.to_crs("EPSG:4326")
 

@@ -23,6 +23,7 @@ class ICESat2(Dataset):
     # search: str = "https://cmr.earthdata.nasa.gov/stac/NSIDC_ECS"
     search: str = "https://cmr.earthdata.nasa.gov/cloudstac/NSIDC_CPRD"
     start: str | None = "2018-10-13"
+    # spatial_ref: str | None = "v6 = EPSG:7912 / v7 = EPSG:9989" # SlideRule handles this
     type: str = "altimeter"
     alias: str = "icesat-2"
     collections: list[str] = field(
@@ -43,6 +44,7 @@ class GEDI(Dataset):
     # https://www.earthdata.nasa.gov/news/nasa-announces-pause-gedi-mission
     # https://gedi.umd.edu/mission/timeline/
     end: str = "2023-03-17"
+    spatial_ref: str | None = "EPSG:7912"  # ITRF2014 3D
     type: str = "altimeter"
     alias: str = "gedi"
     collections: list[str] = field(default_factory=lambda: ["GEDI02_A_002"])

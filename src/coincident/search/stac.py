@@ -7,6 +7,7 @@ from __future__ import annotations
 import warnings
 from typing import Any
 
+import arro3.core
 import geopandas as gpd
 import pystac
 import pystac_client
@@ -43,7 +44,9 @@ def _filter_assets(assets: gpd.GeoDataFrame) -> dict[str, str]:
 
 
 def to_geopandas(
-    collection: pystac.item_collection.ItemCollection,
+    collection: list[pystac.Item]
+    | pystac.item_collection.ItemCollection
+    | arro3.core.Table,
 ) -> gpd.GeoDataFrame:
     """
     Convert a STAC ItemCollection to a GeoDataFrame.
@@ -51,7 +54,7 @@ def to_geopandas(
 
     Parameters
     ----------
-    collection : pystac.item_collection.ItemCollection
+    collection : list[pystac.Item] | pystac.item_collection.ItemCollection | arro3.core.Table
         The STAC ItemCollection to be converted.
 
     Returns
@@ -65,13 +68,15 @@ def to_geopandas(
         If the provided ItemCollection is empty.
     """
     # Catch if no items are passed
-    if len(collection) == 0:
+    if collection is None or (hasattr(collection, "__len__") and len(collection) == 0):
         message = "ItemCollection is empty, cannot convert to GeoDataFrame"
         raise ValueError(message)
 
-    table = rustac.to_arrow(collection.to_dict())
+    if isinstance(collection, pystac.item_collection.ItemCollection):
+        collection = rustac.to_arrow(collection.to_dict())
+
     # NOTE: I believe all STAC footprints are expected as EPSG:4326 (proj:geometry is optional)
-    gf = gpd.GeoDataFrame.from_arrow(table).set_crs(epsg=4326)
+    gf = gpd.GeoDataFrame.from_arrow(collection).set_crs(epsg=4326)
 
     # Workaround stac-geoparquet limitation https://github.com/stac-utils/stac-geoparquet/issues/82
     gf["assets"] = gf["assets"].apply(_filter_assets)
