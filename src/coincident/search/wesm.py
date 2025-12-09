@@ -123,7 +123,7 @@ def search_bboxes(
     # NOTE: much faster to JUST read bboxes, not full geometry or other columns
     sql = "select * from rtree_WESM_geometry"
     with rasterio.Env(
-        aws_unsigned=True,
+        AWS_NO_SIGN_REQUEST=True,
         GDAL_PAM_ENABLED="NO",
         CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg",
     ):
