@@ -29,6 +29,7 @@ dependencies = [
   "aiobotocore[boto3]>=2.25.2,<3",
   "arro3-core",
   "contextily",
+  "cql2",
   "geopandas",
   "ipykernel",
   "ipywidgets",
@@ -45,6 +46,7 @@ dependencies = [
   "sliderule",
   "stac-asset>=0.4.7,<0.5",
   "rustac",
+  "tqdm",
 ]
 
 [project.optional-dependencies]

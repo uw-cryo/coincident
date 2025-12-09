@@ -3134,12 +3134,13 @@ packages:
   timestamp: 1736947650712
 - pypi: ./
   name: coincident
-  version: 0.4.2.dev14+g362934774.d20251208
-  sha256: d87f0f0470e5e1c6c21eb4416b94517e83bb2ec70258a2eb6c35cdacf19a6db5
+  version: 0.4.2.dev20+g72544c54a.d20251209
+  sha256: 0692d1cd9638107a2ff40d4bd00c09bda12aad08e5eccd27fb8e8dfd3e7524c3
   requires_dist:
   - aiobotocore[boto3]>=2.25.2,<3
   - arro3-core
   - contextily
+  - cql2
   - geopandas
   - ipykernel
   - ipywidgets
@@ -3156,6 +3157,7 @@ packages:
   - scipy
   - sliderule
   - stac-asset>=0.4.7,<0.5
+  - tqdm
   - cql2>=0.4.2,<0.5 ; extra == 'dev'
   - mypy>=1.15 ; extra == 'dev'
   - pre-commit>=4.4.0 ; extra == 'dev'
