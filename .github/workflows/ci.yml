@@ -53,14 +53,14 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           python-version: ${{ matrix.python-version }}
+          activate-environment: "true" # source .venv/bin/activate
 
       - name: Install package
-        run: uv pip install .[dev]
+        run: uv pip install '.[dev]'
 
       - name: Test package
         env:
           MAXAR_API_KEY: ${{ secrets.MAXAR_API_KEY}}
           EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN}}
         run: >-
-          uv python -m pytest -ra --cov --cov-report=xml --cov-report=term
-          --durations=20
+          python -m pytest -ra --cov --cov-report=term --durations=20
