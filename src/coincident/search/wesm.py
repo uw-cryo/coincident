@@ -125,7 +125,7 @@ def search_bboxes(
     with rasterio.Env(
         AWS_NO_SIGN_REQUEST=True,
         GDAL_PAM_ENABLED="NO",
-        CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg",
+        CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg,.xml",
     ):
         df = pyogrio.read_dataframe(
             url, sql=sql
