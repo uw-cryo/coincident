@@ -178,16 +178,21 @@ def load_by_fid(
     # Reading a remote WESM by specific FIDs is fast
     query = f"fid in ({fids[0]})" if len(fids) == 1 else f"fid in {(*fids,)}"
 
-    gf = read_file(
-        url,
-        where=query,
-        **kwargs,
-        # mask=mask, # spatial subset intolerably slow for remote GPKG...
-        # NOTE: worth additional dependencies for speed?
-        # Only faster I think if GPKG is local & large https://github.com/geopandas/pyogrio/issues/252
-        # engine='pyogrio',
-        # pyarrow=True,
-    )
+    with rasterio.Env(
+        AWS_NO_SIGN_REQUEST=True,
+        GDAL_PAM_ENABLED="NO",  # avoid trying to write to s3
+        CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg,.xml",
+    ):
+        gf = read_file(
+            url,
+            where=query,
+            **kwargs,
+            # mask=mask, # spatial subset intolerably slow for remote GPKG...
+            # NOTE: worth additional dependencies for speed?
+            # Only faster I think if GPKG is local & large https://github.com/geopandas/pyogrio/issues/252
+            # engine='pyogrio',
+            # pyarrow=True,
+        )
 
     # For the purposes of footprint polygon search, just ignore datum (NAD83)
     gf = gf.set_crs("EPSG:4326", allow_override=True)
@@ -266,7 +271,11 @@ def get_swath_polygons(
         raise ValueError(message) from e
 
     # Actually read from S3!
-    gf = read_file(url)
+    with rasterio.Env(
+        AWS_NO_SIGN_REQUEST=True,
+        GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+    ):
+        gf = read_file(url)
 
     gf = swathtime_to_datetime(gf, start_col=start_col, end_col=end_col)
     # Swath polygons likely have different CRS (EPSG:6350), so reproject

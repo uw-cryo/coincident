@@ -118,6 +118,7 @@ def create_vrt(
     str
         Path to the temporary VRT file
     """
+    # This has global effect, so be sure to unset
     gdal.SetConfigOption("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR")
 
     # Prefix URLs with vsicurl if they start with http
@@ -172,6 +173,9 @@ def create_vrt(
 
         with Path(vrt_path).open("w") as fp:
             fp.writelines(vrt_content)
+
+        # Unset global config
+        gdal.SetConfigOption("GDAL_DISABLE_READDIR_ON_OPEN", None)
 
     return vrt_path
 
@@ -250,6 +254,10 @@ def warp_with_pipeline(
     # numpy_result = warped_ds.ReadAsArray()
     # del warped_ds
     # return xr.DataArray(numpy_result)
+
+    # Unset global config
+    gdal.SetConfigOption("GDAL_DISABLE_READDIR_ON_OPEN", None)
+
     return vrt_path
 
 
