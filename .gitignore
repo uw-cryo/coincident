@@ -1,3 +1,4 @@
+*.vrt
 *.bak
 notebooks/
 tests/debug.ipynb

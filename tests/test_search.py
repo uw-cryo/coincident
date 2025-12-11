@@ -68,12 +68,31 @@ def test_cascading_search(aoi):
     actual_min = results[0].datetime.min()
     actual_max = results[0].datetime.max()
 
+    gf_is2 = results[0]
+    gf_gedi = results[1]
+    expected_gedi_dates = {
+        "2019-05-28",
+        "2019-06-08",
+        "2019-06-11",
+        "2019-07-03",
+        "2019-07-07",
+    }
+    actual_gedi_dates = set(gf_gedi["datetime"].dt.date.astype(str))
+    expected_is2_dates = {
+        "2019-05-15",
+        "2019-05-16",
+        "2019-06-12",
+        "2019-06-14",
+        "2019-07-11",
+    }
+    actual_is2_dates = set(gf_is2["datetime"].dt.date.astype(str))
+
     assert isinstance(results, list)
     assert len(results) == 2
-    assert len(results[0]) == 5
-    assert len(results[1]) == 4
     assert actual_min >= expected_min
     assert actual_max <= expected_max
+    assert actual_gedi_dates == expected_gedi_dates
+    assert actual_is2_dates == expected_is2_dates
 
 
 @network
@@ -246,6 +265,7 @@ def test_tdx_search(aoi):
         "constellation",
         "datetime",
         "end_datetime",
+        "missionInfo_orbitDirection",
         "platform",
         "sar:center_frequency",
         "sar:frequency_band",
@@ -265,7 +285,7 @@ def test_tdx_search(aoi):
         filter(lambda x: x["role"] == "data", gf.iloc[0].assets.values())
     )
     assert gf.iloc[0].stac_version == expected_stac_version
-    assert gf.shape == (48, 24)
+    assert len(gf) == 48
     assert actual_columns == expected_columns
     assert gf["sar:product_type"].unique() == "SSC"
     assert len(data_assets) >= 1
@@ -351,6 +371,32 @@ def test_round_trip_parquet(aoi):
 
 # USGS
 # =======
+@network
+def test_wesm_search_bboxes(aoi):
+    # Efficiently reads only bboxes from remote GPKG
+    gf = coincident.search.wesm.search_bboxes(intersects=aoi)
+    expected_columns = {
+        "minx",
+        "miny",
+        "maxx",
+        "maxy",
+    }
+    actual_columns = set(gf.columns)
+    assert isinstance(gf, gpd.GeoDataFrame)
+    assert gf.index.name == "fid"
+    assert expected_columns.issubset(actual_columns)
+    assert gf.shape == (5, 37)
+
+
+@network
+def test_wesm_load_by_fid():
+    # Efficiently reads only bboxes from remote GPKG
+    gf = coincident.search.wesm.load_by_fid([2446])
+    assert isinstance(gf, gpd.GeoDataFrame)
+    assert gf.shape == (1, 33)
+    assert gf.iloc[0].workunit == "CO_WestCentral_2019"
+
+
 @network
 def test_wesm_search(aoi):
     gf = coincident.search.search(

@@ -1,10 +1,30 @@
 # ruff: noqa: ARG001
 from __future__ import annotations
 
+import os
+
 import geopandas as gpd
 import pytest
+import sliderule
 import xarray as xr
 from shapely.geometry import box
+
+
+@pytest.fixture(scope="session")
+def initialize_sliderule():
+    if os.environ.get("PS_GITHUB_TOKEN"):
+        initialized = sliderule.init(
+            verbose=True,
+            organization="uw",
+            desired_nodes=2,
+            bypass_dns=True,
+            time_to_live=60,
+        )
+    else:
+        initialized = sliderule.init(verbose=True)
+
+    if not initialized:
+        pytest.skip("SlideRule service not available, skipping related tests.")
 
 
 @pytest.fixture(scope="package")

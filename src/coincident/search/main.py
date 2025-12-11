@@ -4,6 +4,7 @@ import warnings
 from typing import Any
 
 import geopandas as gpd
+import rustac
 
 # Used to access formatters
 from pystac_client.item_search import ItemSearch as _ItemSearch
@@ -78,7 +79,9 @@ def search(
         # ANd 'exterior' not available for Multipolygons, just
         # NOTE: force_2d as some STAC searches fail with 3D polygons
         # https://github.com/uw-cryo/coincident/issues/101#issuecomment-3104277451
-        shapely_geometry = intersects.geometry.force_2d().explode().iloc[0]
+        # shapely_geometry = intersects.geometry.force_2d().explode().iloc[0]
+        # Since coincident PCD fixtures are MultiPolygon
+        shapely_geometry = intersects.geometry.force_2d().convex_hull.iloc[0]
 
         if not shapely_geometry.exterior.is_ccw:
             shapely_geometry = (
@@ -141,6 +144,18 @@ def search(
                         item.properties.pop(col)
 
             gf = stac.to_geopandas(item_collection)
+
+    elif dataset.alias == "3dep-1m":
+        # Configure duckdb for searching STAC GeoParquet
+        duck_client = rustac.DuckdbClient()
+        table = duck_client.search_to_arrow(
+            href=dataset.search,
+            intersects=aoi,
+            start_datetime=search_start,
+            end_datetime=search_end,
+            **kwargs,
+        )
+        gf = stac.to_geopandas(table)
 
     # Non-STAC Searches
     elif dataset.alias == "3dep":
