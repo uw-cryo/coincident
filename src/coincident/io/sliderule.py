@@ -91,9 +91,8 @@ def subset_gedi02a(
     ----------
     gf : gpd.GeoDataFrame
         A GeoDataFrame of results from coincident.search.search(dataset='gedi')
-
     aoi : gpd.GeoDataFrame, optional
-        A GeoDataFrame with a POLYGON to subset. If not provided the union of geometries in gf is used.
+        A GeoDataFrame with a POLYGON to subset The *envelope* of geometries is used to search.
     include_worldcover : bool, optional
         Whether to include WorldCover data in the processing. Default is False.
     include_3dep : bool, optional
@@ -130,6 +129,12 @@ def subset_gedi02a(
         params.update(sliderule_params)
 
     gfsr = gedi.gedi02ap(params, resources=granule_names)
+    if gfsr.empty:
+        message = "SlideRule returned an empty GeoDataFrame. Check spatial/temporal overlap and filter parameters."
+        warnings.warn(
+            message,
+            stacklevel=2,
+        )
 
     if include_worldcover:
         gfsr = _decode_worldcover(gfsr)
@@ -154,7 +159,7 @@ def subset_atl06(
     gf : gpd.GeoDataFrame
         GeoDataFrame containing the input data.
     aoi : gpd.GeoDataFrame, optional
-        Area of interest as a GeoDataFrame to filter the data spatially, by default None.
+        A GeoDataFrame with a POLYGON to subset The *envelope* of geometries is used to search.
     dropna : bool, optional
         Whether to drop rows with NaN values in the 'h_li' column, by default True.
     include_worldcover : bool, optional
@@ -186,6 +191,12 @@ def subset_atl06(
 
     gfsr = icesat2.atl06sp(params, resources=granule_names)
 
+    if gfsr.empty:
+        message = "SlideRule returned an empty GeoDataFrame. Check spatial/temporal overlap and filter parameters."
+        raise ValueError(
+            message,
+        )
+
     # Drop poor-quality data
     # https://github.com/orgs/SlideRuleEarth/discussions/441
     gfsr = gfsr[gfsr.atl06_quality_summary == 0]
@@ -196,6 +207,12 @@ def subset_atl06(
 
     if include_worldcover:
         gfsr = _decode_worldcover(gfsr)
+
+    if gfsr.empty:
+        warnings.warn(
+            "Only poor-quality data found after filtering. Resulting GeoDataFrame is empty.",
+            stacklevel=2,
+        )
 
     return gfsr
 
@@ -217,7 +234,7 @@ def process_atl06sr(
     gf : gpd.GeoDataFrame
         Input GeoDataFrame with ICESat-2 ATL03 Granule metadata
     aoi : gpd.GeoDataFrame, optional
-        Area of interest as a GeoDataFrame. If provided, it will be used to filter the data.
+        A GeoDataFrame with a POLYGON to subset The *envelope* of geometries is used to search.
     target_surface : str, optional
         Specify which ATL08 filters to apply. Must be either 'ground' or 'canopy'. Default is 'ground'.
     include_worldcover : bool, optional
@@ -348,3 +365,30 @@ def sample_3dep(
 
     # Return with order matching input geodataframe
     return gf.sjoin_nearest(gf3dep, how="left").drop(columns="index_right")
+
+
+def to_3d(
+    gf: gpd.GeoDataFrame,
+    z_col: str,
+) -> gpd.GeoDataFrame:
+    """
+    Convert 2D GeoDataFrame to 3D by adding z-coordinate from specified column.
+    Necessary to apply 3D transforms via gf.to_crs().
+
+    Parameters
+    ----------
+    gf : gpd.GeoDataFrame
+        A GeoDataFrame containing 2D lon,lat POINT
+    z_col : str
+        The name of the column to use for the z-coordinate (e.g. h_li, elevation_lm, etc.)
+
+    Returns
+    -------
+    gpd.GeoDataFrame
+        A GeoDataFrame with 3D POINT geometries.
+    """
+    points3D = gpd.points_from_xy(gf.geometry.x, gf.geometry.y, gf[z_col])
+    gf3D = gf.copy()
+    gf3D.geometry = points3D
+
+    return gf3D

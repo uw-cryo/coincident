@@ -2,9 +2,6 @@
 Microsoft Planetary Computer
 
 https://planetarycomputer.microsoft.com/docs/quickstarts/reading-stac/
-
-- https://planetarycomputer.microsoft.com/dataset/esa-worldcover
-- https://planetarycomputer.microsoft.com/dataset/cop-dem-glo-30
 """
 
 from __future__ import annotations
@@ -27,8 +24,30 @@ class COP30(Dataset):
     search: str = STACAPI
     start: str | None = None  # Copernicus DEM has 'representative' datetime: 2021-04-22
     end: str | None = None
+    spatial_ref: str | None = "EPSG:9055+3855"  # WGS84 (G1150) 3D + EGM2008
     type: str = "dem"
     provider: str = "microsoft"
+    provider_docs: str | None = (
+        "https://planetarycomputer.microsoft.com/dataset/cop-dem-glo-30"
+    )
+
+
+@dataclass
+class NASADEM(Dataset):
+    """Essential metadata and data access for NASADEM"""
+
+    alias: str = "nasadem"
+    has_stac_api: bool = True
+    collections: list[str] = field(default_factory=lambda: ["nasadem"])
+    search: str = STACAPI
+    start: str | None = "2000-02-11"
+    end: str | None = "2000-02-21"
+    spatial_ref: str | None = "EPSG:9055+5773"  # WGS84 (G1150) 3D + EGM1996
+    type: str = "dem"
+    provider: str = "microsoft"
+    provider_docs: str | None = (
+        "https://planetarycomputer.microsoft.com/dataset/nasadem"
+    )
 
 
 @dataclass
@@ -43,6 +62,9 @@ class WorldCover(Dataset):
     end: str = "2021-12-31"
     type: str = "lulc"
     provider: str = "microsoft"
+    provider_docs: str | None = (
+        "https://planetarycomputer.microsoft.com/dataset/esa-worldcover"
+    )
     classmap: dict[int, Any] = field(
         default_factory=lambda: {
             10: {"hex": "#006400", "description": "Tree cover"},

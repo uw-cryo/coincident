@@ -11,6 +11,7 @@ from typing import Any
 
 import boto3
 import geopandas as gpd
+import numpy as np
 import odc.stac
 import pystac
 import rasterio
@@ -22,6 +23,7 @@ from botocore import UNSIGNED
 from botocore.client import Config
 from shapely.geometry import MultiPolygon, Polygon, box
 
+import coincident.io.gdal
 from coincident.datasets.nasa import GLiHT
 from coincident.search import search
 from coincident.search.neon_api import (
@@ -44,7 +46,7 @@ threedep_to_7912 = "https://raw.githubusercontent.com/uw-cryo/3D_CRS_Transformat
 def load_dem_7912(dataset: str, aoi: gpd.GeoDataFrame) -> xr.DataArray:
     """
     Load a Digital Elevation Model (DEM) dataset and clip it to the area of interest (AOI).
-    Reprojection-on-reading to EPSG:7912 is performed by GDAL.
+    Reprojection-on-reading to EPSG:7912 (ITRF2014 Ellipsoid Height) is performed by GDAL.
 
     Parameters
     ----------
@@ -62,23 +64,6 @@ def load_dem_7912(dataset: str, aoi: gpd.GeoDataFrame) -> xr.DataArray:
     -----
     - This function currently eagerly pulls all data into memory, so may fail if aoi is large
     """
-    # NOTE: Currently only getting data from OpenTopography VRTs, but leaving this in for future
-    # if dataset in ["cop30", "nasadem"]:
-    #     r = requests.get(
-    #         "https://planetarycomputer.microsoft.com/api/sas/v1/token/pcstacitems/items",
-    #         timeout=10,
-    #     )
-    #     token = r.json()["token"]
-    #     if dataset == "cop30":
-    #         uri = cop_to_7912
-    #     elif dataset == "nasadem":
-    #         uri = nasadem_to_7912
-    #     ENV = rasterio.Env(
-    #         GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
-    #         AZURE_STORAGE_ACCOUNT="pcstacitems",
-    #         AZURE_STORAGE_SAS_TOKEN=token,
-    #         VSICURL_PC_URL_SIGNING="YES",
-    #     )
     if dataset == "cop30":
         uri = cop_to_7912
     elif dataset == "nasadem":
@@ -101,6 +86,31 @@ def load_dem_7912(dataset: str, aoi: gpd.GeoDataFrame) -> xr.DataArray:
             .squeeze()
             .load()
         )
+
+
+# def load_dem(
+#     dataset: str,
+#     aoi: gpd.GeoDataFrame,
+# ) -> xr.DataArray:
+#     """
+#     Load a Digital Elevation Model (DEM) dataset and clip it to the area of interest (AOI).
+
+#     Parameters
+#     ----------
+#     dataset : str
+#         The name of the DEM dataset to load. Must be one of 'cop30', 'nasadem', or '3dep'.
+#     aoi : gpd.GeoDataFrame
+#         Polygon with lon,lat coordinates to which the DEM will be clipped.
+
+#     Returns
+#     -------
+#     xr.DataArray
+#         The clipped DEM data as an xarray DataArray.
+
+#     Notes
+#     -----
+#     - This function currently eagerly pulls all data into memory, so may fail if aoi is large
+#     """
 
 
 def to_dataset(
@@ -237,6 +247,66 @@ def _filter_items_by_project(
     return filtered_items
 
 
+def get_usgs_dem_tiff_urls(
+    aoi: gpd.GeoDataFrame,
+    project: str,
+    tnmdataset: str = "Digital Elevation Model (DEM) 1 meter",
+) -> list[str]:
+    # Extract Shapely geometry
+    if aoi.geometry.iloc[0].geom_type == "MultiPolygon":
+        aoi = gpd.GeoDataFrame(geometry=[aoi.union_all()], crs=aoi.crs)
+    shapely_geom = aoi.geometry.iloc[0]
+
+    # Convert geometry to polygon string using the updated helper function.
+    polygon_string = _aoi_to_polygon_string(shapely_geom)
+
+    # Query the TNM API (function moved to coincident.search.wesm).
+    tnm_api_items = query_tnm_api(polygon_string, tnmdataset=tnmdataset)
+    if not tnm_api_items:
+        msg_empty_tnm = "TNM API returned no products for the given AOI and dataset."
+        raise ValueError(msg_empty_tnm)
+
+    # Filter the returned items using the private helper.
+    filtered_api_items = _filter_items_by_project(tnm_api_items, project)
+    if not filtered_api_items:
+        msg_no_project_id = (
+            "No products found for input project string intersecting the AOI."
+        )
+        raise ValueError(msg_no_project_id)
+
+    # Extract TIFF URLs and open each GeoTIFF lazily.
+    return [
+        item["urls"]["TIFF"]
+        for item in filtered_api_items
+        if "urls" in item and "TIFF" in item["urls"]
+    ]
+
+
+def load_usgs_dem_vrt(
+    aoi: gpd.GeoDataFrame,
+    project: str,
+    clip_box: bool = True,
+    res: float | None = None,
+    resampling: str = "nearest",
+    tnmdataset: str = "Digital Elevation Model (DEM) 1 meter",
+) -> xr.DataArray:
+    # Reproject AOI to EPSG:4326 for the TNM API query.
+    aoi_in_4326 = aoi.to_crs(epsg=4326)
+    tiff_urls = get_usgs_dem_tiff_urls(aoi_in_4326, project, tnmdataset=tnmdataset)
+
+    if clip_box:
+        vrt_crs = xr.open_dataarray(tiff_urls[0]).rio.crs
+        outputBounds = aoi.to_crs(vrt_crs).total_bounds
+    else:
+        outputBounds = None
+
+    vrt_path = coincident.io.gdal.create_vrt(
+        tiff_urls, outputBounds=outputBounds, custom_res=res, resampling=resampling
+    )
+    # print(vrt_path)
+    return xr.open_dataarray(vrt_path, engine="rasterio").squeeze()
+
+
 # NOTE: see https://apps.nationalmap.gov/tnmaccess/#/product for more datasets we can load in
 # LPCs and 5m IFSAR DSMs might be of interest
 # but we'll have to do something with this wonky "_filter_items_by_project" function i made if
@@ -246,81 +316,65 @@ def load_usgs_dem(
     project: str,
     tnmdataset: str = "Digital Elevation Model (DEM) 1 meter",
     res: int = 1,
-    clip: bool = True,
+    clip: bool = False,
+    clip_box: bool = True,
 ) -> xr.DataArray:
     """
     Load and merge USGS 1-meter DEM tiles based on an AOI by querying the TNM API.
-
-    Steps:
-      1. Reproject the AOI to EPSG:4326.
-      2. Extract the first geometry from the exploded AOI (to match the geometry type used in search.search).
-      3. Convert the geometry to a polygon string using a private helper.
-      4. Query the TNM API via the moved function in coincident.search.wesm.
-      5. Filter the API items using a private helper.
-      6. Load and optionally coarsen each GeoTIFF tile.
-      7. Merge the DEM tiles and optionally clip the mosaic to the AOI.
 
     Parameters:
         aoi (gpd.GeoDataFrame): Area of interest geometry to query against
         project (str): Project identifier to filter results
         tnmdataset (str): TNM dataset identifier (default "Digital Elevation Model (DEM) 1 meter")
         res (int): Resolution factor to coarsen DEM by (default 1)
-        clip (bool): Whether to clip final mosaic to AOI (default True)
+        clip (bool): Use AOI to crop extent and apply valid data mask (default False)
+        clip_box (bool): Use AOI bounding box to crop extent (default True)
 
     Returns:
       xr.DataArray: The merged (and optionally clipped) DEM mosaic.
     """
-    # 1: Reproject AOI to EPSG:4326 for the TNM API query.
+    # Reproject AOI to EPSG:4326 for the TNM API query.
     aoi_in_4326 = aoi.to_crs(epsg=4326)
+    tiff_urls = get_usgs_dem_tiff_urls(aoi_in_4326, project, tnmdataset=tnmdataset)
 
-    # 2: Explode and extract the first geometry.
-    shapely_geom = aoi_in_4326.geometry.explode().iloc[0]
+    def _load_usgs_tile(url: str) -> xr.DataArray:
+        """Read a single USGS DEM tile and round coordinates."""
+        da = xr.open_dataarray(url, masked=True, chunks="auto").squeeze()
+        # NOTE: round coordinates to avoid floating-point precision issues when merging
+        # Assumes all tiles are 'tapped' with integer meter spacing
+        da = da.assign_coords(x=np.round(da.x, 1), y=np.round(da.y, 1))
+        da.name = "elevation"
+        return da
 
-    # 3: Convert geometry to polygon string using the updated helper function.
-    polygon_string = _aoi_to_polygon_string(shapely_geom)
+    # Load first tile
+    merged_dem = _load_usgs_tile(tiff_urls[0])
 
-    # 4: Query the TNM API (function moved to coincident.search.wesm).
-    tnm_api_items = query_tnm_api(polygon_string, tnmdataset=tnmdataset)
-    if not tnm_api_items:
-        msg_empty_tnm = "TNM API returned no products for the given AOI and dataset."
-        raise ValueError(msg_empty_tnm)
-
-    # 5: Filter the returned items using the private helper.
-    filtered_api_items = _filter_items_by_project(tnm_api_items, project)
-    if not filtered_api_items:
-        msg_no_project_id = (
-            "No products found for input project string intersecting the AOI."
-        )
-        raise ValueError(msg_no_project_id)
-
-    # 6: Extract TIFF URLs and open each GeoTIFF lazily.
-    tiff_urls = [
-        item["urls"]["TIFF"]
-        for item in filtered_api_items
-        if "urls" in item and "TIFF" in item["urls"]
-    ]
-    dem_dataarrays = []
-    for url in tiff_urls:
+    for url in tiff_urls[1:]:
         try:
-            dem_tile = rioxarray.open_rasterio(url, masked=True, chunks="auto")
-            if res > 1:
-                dem_tile = dem_tile.coarsen(x=res, y=res, boundary="trim").mean()
-            dem_dataarrays.append(dem_tile)
+            tile = _load_usgs_tile(url)
         except Exception as error:
-            msg_vendor_err = f"Unable to parse vendorMetaUrl. Error: {error}"
+            msg_vendor_err = f"Unable to read {url}. Error: {error}"
             raise RuntimeError(msg_vendor_err) from error
-    if not dem_dataarrays:
-        msg_tiff_open = "None of the TIFF files could be opened."
-        raise RuntimeError(msg_tiff_open)
 
-    # 7: Merge DEM tiles and clip if required.
-    tile_crs = dem_dataarrays[0].rio.crs
-    merged_dem = (
-        xr.concat(dem_dataarrays, dim="band").max(dim="band").rename("elevation")
-    )
-    if clip:
-        aoi_tile_crs = aoi.to_crs(tile_crs)
-        merged_dem = merged_dem.rio.clip(aoi_tile_crs.geometry, tile_crs, drop=True)
+        # Merge tiles using combine_first to handle overlaps
+        merged_dem = merged_dem.combine_first(tile)
+
+    # NOTE: not sure when this is needed...
+    # invert flipping of y-coords by xarray to be consistent with geotransform
+    # merged_dem = merged_dem.reindex(y=merged_dem.y[::-1])
+
+    aoi_tile_crs = aoi_in_4326.to_crs(merged_dem.rio.crs)
+    if clip_box:
+        merged_dem = merged_dem.rio.clip_box(
+            *aoi_tile_crs.to_crs(merged_dem.rio.crs).total_bounds
+        )
+    elif clip:
+        merged_dem = merged_dem.rio.clip(
+            aoi_tile_crs.geometry, merged_dem.rio.crs, drop=True
+        )
+
+    if res > 1:
+        merged_dem = merged_dem.coarsen(x=res, y=res, boundary="trim").mean()
 
     return merged_dem
 

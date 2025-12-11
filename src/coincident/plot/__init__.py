@@ -18,8 +18,11 @@ from coincident.plot.matplotlib import (
     plot_maxar_browse,
 )
 from coincident.plot.utils import (
-    gdaldem,
-    get_elev_diff,
+    get_aspect,
+    get_haversine_distance,
+    get_scale,
+    get_tiles,
+    sample_dem_at_points,
 )
 
 __all__ = [
@@ -28,12 +31,15 @@ __all__ = [
     "boxplot_slope",
     "boxplot_terrain_diff",
     "compare_dems",
-    "gdaldem",
-    "get_elev_diff",
+    "get_aspect",
+    "get_haversine_distance",
+    "get_scale",
+    "get_tiles",
     "hist_esa",
     "plot_altimeter_points",
     "plot_dem",
     "plot_diff_hist",
     "plot_esa_worldcover",
     "plot_maxar_browse",
+    "sample_dem_at_points",
 ]

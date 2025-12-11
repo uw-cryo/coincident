@@ -12,6 +12,6 @@ sliderule.*  Server-side sliderule processing. Return GeoDataFrames or directly 
 
 from __future__ import annotations
 
-from coincident.io import download, sliderule, xarray
+from coincident.io import download, gdal, proj, sliderule, xarray
 
-__all__ = ["download", "sliderule", "xarray"]
+__all__ = ["download", "gdal", "proj", "sliderule", "xarray"]
