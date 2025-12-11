@@ -3134,8 +3134,8 @@ packages:
   timestamp: 1736947650712
 - pypi: ./
   name: coincident
-  version: 0.4.2.dev20+g72544c54a.d20251209
-  sha256: 0692d1cd9638107a2ff40d4bd00c09bda12aad08e5eccd27fb8e8dfd3e7524c3
+  version: 0.4.2.dev37+gfb60383cf.d20251211
+  sha256: bd3102ac5ff934e77427dabbaa6e2f1d11280344d202ebc6b7db29552f5f5644
   requires_dist:
   - aiobotocore[boto3]>=2.25.2,<3
   - arro3-core
