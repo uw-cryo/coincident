@@ -18,9 +18,29 @@ def get_tiles(name: str) -> xyzservices.TileProvider:
     return xyzservices.providers.flatten()[name]
 
 
-def get_lonlat_aspect(mid_lat: float) -> float:
-    """Calculate appropriate aspect ratio for coordinates in degrees"""
-    return float(1 / np.cos(np.deg2rad(mid_lat)))
+def get_aspect(data: xr.DataArray | gpd.GeoDataFrame) -> float | None:
+    """Determine best plot aspect ratio based on latitude and CRS for a xr.DataArray or gpd.GeoDataFrame"""
+    if isinstance(data, gpd.GeoDataFrame):
+        bounds = data.total_bounds
+        crs = data.crs
+    elif isinstance(data, xr.DataArray):
+        bounds = data.rio.bounds(recalc=True)  # in case of xarray ops like coarsen
+        crs = data.rio.crs
+    else:
+        message = (
+            "aspect calculation requires an xarray.DataArray or geopandas.GeoDataFrame"
+        )
+        raise TypeError(message)
+
+    if crs.is_geographic:
+        mid_lat = (bounds[1] + bounds[3]) / 2
+        aspect = float(1 / np.cos(np.deg2rad(mid_lat)))
+    elif crs.is_projected:
+        aspect = 1.0
+    else:
+        aspect = None  # Not sure how matplotlib does default aspect...
+
+    return aspect
 
 
 def get_haversine_distance(lon1: float, lat1: float, lon2: float, lat2: float) -> float:

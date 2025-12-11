@@ -85,16 +85,15 @@ def plot_esa_worldcover(
 
     if ax is None:
         fig, ax = plt.subplots()
-        # set aspect ratio according to mid scene latitude
-        if da.rio.crs.to_epsg() == 4326:
-            mid_lat = da.latitude[int(da.latitude.size / 2)].to_numpy()  # PD011
-            ax.set_aspect(aspect=utils.get_lonlat_aspect(mid_lat))
+        ax.set_aspect(aspect=utils.get_aspect(da))
     else:
         fig = ax.get_figure()
 
     da.plot(
         ax=ax, cmap=cmap, norm=normalizer, add_labels=add_labels, add_colorbar=False
     )
+    year = str(da.time.dt.year.to_numpy())
+    ax.set_title(f"ESA WorldCover {year}")
 
     if add_colorbar:
         # Specific to panel_plots, so rather than cax, add_to_panel=True boolean?
@@ -109,6 +108,7 @@ def plot_esa_worldcover(
                 pad=-1.1,  # hack to get colorbar in subplot mosaic in the right place
             )
             colorbar.set_ticks(ticks, labels=tick_labels, rotation=90)
+            # colorbar.set_label(f"Landcover class {year}", loc="top")
         else:
             colorbar = fig.colorbar(
                 cm.ScalarMappable(norm=normalizer, cmap=cmap),
@@ -156,32 +156,10 @@ def plot_maxar_browse(
         )
         raise ValueError(error_message)
 
-    if da.rio.crs.is_geographic:
-        mid_lat = da.y[int(da.y.size / 2)].to_numpy()  # PD011
-        ax.set_aspect(aspect=utils.get_lonlat_aspect(mid_lat))
-        ax.set_title(item.id)
+    # must happen after da.plot calls
+    _style_ax(ax, clear_labels=False, aspect=utils.get_aspect(da))
 
     return ax
-
-
-def _clear_labels(ax: plt.Axes) -> None:
-    """
-    Remove x and y axis labels.
-
-    Parameters
-    ----------
-    ax : matplotlib.axes._axes.Axes
-        The matplotlib axis object to remove labels from
-
-    Returns
-    -------
-    None
-        This function modifies the input axis object directly
-    """
-    ax.xaxis.set_major_formatter(plt.NullFormatter())
-    ax.yaxis.set_major_formatter(plt.NullFormatter())
-    ax.set_xlabel("")
-    ax.set_ylabel("")
 
 
 def plot_dem(
@@ -237,6 +215,8 @@ def plot_dem(
     da.squeeze().plot.imshow(ax=ax, cmap=cmap, **kwargs)
     ax.set_title(title)
 
+    ax.set_aspect(aspect=utils.get_aspect(da))
+
     return ax
 
 
@@ -246,8 +226,11 @@ def plot_altimeter_points(
     ax: plt.Axes | None = None,
     cmap: str = "inferno",
     title: str = "",
+    facecolor: str = "black",
+    basemap: str | None = None,
+    basemap_attribution: bool | str | None = None,
     da_hillshade: xr.DataArray | None = None,
-    **kwargs: Any,
+    scatter_kwds: dict[str, Any] | None = None,
 ) -> plt.Axes:
     """
     Map view of laser altimeter point data with an optional hillshade background.
@@ -256,22 +239,24 @@ def plot_altimeter_points(
     ----------
     gf: geopandas.GeoDataFrame
         GeoDataFrame containing altimeter point data
-    ax: matplotlib.axes._axes.Axes
-        Axis on whichx to plot the points
     column: str
         Name of the GeoDataFrame elevation column to plot (e.g. 'h_li' for ICESat-2 ATL06)
+    ax: matplotlib.axes._axes.Axes
+        Axis on which to plot the points
     cmap: str
         Matplotlib colormap to use for the points
-    alpha_p: float
-        the alpha of the points
     title: str
         Title of the plot
+    facecolor: str
+        Facecolor of the plot background
+    basemap: str | None
+        xyzservices provider name like 'Esri.WorldImagery'. Mutually exclusive with da_hillshade.
+    basemap_attribution: bool | str | None
+        If False, don't show any attribution, or pass a string to use as custom attribution.
     da_hillshade: xarray.core.dataarray.DataArray | None
         A 2d xarray DataArray containing hillshade data
-    p_alpha: float | None
-        Alpha value for the points, default is 0.5
-    **kwargs: Any
-        Artist properties passed to geopandas.GeoDataFrame.plot (e.g., markersize, legend, etc.)
+    scatter_kwds: Any
+        Additional Artist properties passed to geopandas.GeoDataFrame.plot (e.g., markersize, alpha, etc.)
 
     Returns
     -------
@@ -282,6 +267,14 @@ def plot_altimeter_points(
     -----
     alpha=0.5 set by default if you pass in a hillshade.
     """
+    if basemap is not None and da_hillshade is not None:
+        error_message = (
+            "basemap and da_hillshade are mutually exclusive. Please provide only one."
+        )
+        raise ValueError(error_message)
+    if scatter_kwds is None:
+        scatter_kwds = {}
+
     if ax is None:
         _, ax = plt.subplots()
 
@@ -294,12 +287,23 @@ def plot_altimeter_points(
             add_colorbar=False,
             add_labels=False,
         )
-        if "alpha" not in kwargs:
-            kwargs["alpha"] = 0.5
+        # Automatically adjust alpha if we're on a hillshade
+        if scatter_kwds.get("alpha") is None:
+            scatter_kwds["alpha"] = 0.5
 
     # NOTE: geopandas automatically scales aspect ratio
-    gf.plot(ax=ax, column=column, cmap=cmap, linewidth=0, **kwargs)
+    gf.plot(ax=ax, column=column, cmap=cmap, linewidth=0, **scatter_kwds)
     ax.set_title(title)
+
+    _style_ax(
+        ax,
+        clear_labels=False,
+        facecolor=facecolor,
+        altimetry_basemap=basemap,
+        basemap_attribution=basemap_attribution,
+        crs=gf.crs.to_string(),
+    )
+
     return ax
 
 
@@ -363,6 +367,34 @@ def plot_diff_hist(
     return ax
 
 
+def _style_ax(
+    ax: plt.Axes,
+    clear_labels: bool = True,
+    facecolor: str | None = None,
+    aspect: float | None = None,
+    altimetry_basemap: str | None = None,
+    basemap_attribution: bool | str | None = False,
+    crs: str | None = None,
+) -> None:
+    """Helper function to style axes (remove ticks and set face color)."""
+    if clear_labels:
+        ax.set_xticks([])
+        ax.set_yticks([])
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+    if facecolor:
+        ax.set_facecolor(facecolor)
+    if aspect:
+        ax.set_aspect(aspect)
+    if altimetry_basemap and altimetry_basemap != "hillshade":
+        ctx.add_basemap(
+            ax,
+            crs=crs,
+            attribution=basemap_attribution,
+            source=utils.get_tiles(altimetry_basemap),
+        )
+
+
 def compare_dems(
     dem_dict: dict[str, xr.DataArray],
     gdf_dict: dict[str, tuple[gpd.GeoDataFrame, str]] | None = None,
@@ -420,12 +452,9 @@ def compare_dems(
     """
     # FIGURE SETUP
     # ---------------------------
-    # TODO: check for consistent CRS?
-    # Calculate number of columns for the plot (DEMs + GeoDataFrames if provided)
     n_dems = len(dem_dict)
-    # for convenience
     dem_list = list(dem_dict.values())
-    dem_names = list(dem_dict.keys())
+    # dem_names = list(dem_dict.keys())
     first_dem = dem_list[0]
     gdf_keys = list(gdf_dict.keys()) if gdf_dict else []
     n_columns = n_dems + len(gdf_keys)
@@ -475,14 +504,7 @@ def compare_dems(
     )
 
     # Determine aspect ratio
-    if first_dem.rio.crs.is_geographic:
-        # coordinate name: y or latitude?
-        mid_lat = first_dem.y[int(first_dem.y.size / 2)].to_numpy()  # PD011
-        aspect = utils.get_lonlat_aspect(mid_lat)
-    elif first_dem.rio.crs.is_projected:
-        aspect = 1.0
-    else:
-        aspect = None  # Not sure how matplotlib does default aspect...
+    aspect = utils.get_aspect(first_dem)
 
     reference_ax = axd["dem_0"]
 
@@ -491,29 +513,6 @@ def compare_dems(
         if key.startswith(("dem_", "diff_", "worldcover")):
             axd[key].sharex(reference_ax)
             axd[key].sharey(reference_ax)
-
-    def _style_ax(
-        ax: plt.Axes,
-        facecolor: str | None = None,
-        aspect: float | None = None,
-        altimetry_basemap: str | None = None,
-    ) -> None:
-        """Helper function to style axes (remove ticks and set face color)."""
-        ax.set_xticks([])
-        ax.set_yticks([])
-        ax.set_xlabel("")
-        ax.set_ylabel("")
-        if facecolor:
-            ax.set_facecolor(facecolor)
-        if aspect:
-            ax.set_aspect(aspect)
-        if altimetry_basemap and altimetry_basemap != "hillshade":
-            ctx.add_basemap(
-                ax,
-                crs=first_dem.rio.crs,
-                attribution=False,
-                source=utils.get_tiles(altimetry_basemap),
-            )
 
     # Get Landcover for scene
     bounds = first_dem.rio.bounds()
@@ -535,9 +534,11 @@ def compare_dems(
         aoi=gf_search,
     ).compute()
     if first_dem.rio.crs.is_projected:
-        # NOTE: no reproject_match here since just for visualization
+        # NOTE: reproject_match not necessary since just for visualization
+        # For analysis we'd want the same grid resolution
         ds_wc = ds_wc.rio.reproject(first_dem.rio.crs)
 
+    # We'll reuse the lidar hillshade for altimeter plots
     if add_hillshade:
         da_hillshade = gdaldem(first_dem, subcommand="hillshade")
 
@@ -573,7 +574,7 @@ def compare_dems(
             vmax=vmax,
             title=title,
         )
-        _style_ax(axi, aspect=aspect)
+        _style_ax(axi, aspect=aspect, facecolor="black")
         # Add a scalebar to first plot
         if i == 0:
             if first_dem.rio.crs.is_geographic:
@@ -598,21 +599,16 @@ def compare_dems(
         for key, (gdf, column) in gdf_dict.items() if gdf_dict else []:
             axi = axd[f"dem_{key}"]
             plot_altimeter_points(
-                gdf,
-                column,
+                gf=gdf,
+                column=column,
                 ax=axi,
-                title=key,
                 da_hillshade=da_hillshade if altimetry_basemap == "hillshade" else None,
-                cmap=elevation_cmap,
-                vmin=vmin,
-                vmax=vmax,
-                s=altimetry_pointsize,
-            )
-            _style_ax(
-                axi,
-                aspect=aspect,
+                title=key,
                 facecolor="black",
-                altimetry_basemap=altimetry_basemap,
+                basemap=altimetry_basemap,
+                basemap_attribution=False,
+                cmap=elevation_cmap,
+                scatter_kwds={"vmin": vmin, "vmax": vmax, "s": altimetry_pointsize},
             )
 
     # Add colorbar to last plot in top row
@@ -632,7 +628,8 @@ def compare_dems(
         # add_labels=False,
     )
     _style_ax(axd["worldcover"], aspect=aspect)
-    axd["worldcover"].set_title("ESA WorldCover 2021")
+    # axd["worldcover"].set_title("ESA WorldCover 2021")
+    axd["worldcover"].set_title("")
 
     # raster diffs
     if len(dem_list) > 1:
@@ -643,12 +640,13 @@ def compare_dems(
                 ax=axi,
                 cmap=diff_cmap,
                 add_colorbar=False,
-                # add_labels=False,
+                add_labels=False,
                 vmin=diff_clim[0],
                 vmax=diff_clim[1],
             )
             _style_ax(axi, aspect=aspect, facecolor="black")
-            axi.set_title(f"{dem_names[i]} minus {dem_names[0]}")
+            # NOTE: no titles seems cleaner for residuals
+            # axi.set_title(f"{dem_names[i]} minus {dem_names[0]}")
 
     if gdf_dict:
         for _, (key, (gdf, column)) in enumerate(gdf_dict.items() if gdf_dict else []):
@@ -659,22 +657,20 @@ def compare_dems(
             )["elev_diff"]
 
             plot_altimeter_points(
-                gdf,
-                "elev_diff",
-                axi,
+                gf=gdf,
+                column="elev_diff",
+                ax=axi,
                 da_hillshade=da_hillshade if altimetry_basemap == "hillshade" else None,
-                cmap=diff_cmap,
-                vmin=diff_clim[0],
-                vmax=diff_clim[1],
-                title=f"{column} minus {dem_names[0]}",
-                s=altimetry_pointsize,
-                alpha=0.5 if add_hillshade else 1.0,
-            )
-            _style_ax(
-                axi,
-                aspect=aspect,
+                # title=f"{column} minus {dem_names[0]}",
                 facecolor="black",
-                altimetry_basemap=altimetry_basemap,
+                basemap=altimetry_basemap,
+                basemap_attribution=False,
+                cmap=diff_cmap,
+                scatter_kwds={
+                    "vmin": diff_clim[0],
+                    "vmax": diff_clim[1],
+                    "s": altimetry_pointsize,
+                },
             )
 
     # Add colorbar to last plot in middle row
