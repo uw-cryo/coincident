@@ -304,7 +304,7 @@ def get_swath_polygons(
     # Actually read from S3!
     with TemporaryEnvVars(
         AWS_NO_SIGN_REQUEST="YES",
-        CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg",
+        GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
     ):
         gf = read_file(url)
 
