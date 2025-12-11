@@ -66,6 +66,9 @@ def construct_custom_utm_crs(
             vert_crs = VerticalCRS.from_epsg(5773)
         elif geoid == "EGM08":
             vert_crs = VerticalCRS.from_epsg(3855)
+        else:
+            message = f"geoid must be one of EGM96, EGM08, GEOID09, GEOID12A, GEOID12B, GEOID18. But {geoid} was provided."
+            raise ValueError(message)
 
         tmp_crs = CompoundCRS(
             name=f"{crs_ellipsoid.name} / UTM zone {crs_default.utm_zone} + {vert_crs.name}",

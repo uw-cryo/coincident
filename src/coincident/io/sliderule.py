@@ -91,9 +91,8 @@ def subset_gedi02a(
     ----------
     gf : gpd.GeoDataFrame
         A GeoDataFrame of results from coincident.search.search(dataset='gedi')
-
     aoi : gpd.GeoDataFrame, optional
-        A GeoDataFrame with a POLYGON to subset. If not provided the union of geometries in gf is used.
+        A GeoDataFrame with a POLYGON to subset The *envelope* of geometries is used to search.
     include_worldcover : bool, optional
         Whether to include WorldCover data in the processing. Default is False.
     include_3dep : bool, optional
@@ -160,7 +159,7 @@ def subset_atl06(
     gf : gpd.GeoDataFrame
         GeoDataFrame containing the input data.
     aoi : gpd.GeoDataFrame, optional
-        Area of interest as a GeoDataFrame to filter the data spatially, by default None.
+        A GeoDataFrame with a POLYGON to subset The *envelope* of geometries is used to search.
     dropna : bool, optional
         Whether to drop rows with NaN values in the 'h_li' column, by default True.
     include_worldcover : bool, optional
@@ -235,7 +234,7 @@ def process_atl06sr(
     gf : gpd.GeoDataFrame
         Input GeoDataFrame with ICESat-2 ATL03 Granule metadata
     aoi : gpd.GeoDataFrame, optional
-        Area of interest as a GeoDataFrame. If provided, it will be used to filter the data.
+        A GeoDataFrame with a POLYGON to subset The *envelope* of geometries is used to search.
     target_surface : str, optional
         Specify which ATL08 filters to apply. Must be either 'ground' or 'canopy'. Default is 'ground'.
     include_worldcover : bool, optional

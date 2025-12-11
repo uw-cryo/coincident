@@ -78,3 +78,22 @@ While this initial dataset focuses on four-way overlap, it excludes some regions
 like bathymetric zones where stereo imagery is less effective. However, users
 are encouraged to use the `coincident` package to find three-way overlaps (e.g.,
 ALS, ICESat-2, GEDI) for these and other applications.
+
+## Custom products
+
+For each of the PCD sites, DSMs from original lidar point clouds as well as
+Stereo DSMs have been created. You can access these products with the following
+command.
+
+```{note}
+You need to be affiliated with an NASA STV research group to access this Cloud storage bucket.
+```
+
+```{warning}
+These products are high resolution and take up a fair amount of disk space.
+```
+
+```bash
+# 125G	usgs_pcd_products
+aws s3 sync s3://uw-cryo-stv/usgs_pcd_products/ usgs_pcd_products/
+```
