@@ -10,9 +10,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    env:
-      AWS_REGION: us-west-2
-      AWS_NO_SIGN_REQUEST: "YES"
     steps:
       - uses: actions/checkout@v5
 

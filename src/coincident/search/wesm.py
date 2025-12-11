@@ -5,13 +5,13 @@ https://www.usgs.gov/ngp-standards-and-specifications/wesm-data-dictionary
 
 from __future__ import annotations
 
+import os
 from importlib import resources
 from typing import Any
 
 # import rustac
 import pandas as pd
 import pyogrio
-import rasterio
 import requests  # type: ignore[import-untyped]
 from geopandas import GeoDataFrame, read_file
 from pandas import Timedelta, Timestamp
@@ -24,6 +24,34 @@ swath_polygon_csv = resources.files("coincident.search") / "swath_polygons.csv"
 
 defaults = usgs.ThreeDEP()
 wesm_gpkg_url = defaults.search
+
+
+# For some reason credential handling of pyogrio is different in pip environment rather than conda-forge. if installed from pip, it seems rasterio.Env does not have effect, but using os.environ to temporary set GDAL ENV settings works in either environment…
+
+
+class TemporaryEnvVars:
+    def __init__(self, **kwargs: str) -> None:
+        self.env_vars: dict[str, str] = kwargs
+        self.old_values: dict[str, str | None] = {}
+
+    def __enter__(self) -> None:
+        # Save original values and set new ones
+        for key, value in self.env_vars.items():
+            self.old_values[key] = os.environ.get(key)
+            os.environ[key] = str(value)  # Env vars must be strings
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: Any,
+    ) -> None:
+        # Restore original values
+        for key, value in self.old_values.items():
+            if value is None:
+                del os.environ[key]
+            else:
+                os.environ[key] = value
 
 
 def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
@@ -122,10 +150,14 @@ def search_bboxes(
     """
     # NOTE: much faster to JUST read bboxes, not full geometry or other columns
     sql = "select * from rtree_WESM_geometry"
-    with rasterio.Env(
-        AWS_NO_SIGN_REQUEST=True,
-        GDAL_PAM_ENABLED="NO",
-        CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg,.xml",
+    #
+    # with rasterio.Env(
+    #     AWS_NO_SIGN_REQUEST="YES",
+    #     CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg",
+    # ):
+    with TemporaryEnvVars(
+        AWS_NO_SIGN_REQUEST="YES",
+        CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg",
     ):
         df = pyogrio.read_dataframe(
             url, sql=sql
@@ -178,10 +210,9 @@ def load_by_fid(
     # Reading a remote WESM by specific FIDs is fast
     query = f"fid in ({fids[0]})" if len(fids) == 1 else f"fid in {(*fids,)}"
 
-    with rasterio.Env(
-        AWS_NO_SIGN_REQUEST=True,
-        GDAL_PAM_ENABLED="NO",  # avoid trying to write to s3
-        CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg,.xml",
+    with TemporaryEnvVars(
+        AWS_NO_SIGN_REQUEST="YES",
+        CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg",
     ):
         gf = read_file(
             url,
@@ -271,9 +302,9 @@ def get_swath_polygons(
         raise ValueError(message) from e
 
     # Actually read from S3!
-    with rasterio.Env(
-        AWS_NO_SIGN_REQUEST=True,
-        GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
+    with TemporaryEnvVars(
+        AWS_NO_SIGN_REQUEST="YES",
+        CPL_VSIL_CURL_ALLOWED_EXTENSIONS=".gpkg",
     ):
         gf = read_file(url)
 

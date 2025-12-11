@@ -389,6 +389,15 @@ def test_wesm_search_bboxes(aoi):
 
 
 @network
+def test_wesm_load_by_fid():
+    # Efficiently reads only bboxes from remote GPKG
+    gf = coincident.search.wesm.load_by_fid([2446])
+    assert isinstance(gf, gpd.GeoDataFrame)
+    assert gf.shape == (1, 33)
+    assert gf.iloc[0].workunit == "CO_WestCentral_2019"
+
+
+@network
 def test_wesm_search(aoi):
     gf = coincident.search.search(
         dataset="3dep",
