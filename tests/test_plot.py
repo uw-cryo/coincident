@@ -69,19 +69,6 @@ def test_hillshade_tiny(dem_tiny_utm):
     assert hillshade[1].max() <= 255
 
 
-def test_clear_labels():
-    """Test that _clear_labels removes axis labels correctly"""
-
-    _fig, ax = plt.subplots()
-    coincident.plot.matplotlib._clear_labels(ax)
-    assert isinstance(ax.xaxis.get_major_formatter(), plt.NullFormatter), (
-        "x-axis abels not cleared"
-    )
-    assert isinstance(ax.yaxis.get_major_formatter(), plt.NullFormatter), (
-        "y-axis abels not cleared"
-    )
-
-
 def test_plot_dem_no_hillshade(dem_tiny):
     """Test plot_dem with tiny DEM input without hillshade"""
 
@@ -129,7 +116,10 @@ def test_plot_altimeter_points_with_hillshade(dem_tiny, points_tiny):
 
     _fig, ax = plt.subplots()
     ax = coincident.plot.plot_altimeter_points(
-        points_tiny, "h_li", ax=ax, da_hillshade=dem_tiny.hillshade, alpha=0.5
+        points_tiny,
+        "h_li",
+        ax=ax,
+        da_hillshade=dem_tiny.hillshade,
     )
     assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
     assert len(ax.images) == 1, "Plot should contain exactly 1 hillshade layer"

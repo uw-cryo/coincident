@@ -265,6 +265,7 @@ def test_tdx_search(aoi):
         "constellation",
         "datetime",
         "end_datetime",
+        "missionInfo_orbitDirection",
         "platform",
         "sar:center_frequency",
         "sar:frequency_band",
@@ -284,7 +285,7 @@ def test_tdx_search(aoi):
         filter(lambda x: x["role"] == "data", gf.iloc[0].assets.values())
     )
     assert gf.iloc[0].stac_version == expected_stac_version
-    assert gf.shape == (48, 24)
+    assert len(gf) == 48
     assert actual_columns == expected_columns
     assert gf["sar:product_type"].unique() == "SSC"
     assert len(data_assets) >= 1
