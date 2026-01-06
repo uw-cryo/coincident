@@ -29,6 +29,7 @@ dependencies = [
   "aiobotocore[boto3]>=2.26.0,<3",
   "arro3-core",
   "contextily",
+  "cql2",
   "geopandas",
   "ipykernel",
   "ipywidgets",
@@ -45,8 +46,7 @@ dependencies = [
   "sliderule",
   "stac-asset>=0.4.7,<0.5",
   "rustac",
-  "tqdm", "cql2>=0.4.2,<0.5", "mypy", "pre-commit", "pylint", "pytest", "pytest-cov>=7.0.0,<8", "folium", "mapclassify", "myst-nb", "myst-parser", "pydata-sphinx-theme", "sphinx", "sphinx-autodoc-typehints", "sphinx-copybutton", "sphinx-design",
-]
+  "tqdm"]
 
 [project.optional-dependencies]
 dev = [
