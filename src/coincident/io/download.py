@@ -32,7 +32,6 @@ from coincident.io.xarray import (
     _aoi_to_polygon_string,
     _fetch_noaa_tile_geometry,
     _filter_items_by_project,
-    _translate_gliht_id,
 )
 from coincident.search import search
 from coincident.search.neon_api import (
@@ -1274,6 +1273,28 @@ def _process_gliht_files(
             # Clean up temp file
             if temp_path and Path(temp_path).exists():
                 Path(temp_path).unlink()
+
+
+def _translate_gliht_id(
+    original_id: str, target_product: str, GLIHT_COLLECTIONS_MAP: dict[str, Any]
+) -> tuple[str, ...]:
+    """
+    Helper function for load_gliht_raster to translate IDs between datasets
+    Because most people will input the search ID for the default GLiHT collection (metadata)
+    rather than the id for what is needed (e.g. dsm vs dtm cvs chm)
+    """
+    collection_code = GLIHT_COLLECTIONS_MAP[target_product].replace("_001", "")
+
+    # Check if the target collection code is already in the original ID
+    if original_id.startswith(collection_code):
+        return (original_id,)
+
+    parts = original_id.split("_", 1)  # Split only on first underscore
+    # Return both possible formats, sometimes a tail is added sometimes not (e.g. CHM vs DSM)
+    format1 = f"{collection_code}_{parts[1]}_{target_product.upper()}"
+    format2 = f"{collection_code}_{parts[1]}"
+
+    return format1, format2
 
 
 def download_gliht_raster(

@@ -684,27 +684,6 @@ def load_noaa_dem(
     return merged_dem
 
 
-def _translate_gliht_id(
-    original_id: str, target_product: str, GLIHT_COLLECTIONS_MAP: dict[str, Any]
-) -> tuple[str, ...]:
-    """
-    Helper function for load_gliht_raster to translate IDs between datasets
-    Because most people will input the search ID for the default GLiHT collection (metadata)
-    rather than the id for what is needed (e.g. dsm vs dtm cvs chm)
-    """
-    collection_code = GLIHT_COLLECTIONS_MAP[target_product].replace("_001", "")
-
-    # Check if the target collection code is already in the original ID
-    if original_id.startswith(collection_code):
-        return (original_id,)
-
-    parts = original_id.split("_", 1)  # Split only on first underscore
-    # Return both possible formats, sometimes a tail is added sometimes not (e.g. CHM vs DSM)
-    format1 = f"{collection_code}_{parts[1]}_{target_product.upper()}"
-    format2 = f"{collection_code}_{parts[1]}"
-    return format1, format2
-
-
 def load_gliht_raster(
     aoi: gpd.GeoDataFrame,
     dataset_id: str,
@@ -720,6 +699,23 @@ def load_gliht_raster(
     For products with multiple data assets (e.g., DSM with Aspect, Slope, Rugosity),
     all assets will be loaded as separate bands in the output Dataset.
 
+    Parameters
+    ----------
+    aoi : geopandas.GeoDataFrame
+        Area of interest geometry to query against.
+    dataset_id : str
+        G-LiHT dataset identifier (e.g., 'GLMETRICS_SERC_CalTarps_31July2017_am_l0s0')
+    product : str
+        G-LiHT product to load. Must be one of:
+        'ortho', 'chm', 'dsm', 'dtm', 'hyperspectral_ancillary',
+        'radiance', 'reflectance', 'hyperspectral_vegetation', 'metrics'.
+
+    Returns
+    -------
+    xarray.Dataset
+        A Dask-backed xarray.Dataset containing the requested G-LiHT product data,
+        with bands renamed to simpler names.
+
     NOTE: many DSM products from G-LiHT do not have an elevation band provided,
     users should consider searching for CHM products for replacement
     """
@@ -732,6 +728,7 @@ def load_gliht_raster(
         "radiance": "GLRADS_001",  # Hyperspectral radiance
         "reflectance": "GLREFL_001",  # Hyperspectral surface reflectance
         "hyperspectral_vegetation": "GLHYVI_001",  # HSI-derived veg indices
+        "metrics": "GLMETRICS_001",  # Lidar-derived forest metrics
     }
     if product not in GLIHT_COLLECTIONS_MAP:
         msg_product_key = f"'{product}' is not a valid G-LiHT product key."
@@ -746,16 +743,10 @@ def load_gliht_raster(
         msg_empty_gliht = "No GLiHT raster tiles found for the given AOI and id."
         raise ValueError(msg_empty_gliht)
 
-    possible_ids = _translate_gliht_id(dataset_id, product, GLIHT_COLLECTIONS_MAP)
-    df_item = None
-    for translated_id in possible_ids:
-        matching_items = results[results.id == translated_id]
-        if not matching_items.empty:
-            df_item = matching_items.iloc[[0]]  # Keep as gdf
-            break
+    df_item = results.query("id == @dataset_id")
 
-    if df_item is None:
-        msg_no_match = f"No GLiHT item found with any of these IDs: {possible_ids}"
+    if df_item.empty:
+        msg_no_match = f"No GLiHT item found with id {dataset_id}"
         raise ValueError(msg_no_match)
 
     asset_items = df_item.assets.item()

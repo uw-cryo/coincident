@@ -128,7 +128,7 @@ def test_load_gliht_raster():
     )
     da_chm = coincident.io.xarray.load_gliht_raster(
         aoi=mini_aoi,
-        dataset_id="GLMETRICS_SERC_CalTarps_31July2017_am_l0s0",
+        dataset_id="GLCHMT_SERC_CalTarps_31July2017_am_l0s0_CHM",
         product="chm",
     )["CHM"]
 
