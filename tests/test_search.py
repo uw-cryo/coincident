@@ -51,8 +51,11 @@ def test_to_geopandas_empty_search_result():
         coincident.search.stac.to_geopandas([])
 
 
-def test_unconstrained_search_warns():
-    with pytest.warns(match="Neither `bbox` nor `intersects` provided"):
+def test_unconstrained_search_raises():
+    with pytest.raises(
+        ValueError,
+        match="You must provide `bbox`, `intersects`, or `ids` to constrain the search",
+    ):
         coincident.search.search(dataset="tdx")
 
 
@@ -253,41 +256,52 @@ def test_tdx_search(aoi):
         dataset="tdx", intersects=aoi, datetime=["2009", "2020"]
     )
     expected_columns = {
-        "assets",
-        "bbox",
-        "collection",
-        "geometry",
-        "id",
-        "links",
-        "stac_extensions",
-        "stac_version",
         "type",
-        "constellation",
+        "stac_version",
+        "stac_extensions",
+        "id",
+        "airbus:antenna_receive_configuration",
+        "airbus:elevation_beam_configuration",
+        "links",
+        "assets",
+        "collection",
         "datetime",
-        "end_datetime",
-        "missionInfo_orbitDirection",
-        "platform",
-        "sar:center_frequency",
-        "sar:frequency_band",
-        "sar:instrument_mode",
-        "sar:looks_azimuth",
-        "sar:looks_range",
-        "sar:polarizations",
-        "sar:product_type",
-        "sar:resolution_azimuth",
-        "sar:resolution_range",
         "start_datetime",
+        "end_datetime",
+        "platform",
+        "product:type",
+        "constellation",
+        "sar:bandwidth",
+        "sat:orbit_cycle",
+        "sat:orbit_state",
+        "sar:polarizations",
+        "processing:version",
+        "sar:frequency_band",
+        "sat:absolute_orbit",
+        "sat:relative_orbit",
+        "processing:datetime",
+        "processing:facility",
+        "sar:instrument_mode",
+        "sar:center_frequency",
+        "sar:resolution_range",
+        "view:incidence_angle",
+        "sar:resolution_azimuth",
+        "sar:observation_direction",
+        "airbus:product_type_detail",
+        "airbus:radiometric_correction",
+        "bbox",
+        "geometry",
         "dayofyear",
     }
     actual_columns = set(gf.columns)
     # NOTE: I think technically assets should have 'roles' not 'role' key...
     data_assets = list(
-        filter(lambda x: x["role"] == "data", gf.iloc[0].assets.values())
+        filter(lambda x: x["roles"] == "data", gf.iloc[0].assets.values())
     )
     assert gf.iloc[0].stac_version == expected_stac_version
     assert len(gf) == 48
     assert actual_columns == expected_columns
-    assert gf["sar:product_type"].unique() == "SSC"
+    assert gf["product:type"].unique() == "SSC"
     assert len(data_assets) >= 1
 
 
