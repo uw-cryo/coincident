@@ -14,7 +14,7 @@ from typing import Any
 class Dataset:
     """Essential metadata for supported datasets"""
 
-    alias: str | None = None  # nickname
+    alias: str  # nickname
     has_stac_api: bool | None = None  # whether or not its a STAC API
     collections: list[str] = field(
         default_factory=list

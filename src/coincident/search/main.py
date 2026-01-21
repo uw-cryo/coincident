@@ -156,10 +156,10 @@ def search(
     elif dataset.provider == "opentopography":
         # TODO: best way to address lpc vs dem argument in opentopo_api.search_ncalm_noaa()?
         gf = opentopo_api.search_opentopo(
+            dataset=dataset.alias,
             intersects=intersects,
             search_start=search_start,
             search_end=search_end,
-            dataset=dataset.alias,
         )
 
     # Keep track of dataset alias in geodataframe metadata

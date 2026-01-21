@@ -8,7 +8,6 @@ import json
 import logging
 import os
 import re
-import tempfile
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -27,13 +26,11 @@ from pystac import Item
 from shapely.geometry import box
 from tqdm.autonotebook import tqdm
 
-from coincident.datasets.nasa import GLiHT
 from coincident.io.xarray import (
     _aoi_to_polygon_string,
     _fetch_noaa_tile_geometry,
     _filter_items_by_project,
 )
-from coincident.search import search
 from coincident.search.neon_api import (
     _get_tile_bbox,
     query_neon_data_api,
@@ -52,6 +49,16 @@ def _set_config(
     if item.properties.get("constellation") == "maxar" and config is None:
         config = stac_asset.Config(
             http_headers={"MAXAR-API-KEY": os.environ.get("MAXAR_API_KEY")}
+        )
+    elif "nasa.gov" in item.get_self_href() and config is None:
+        exclude_keys = []
+        for key in item.assets:
+            # thumbnail & browse repeated in some cases
+            if key.startswith(("s3", "thumbnail")):
+                exclude_keys.append(key)
+        config = stac_asset.Config(
+            earthdata_token=os.environ.get("EARTHDATA_TOKEN"),
+            exclude=exclude_keys,
         )
     else:
         config = stac_asset.Config(**config)
@@ -133,7 +140,6 @@ def download_files(
     output_dir: str,
     product: str | None = "",
     chunk_size: int = 65536,  # preset chunk size (64KB)
-    earthdata_auth: bool = False,
 ) -> list[str]:
     """
     Download files from remote URLs (cloud storage, web servers, etc.)
@@ -149,31 +155,27 @@ def download_files(
         Product name used for customizing the progress description.
     chunk_size : int, optional
         The chunk size to use when streaming downloads (default is 64KB).
-    earthdata_auth : bool, optional
-        Whether to use NASA Earthdata authentication (default False).
 
     Returns
     -------
     list
         A list of local file paths to each downloaded file
     """
-    # Handle Earthdata authentication if needed
-    auth = None
-    if earthdata_auth:
-        username = os.getenv("EARTHDATA_USERNAME")
-        password = os.getenv("EARTHDATA_PASSWORD")
-        if not username or not password:
-            msg_no_ed_cres = """
-            EARTHDATA_USERNAME and EARTHDATA_PASSWORD must be set in the environment.
-            os.environ["EARTHDATA_USERNAME"] = "username"
-            os.environ["EARTHDATA_PASSWORD"] ="password"
-            """
-            raise OSError(msg_no_ed_cres)
-        auth = (username, password)
-
     outer_desc = (
         f"Downloading {product.upper()} tiles..." if product else "Downloading tiles..."
     )
+
+    # Handle bearer token if earthdata_auth is True
+    headers = {}
+    if "nasa.gov" in files[0]:
+        token = os.getenv("EARTHDATA_TOKEN")
+        if not token:
+            msg_no_token = """
+            EARTHDATA_TOKEN must be set in the environment to download NASA data.
+            os.environ["EARTHDATA_TOKEN"] = "your_token"
+            """
+            raise OSError(msg_no_token)
+        headers["Authorization"] = f"Bearer {token}"
 
     local_paths = []
     for url in tqdm(files, desc=outer_desc, position=0):
@@ -185,7 +187,7 @@ def download_files(
         if dest.exists():
             continue
 
-        resp = requests.get(url, stream=True, auth=auth, timeout=60)
+        resp = requests.get(url, stream=True, headers=headers, timeout=60)
         resp.raise_for_status()
         total = int(resp.headers.get("content-length", 0))
         inner = tqdm(
@@ -1196,259 +1198,3 @@ def fetch_lpc_tiles(
 
     msg_invalid_search = "Invalid search, please double check your parameters and function documentation: 'coincident.io.download.fetch_lpc_tiles?'"
     raise ValueError(msg_invalid_search)
-
-
-# TODO: add similar logic to the download_urls func instead so every download func is generalizeable?
-def _process_gliht_files(
-    urls: list[str],
-    output_dir: str,
-    products: list[str],
-    aoi: gpd.GeoDataFrame,
-    clip: bool,
-    res: int,
-) -> None:
-    """Helper function to downloads G-LiHT files with optional clipping and coarsening."""
-    # If no processing needed, just download normally
-    if not clip and res == 1:
-        download_files(
-            urls, output_dir, f"G-LiHT {', '.join(products)}", earthdata_auth=True
-        )
-        return
-
-    # Get Earthdata credentials
-    username = os.getenv("EARTHDATA_USERNAME")
-    password = os.getenv("EARTHDATA_PASSWORD")
-    if not username or not password:
-        msg_no_ed_cres = """
-    EARTHDATA_USERNAME and EARTHDATA_PASSWORD must be set in the environment.
-    os.environ["EARTHDATA_USERNAME"] = "username"
-    os.environ["EARTHDATA_PASSWORD"] ="password"
-        """
-        raise OSError(msg_no_ed_cres)
-
-    for url in tqdm(urls, desc=f"Processing G-LiHT {', '.join(products)} tiles..."):
-        filename = Path(url).name
-        prefix = []
-        if clip:
-            prefix.append("clipped")
-        if res > 1:
-            prefix.append(f"coarsened_{res}x")
-        output_filename = f"{'_'.join(prefix) + '_' if prefix else ''}{filename}"
-        output_file = Path(output_dir) / output_filename
-        if output_file.exists():
-            continue
-
-        temp_path = None
-        try:
-            # Download to temporary file first
-            with tempfile.NamedTemporaryFile(suffix=".tif", delete=False) as tmp_file:
-                temp_path = tmp_file.name
-
-            resp = requests.get(url, stream=True, auth=(username, password), timeout=60)
-            resp.raise_for_status()
-
-            with Path(temp_path).open("wb") as f:
-                for chunk in resp.iter_content(chunk_size=65536):
-                    if chunk:
-                        f.write(chunk)
-
-            # Process the local file
-            data = rxr.open_rasterio(temp_path, masked=True, chunks="auto")
-            # Clip to AOI geometry if requested
-            if clip:
-                aoi_clipped = (
-                    aoi.to_crs(data.rio.crs) if aoi.crs != data.rio.crs else aoi
-                )
-                data = data.rio.clip(aoi_clipped.geometry, data.rio.crs, drop=True)
-            # Optionally coarsen the data
-            if res > 1:
-                data = data.coarsen(x=res, y=res, boundary="trim").mean()
-            data.rio.to_raster(output_file)
-
-        except Exception as error:
-            msg = f"Unable to process tile from {url}: {error}"
-            logger.error(msg)
-            raise RuntimeError(msg) from error
-        finally:
-            # Clean up temp file
-            if temp_path and Path(temp_path).exists():
-                Path(temp_path).unlink()
-
-
-def _translate_gliht_id(
-    original_id: str, target_product: str, GLIHT_COLLECTIONS_MAP: dict[str, Any]
-) -> tuple[str, ...]:
-    """
-    Helper function for load_gliht_raster to translate IDs between datasets
-    Because most people will input the search ID for the default GLiHT collection (metadata)
-    rather than the id for what is needed (e.g. dsm vs dtm cvs chm)
-    """
-    collection_code = GLIHT_COLLECTIONS_MAP[target_product].replace("_001", "")
-
-    # Check if the target collection code is already in the original ID
-    if original_id.startswith(collection_code):
-        return (original_id,)
-
-    parts = original_id.split("_", 1)  # Split only on first underscore
-    # Return both possible formats, sometimes a tail is added sometimes not (e.g. CHM vs DSM)
-    format1 = f"{collection_code}_{parts[1]}_{target_product.upper()}"
-    format2 = f"{collection_code}_{parts[1]}"
-
-    return format1, format2
-
-
-def download_gliht_raster(
-    aoi: gpd.GeoDataFrame,
-    dataset_id: str,
-    products: list[str] | None = None,
-    output_dir: str = "/tmp",
-    save_parquet: bool = True,
-    clip: bool = True,
-    res: int = 1,
-) -> None:
-    """
-    Download G-LiHT raster products (e.g., CHM, DTM, DSM) for a given AOI and date.
-    This function queries NASA's STAC endpoint for the appropriate G-LiHT product(s),
-    downloads the raster COG files via Earthdata authentication, and saves them
-    to the specified output directory.
-
-    Supported products:
-        - 'ortho': Orthorectified aerial imagery
-        - 'chm': Canopy height model
-        - 'dsm': Digital surface model
-        - 'dtm': Digital terrain model
-        - 'hyperspectral_ancillary': Ancillary HSI data
-        - 'radiance': Hyperspectral aradiance
-        - 'reflectance': Hyperspectral surface reflectance
-        - 'hyperspectral_vegetation': HSI-derived veg indices
-
-    NOTE: Not all G-LiHT flights will contain every single product listed
-    NOTE: Lidar point cloud data is not supported due to coincident's lack of PDAL support
-
-    Parameters
-    ----------
-    aoi : gpd.GeoDataFrame
-        Area of interest to intersect with G-LiHT tiles.
-    datetime_str : str
-        Desired acquisition date (format: YYYY or YYYY-MM-DD).
-        Provided in the 'datetime' field returned by coincident.search.search
-    product_key : str | list[str]
-        Key or list of keys to select products from GLIHT_COLLECTIONS_MAP.
-    output_dir : str, optional
-        Directory path where tiles will be downloaded (default "/tmp").
-    save_parquet : bool, optional
-        Whether to save metadata as geoparquet (default True).
-    clip: bool
-        Whether to clip result to the AOI geometry.
-    res: int
-        Optional coarsening factor for x/y resolution.
-
-    Returns
-    -------
-    None
-        Files are downloaded to the specified output path.
-    """
-    GLIHT_COLLECTIONS_MAP = {
-        "ortho": "GLORTHO_001",  # Orthorectified aerial imagery
-        "chm": "GLCHMT_001",  # Tiled version of CHM
-        "dsm": "GLDSMT_001",  # Digital surface model (tiled)
-        "dtm": "GLDTMT_001",  # Tiled version of DTM
-        "hyperspectral_ancillary": "GLHYANC_001",  # Ancillary HSI data
-        "radiance": "GLRADS_001",  # Hyperspectral aradiance
-        "reflectance": "GLREFL_001",  # Hyperspectral surface reflectance
-        "hyperspectral_vegetation": "GLHYVI_001",  # HSI-derived veg indices
-    }
-    if products is None:
-        products = list(GLIHT_COLLECTIONS_MAP.keys())  # Use all available products
-        log_all_keys = "No G-LiHT products specified... Downloading all products in 'supported products'"
-        logger.warning(log_all_keys)
-    # Validate each product in the list
-    for product in products:
-        if product not in GLIHT_COLLECTIONS_MAP:
-            msg_product_key = f"'{product}' is not a valid G-LiHT product key."
-            raise ValueError(msg_product_key)
-
-    # Ensure output directory exists
-    Path(output_dir).mkdir(parents=True, exist_ok=True)
-
-    # Process each valid product key
-    all_download_urls = []
-    all_metadata_items = []
-
-    for key in products:
-        collection_id = GLIHT_COLLECTIONS_MAP[key]
-        gliht_dataset = GLiHT(collections=[collection_id])
-
-        # Search for intersecting items
-        results = search(dataset=gliht_dataset, intersects=aoi)
-        possible_ids = _translate_gliht_id(dataset_id, key, GLIHT_COLLECTIONS_MAP)
-
-        # Try to find matching item with any of the possible IDs
-        matching_results = None
-        for translated_id in possible_ids:
-            temp_results = results[results.id == translated_id]
-            if not temp_results.empty:
-                matching_results = temp_results
-                break
-
-        if matching_results is None or matching_results.empty:
-            log_empty_results = "No G-LiHT raster tiles found for product '%s' with the given AOI and any of these IDs: %s. Skipping..."
-            logger.warning(
-                log_empty_results,
-                key,
-                possible_ids,
-            )
-            continue
-
-        # Use the matching results
-        results = matching_results
-
-        # Extract download URLs and metadata for this product
-        for _, item in results.iterrows():
-            asset_items = item.assets
-            # Find the COG (TIF) asset
-            cog_key = next(
-                k for k, v in asset_items.items() if v["href"].endswith(".tif")
-            )
-            cog_href = asset_items[cog_key]["href"]
-            all_download_urls.append(cog_href)
-
-            # Collect metadata for parquet file
-            all_metadata_items.append(
-                {
-                    "id": item.id,
-                    "collection": item.collection,
-                    "datetime": item.datetime,
-                    "product_key": key,
-                    "asset_key": cog_key,
-                    "download_url": cog_href,
-                    "bbox": item.bbox,
-                }
-            )
-
-    # Check if we found any tiles to download
-    if not all_download_urls:
-        msg_empty_all = (
-            "No G-LiHT raster tiles found for any of the valid product keys."
-        )
-        raise ValueError(msg_empty_all)
-
-    # Optionally save metadata as geoparquet
-    if save_parquet:
-        geometries = [
-            box(
-                item["bbox"]["xmin"],
-                item["bbox"]["ymin"],
-                item["bbox"]["xmax"],
-                item["bbox"]["ymax"],
-            )
-            for item in all_metadata_items
-        ]
-
-        gdf = gpd.GeoDataFrame(all_metadata_items, geometry=geometries, crs="EPSG:4326")
-        product_keys_str = "_".join(products)
-        parquet_path = Path(output_dir) / f"stac_gliht_{product_keys_str}.parquet"
-        gdf.to_parquet(parquet_path)
-
-    # Process files with optional clipping and coarsening
-    _process_gliht_files(all_download_urls, output_dir, products, aoi, clip, res)

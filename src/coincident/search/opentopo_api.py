@@ -109,11 +109,11 @@ def _find_noaa_dem_files(
 
 
 def search_ncalm_noaa(
+    dataset: str,
     aoi: gpd.GeoDataFrame | gpd.GeoSeries,
     search_start: Timestamp,
     search_end: Timestamp,
     product: str = "lpc",
-    dataset: str | None = None,
 ) -> gpd.GeoDataFrame:
     """
     Perform a search for NCALM LiDAR or NOAA Coastal LiDAR footprints and metadata via
@@ -121,6 +121,8 @@ def search_ncalm_noaa(
 
     Parameters
     ----------
+    dataset : str
+        The dataset type (either "noaa" or "ncalm").
     aoi : gpd.GeoDataFrame | gpd.GeoSeries
         A GeoDataFrame or GeoSeries containing a geometry to restrict the search area, by default does a global search.
     search_start : Timestamp, optional
@@ -130,8 +132,6 @@ def search_ncalm_noaa(
     product : str
         The product type, must be either "lpc" for LiDAR Point Cloud or "dem" for Digital Elevation Model.
         Defaults to "lpc".
-    dataset : str
-        The dataset type (either "noaa" or "ncalm").
 
     Returns
     -------
@@ -252,7 +252,7 @@ def search_ncalm_noaa(
 
 # TODO: add meaningful error messages when search fails
 def search_opentopo(
-    dataset: str | None,
+    dataset: str,
     intersects: gpd.GeoDataFrame | gpd.GeoSeries,
     search_start: Timestamp | None = None,
     search_end: Timestamp | None = None,
@@ -285,6 +285,13 @@ def search_opentopo(
         search_end = pd.Timestamp.today()  # Default to today's date
 
     # search using the OpenTopography API
-    return search_ncalm_noaa(
-        intersects, search_start=search_start, search_end=search_end, dataset=dataset
+    gf = search_ncalm_noaa(
+        dataset=dataset,
+        aoi=intersects,
+        search_start=search_start,
+        search_end=search_end,
     )
+
+    gf["collection"] = dataset.upper()
+
+    return gf

@@ -24,8 +24,6 @@ from botocore.client import Config
 from shapely.geometry import MultiPolygon, Polygon, box
 
 import coincident.io.gdal
-from coincident.datasets.nasa import GLiHT
-from coincident.search import search
 from coincident.search.neon_api import (
     _get_tile_bbox,
     query_neon_data_api,
@@ -684,72 +682,13 @@ def load_noaa_dem(
     return merged_dem
 
 
-def load_gliht_raster(
-    aoi: gpd.GeoDataFrame,
-    dataset_id: str,
-    product: str,
-) -> xr.Dataset:
-    """
-    Load a G-LiHT raster product (e.g., CHM, DTM, DSM) for a given AOI and date.
-
-    This function queries NASA's STAC endpoint for the appropriate G-LiHT product,
-    downloads the raster COG(s) via Earthdata authentication, and returns a
-    Dask-backed, clipped xarray.Dataset with renamed bands.
-
-    For products with multiple data assets (e.g., DSM with Aspect, Slope, Rugosity),
-    all assets will be loaded as separate bands in the output Dataset.
-
-    Parameters
-    ----------
-    aoi : geopandas.GeoDataFrame
-        Area of interest geometry to query against.
-    dataset_id : str
-        G-LiHT dataset identifier (e.g., 'GLMETRICS_SERC_CalTarps_31July2017_am_l0s0')
-    product : str
-        G-LiHT product to load. Must be one of:
-        'ortho', 'chm', 'dsm', 'dtm', 'hyperspectral_ancillary',
-        'radiance', 'reflectance', 'hyperspectral_vegetation', 'metrics'.
-
-    Returns
-    -------
-    xarray.Dataset
-        A Dask-backed xarray.Dataset containing the requested G-LiHT product data,
-        with bands renamed to simpler names.
-
-    NOTE: many DSM products from G-LiHT do not have an elevation band provided,
-    users should consider searching for CHM products for replacement
-    """
-    GLIHT_COLLECTIONS_MAP = {
-        "ortho": "GLORTHO_001",  # Orthorectified aerial imagery
-        "chm": "GLCHMT_001",  # Canopy height model
-        "dsm": "GLDSMT_001",  # Digital surface model
-        "dtm": "GLDTMT_001",  # Digital terrain model
-        "hyperspectral_ancillary": "GLHYANC_001",  # Ancillary HSI data
-        "radiance": "GLRADS_001",  # Hyperspectral radiance
-        "reflectance": "GLREFL_001",  # Hyperspectral surface reflectance
-        "hyperspectral_vegetation": "GLHYVI_001",  # HSI-derived veg indices
-        "metrics": "GLMETRICS_001",  # Lidar-derived forest metrics
-    }
-    if product not in GLIHT_COLLECTIONS_MAP:
-        msg_product_key = f"'{product}' is not a valid G-LiHT product key."
-        raise ValueError(msg_product_key)
-
-    collection_id = GLIHT_COLLECTIONS_MAP[product]
-    gliht_dataset = GLiHT(collections=[collection_id])
-
-    # Search for intersecting items and find the specific one by its ID
-    results = search(dataset=gliht_dataset, intersects=aoi)
-    if results.empty:
-        msg_empty_gliht = "No GLiHT raster tiles found for the given AOI and id."
-        raise ValueError(msg_empty_gliht)
-
-    df_item = results.query("id == @dataset_id")
-
-    if df_item.empty:
-        msg_no_match = f"No GLiHT item found with id {dataset_id}"
-        raise ValueError(msg_no_match)
-
-    asset_items = df_item.assets.item()
+def load_gliht(
+    item: gpd.GeoSeries,
+    aoi: gpd.GeoDataFrame | None = None,
+    mask: bool = False,
+    **kwargs: Any,
+) -> xr.DataArray:
+    asset_items = item.assets
 
     # Find all data assets that are GeoTIFFs
     data_assets = {
@@ -761,7 +700,7 @@ def load_gliht_raster(
         and "data" in asset.get("roles", [])
     }
     if not data_assets:
-        msg_no_data_assets = f"No .tif data assets found for item {dataset_id}"
+        msg_no_data_assets = f"No .tif data assets found for item {item.id}"
         raise ValueError(msg_no_data_assets)
 
     asset_keys_to_load = list(data_assets.keys())
@@ -770,24 +709,22 @@ def load_gliht_raster(
     with rasterio.Env(
         GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
         CPL_VSIL_CURL_USE_HEAD="NO",
+        CPL_VSIL_CURL_USE_S3_REDIRECT="NO",
         GDAL_HTTP_AUTH="BEARER",
         GDAL_HTTP_BEARER=os.environ.get("EARTHDATA_TOKEN", ""),
         GDAL_HTTP_COOKIEFILE="/tmp/cookies.txt",
         GDAL_HTTP_COOKIEJAR="/tmp/cookies.txt",
     ):
         # Unfortunately NASA STAC doesn't have proj extension, so we have to open one...
-        template = rioxarray.open_rasterio(
-            data_assets[asset_keys_to_load[0]]["href"], masked=True
-        ).squeeze(drop=True)
-
-        # NOTE: may want to allow user to specify chunks or allow for **kwargs to odc.stac
-        ds = to_dataset(
-            df_item,
-            bands=asset_keys_to_load,
-            mask=True,
-            like=template,
+        da = rioxarray.open_rasterio(
+            data_assets[asset_keys_to_load[0]]["href"],
+            masked=mask,
+            **kwargs,
         )
+        da = da.rename({"band": "time"})
+        da["time"] = item.datetime
 
-    # Create a map to rename the long band names to simpler, more readable names
-    rename_map = {band_name: band_name.split("_")[-1] for band_name in ds.data_vars}
-    return ds.rename(rename_map)
+        if aoi is not None:
+            da = da.rio.clip_box(*aoi.total_bounds, crs=aoi.crs)
+
+        return da

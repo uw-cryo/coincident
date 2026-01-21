@@ -259,12 +259,14 @@ def search_bboxes(
         gf_neon = gf_neon.drop(columns=["index_right"], errors="ignore")
 
     # add days in -dd to the start_datetime and end_datetime which are in yyyy-mm
-    gf_neon["start_datetime"] = gf_neon["start_datetime"] + "-01"
-    gf_neon["end_datetime"] = (
+    gf_neon["start_datetime"] = pd.to_datetime(gf_neon["start_datetime"] + "-01")
+    gf_neon["end_datetime"] = pd.to_datetime(
         gf_neon["end_datetime"]
         .astype(str)
         .apply(lambda m: f"{m}-{pd.Period(m, freq='M').days_in_month:02d}")
     )
+
+    gf_neon["collection"] = "NEON"
 
     return gf_neon
 

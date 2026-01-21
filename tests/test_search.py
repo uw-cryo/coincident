@@ -236,15 +236,19 @@ def test_gliht_search():
     )
     gf = coincident.search.search(dataset="gliht", intersects=aoi, datetime=["2012"])
     actual_columns = set(gf.columns)
-    data_assets = list(
-        filter(lambda x: x["roles"] == "data", gf.iloc[0].assets.values())
-    )
+    actual_collections = set(gf.collection.unique())
+
     assert gf.iloc[0].stac_version == expected_stac_version
-    assert gf.shape == (10, len(expected_nasa_columns))
+    assert gf.shape == (40, len(expected_nasa_columns))
+    assert actual_collections == {
+        "GLCHMT_001",
+        "GLDSMT_001",
+        "GLDTMT_001",
+        "GLLIDARPC_001",
+    }
     assert actual_columns == expected_nasa_columns
     assert "roles" in gf.iloc[0].assets["browse"]
-    assert len(data_assets) == 6
-    assert gf.iloc[0].collection.startswith("GLDSMT_001")
+    assert len(gf.iloc[0].assets) == 6
     assert isinstance(gf.start_datetime.iloc[0], gpd.pd.Timestamp)
 
 
@@ -471,8 +475,9 @@ def test_noaa_search(bathy_aoi):
         "start_datetime",
         "end_datetime",
         "geometry",
+        "collection",
     }
-    assert gf.shape == (2, 6)
+    assert gf.shape == (2, 7)
     assert set(gf.columns) == expected_columns
     assert all(isinstance(geom, Polygon) for geom in gf["geometry"])
 
@@ -489,8 +494,9 @@ def test_ncalm_search(large_aoi):
         "start_datetime",
         "end_datetime",
         "geometry",
+        "collection",
     }
-    assert gf.shape == (6, 6)
+    assert gf.shape == (6, 7)
     assert set(gf.columns) == expected_columns
     assert all(isinstance(geom, Polygon) for geom in gf["geometry"])
 
@@ -515,7 +521,8 @@ def test_neon_search():
         "end_datetime",
         "product_url",
         "geometry",
+        "collection",
     }
-    assert gf.shape == (2, 6)
+    assert gf.shape == (2, 7)
     assert set(gf.columns) == expected_columns
     assert all(isinstance(geom, Polygon) for geom in gf["geometry"])
