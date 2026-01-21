@@ -109,6 +109,7 @@ class TestSlideRule:
         assert data.iloc[0].name.toordinal() == 738304
         assert data.shape == (413, 21)
 
+    @pytest.mark.xfail(reason="https://github.com/uw-cryo/coincident/issues/126")
     def test_process_atl06sr(self, tinyaoi):
         gf_is2 = coincident.search.search(
             dataset="icesat-2", intersects=tinyaoi, datetime="2022"
