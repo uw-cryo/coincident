@@ -26,12 +26,9 @@
       "description": "Maxar Platform API Key",
       "documentationUrl": "https://developers.maxar.com/docs/authentication/guides/api-key"
     },
-    "EARTHDATA_USERNAME": {
-      "description": "NASA Earthdata Username",
-      "documentationUrl": "https://earthaccess.readthedocs.io/en/latest/howto/authenticate/#authenticate-with-earthdata-login"
-    },
-    "EARTHDATA_PASSWORD": {
-      "description": "NASA Earthdata Password"
+    "EARTHDATA_TOKEN": {
+      "description": "NASA Earthdata Token",
+      "documentationUrl": "https://urs.earthdata.nasa.gov/documentation/for_users/user_token"
     }
   }
 }

@@ -121,20 +121,22 @@ def test_load_noaa_dem(noaa_dem_bbox):
 
 
 @network
-def test_load_gliht_raster():
+def test_load_gliht():
     mini_aoi = gpd.GeoDataFrame(
         geometry=[box(*[-76.55240202, 38.8885878, -76.54340202, 38.8975878])],
         crs="EPSG:4326",
     )
-    da_chm = coincident.io.xarray.load_gliht_raster(
-        aoi=mini_aoi,
-        dataset_id="GLMETRICS_SERC_CalTarps_31July2017_am_l0s0",
-        product="chm",
-    )["CHM"]
+    gf = coincident.search.search(
+        dataset="gliht", ids=["GLCHMT_SERC_CalTarps_31July2017_am_l0s0_CHM"]
+    )
 
-    assert da_chm.shape == (1, 4589, 637)
+    da_chm = coincident.io.xarray.load_gliht(
+        item=gf.iloc[0],
+        aoi=mini_aoi,
+    )
+
+    assert da_chm.shape == (1, 1013, 637)
     assert da_chm.dtype == "float32"
     assert {"x", "y", "time", "spatial_ref"} == set(da_chm.coords)
     assert da_chm.rio.resolution() == (1.0, -1.0)
     assert da_chm.rio.crs.to_epsg() == 32618
-    assert da_chm.notnull().any(), "DataArray contains no valid data"

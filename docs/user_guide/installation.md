@@ -74,7 +74,7 @@ pip install coincident
 Or, if possible, install into a clean conda environment:
 
 ```bash
-mamba create -n coincident python=3.12 pip
+mamba create -n coincident python pip
 conda activate coincident
 pip install coincident
 ```
@@ -86,13 +86,12 @@ authentication to _download_ data (NASA). `coincident` assumes you have the
 following Environment Variables defined:
 
 ```bash
-export EARTHDATA_USERNAME=aaaaa
-export EARTHDATA_PASSWORD=bbbbb
 export MAXAR_API_KEY=ccccc
+export EARTHDATA_TOKEN=aaaaa
 ```
 
 Sign up for credentials at the following webpages:
 
-- <https://urs.earthdata.nasa.gov>
+- <https://urs.earthdata.nasa.gov/documentation/for_users/user_token>
 - <https://developers.maxar.com/docs/authentication/guides/api-key>
 - <https://planetarycomputer.developer.azure-api.net>

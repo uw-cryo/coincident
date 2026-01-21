@@ -65,7 +65,7 @@ class TDX(Dataset):
                         "op": "in",
                         "args": [{"property": "platform"}, ["TDX-1", "TSX-1"]],
                     },
-                    {"op": "=", "args": [{"property": "sar:product_type"}, "SSC"]},
+                    {"op": "=", "args": [{"property": "product:type"}, "SSC"]},
                 ],
             },
         }

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import warnings
 from typing import Any
 
 import geopandas as gpd
@@ -92,10 +91,8 @@ def search(
 
     else:
         if "bbox" not in kwargs and "ids" not in kwargs:
-            msg_unconstrained = (
-                "Neither `bbox` nor `intersects` provided... search will be global"
-            )
-            warnings.warn(msg_unconstrained, stacklevel=2)
+            msg_unconstrained = "You must provide `bbox`, `intersects`, or `ids` to constrain the search"
+            raise ValueError(msg_unconstrained)
         aoi = None
 
     # STAC API Searches
@@ -125,23 +122,6 @@ def search(
             else:
                 client = stac.configure_stac_client(dataset.search)  # type: ignore[arg-type]
             item_collection = stac.search(client, **stac_api_kwargs)
-
-            # Per-dataset munging
-            # https://github.com/uw-cryo/coincident/issues/8#issuecomment-2449810481
-            if dataset.alias == "tdx":
-                # Drop columns with messy schema
-                dropcols = [
-                    "sceneInfo",
-                    "missionInfo",
-                    "previewInfo",
-                    "imageDataInfo",
-                    "generationInfo",
-                    "acquisitionInfo",
-                    "productVariantInfo",
-                ]
-                for item in item_collection:
-                    for col in dropcols:
-                        item.properties.pop(col)
 
             gf = stac.to_geopandas(item_collection)
 
@@ -176,10 +156,10 @@ def search(
     elif dataset.provider == "opentopography":
         # TODO: best way to address lpc vs dem argument in opentopo_api.search_ncalm_noaa()?
         gf = opentopo_api.search_opentopo(
+            dataset=dataset.alias,
             intersects=intersects,
             search_start=search_start,
             search_end=search_end,
-            dataset=dataset.alias,
         )
 
     # Keep track of dataset alias in geodataframe metadata

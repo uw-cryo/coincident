@@ -54,35 +54,29 @@ class GEDI(Dataset):
 @dataclass
 class GLiHT(Dataset):
     """
-    Essential metadata for G-LiHT aerial lidar
-    NOTE: here, we search only the ''GLDSMT_001' collection for tiled DSMs, but there are also product-specific:
-    'GLORTHO_001'
-    'GLCHMK_001'
-    'GLCHMT_001'
-    'GLDSMT_001'
-    'GLDTMK_001'
-    'GLDTMT_001'
-    'GLHYANC_001'
-    'GLRADS_001'
-    'GLREFL_001'
-    'GLHYVI_001'
-    'GLLIDARPC_001'
-    'GLMETRICS_001'
-    'GLTRAJECTORY_001'
-    'GLanCE30_001'
-    """
+    Essential metadata for G-LiHT LiDAR products (not hyperspectral or thermal products)
 
-    # import pystac_client
-    # stac = pystac_client.Client.open('https://cmr.earthdata.nasa.gov/stac/LPCLOUD')
-    # cols = list(stac.get_all_collections())
-    # [c.id for c in cols if c.id.startswith('GL')]
+    'GLORTHO_001' # orthorectified high-resolution aerial photography
+    'GLCHMT_001' # maximum canopy height and canopy variability information
+    'GLDSMT_001' # Digital Surface Model, Mean, Aspect, Rugosity, and Slope
+    'GLDTMT_001' # bare earth elevation, aspect and slope on the EGM96 Geopotential Model
+    'GLLIDARPC_001' # LiDAR Point Cloud data product (LAS format)
+    """
 
     has_stac_api: bool = True
     search: str = "https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
     start: str = "2011-06-30"
     type: str = "lidar"
     alias: str = "gliht"
-    collections: list[str] = field(default_factory=lambda: ["GLDSMT_001"])
+    collections: list[str] = field(
+        default_factory=lambda: [
+            "GLORTHO_001",
+            "GLCHMT_001",
+            "GLDSMT_001",
+            "GLDTMT_001",
+            "GLLIDARPC_001",
+        ]
+    )
     provider: str = "nasa"
 
 
