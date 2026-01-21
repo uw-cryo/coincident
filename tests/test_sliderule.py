@@ -124,6 +124,7 @@ class TestSlideRule:
         assert data.iloc[0].name.toordinal() == 738304
         assert int(data.iloc[0].h_mean) == 3178
 
+    @pytest.mark.xfail(reason="https://github.com/uw-cryo/coincident/issues/126")
     @pytest.mark.filterwarnings(
         "ignore:Geometry is in a geographic CRS:UserWarning:geopandas"
     )
