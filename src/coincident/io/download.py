@@ -115,7 +115,7 @@ async def download_item(
     path : str, optional
         The local directory path where the item will be downloaded. Default is "/tmp".
     config : dict, optional
-        dictionary of options for :doc:`stac_asset.Config <stac_asset:stac_asset.Config>`
+        dictionary of options for :class:`stac-asset:stac_asset.Config`
 
     Returns
     -------
