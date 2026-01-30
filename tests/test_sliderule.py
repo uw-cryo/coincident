@@ -127,7 +127,7 @@ class TestSlideRule:
     @pytest.mark.filterwarnings(
         "ignore:Geometry is in a geographic CRS:UserWarning:geopandas"
     )
-    @pytest.mark.xfail(reason="USGS TNM is often down")
+    @pytest.mark.xfail(reason="USGS TNM is often down", strict=False)
     def test_sample_3dep(self):
         gf = gpd.GeoDataFrame(
             geometry=gpd.points_from_xy(

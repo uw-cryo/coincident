@@ -34,7 +34,7 @@ def test_download_maxar_browse():
 
 
 @network
-@pytest.mark.xfail(reason="USGS TNM is often down")
+@pytest.mark.xfail(reason="USGS TNM is often down", strict=False)
 def test_3dep_tile_gdf(usgs_neon_dem_bbox):
     gf_usgs_lpc_tiles = coincident.io.download._fetch_usgs_lpc_tiles(
         aoi=usgs_neon_dem_bbox, project="CO_CentralEasternPlains_2020_D20"

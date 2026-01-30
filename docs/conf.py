@@ -1,6 +1,12 @@
 from __future__ import annotations
 
 import importlib.metadata
+import warnings
+
+from sphinx.deprecation import RemovedInSphinx10Warning
+
+# Ignore specific RemovedInSphinx warnings
+warnings.filterwarnings("ignore", category=RemovedInSphinx10Warning)
 
 project = "coincident"
 copyright = "2026, UW TACO Lab"
@@ -188,4 +194,5 @@ nb_execution_mode = "auto"  # off, on
 nb_execution_show_tb = True
 nb_execution_timeout = 90
 nb_execution_allow_errors = True
-# nb_execution_excludepatterns = ["elevation_plotting.ipynb"]
+# NOTE: skip execution of specific notebooks that require large downloads or long processing times
+nb_execution_excludepatterns = ["noaa-coastal-lidar.ipynb"]
