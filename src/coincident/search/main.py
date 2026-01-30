@@ -28,19 +28,19 @@ def search(
 
     Parameters
     ----------
-    dataset : str or Dataset
+    dataset
         The dataset to search. Can be a string alias or a Dataset object.
-    intersects : gpd.GeoDataFrame
-        A GeoDataFrame containing a single row, or GeoSeries containing a geometry to restrict the search area.
-    datetime : str or None, optional
+    intersects
+        A GeoDataFrame or GeoSeries containing a geometry to restrict the search area.
+    datetime
         The datetime range for the search in ISO 8601 format. If None, no datetime filter is applied.
-    **kwargs : Any
+    **kwargs
         Additional keyword arguments to pass to the search functions.
-        see https://pystac-client.readthedocs.io/en/latest/api.html#item-search
+        For STAC searches, common options include ``bbox``, ``ids``
+        For details, see :class:`pystac_client.ItemSearch`.
 
     Returns
     -------
-    gpd.GeoDataFrame
         A GeoDataFrame containing the search results.
 
     Raises
@@ -179,9 +179,9 @@ def _validate_temporal_bounds(
 
     Parameters
     ----------
-    dataset : _Dataset
+    dataset
         The dataset object containing start and end attributes.
-    datetime : str, list, or None, optional
+    datetime
         The datetime range to validate against the dataset's temporal bounds.
         It can be a single string, a list of strings, or None. The datetime
         range should be in a format supported by pystac_client.
@@ -216,12 +216,12 @@ def _validate_spatial_bounds(
 ) -> None:
     """
     Validate that the specified area of interest (AOI) is type GeoDataFrame or GeoSeries
+
     Parameters
     ----------
-    dataset : _Dataset
-        The dataset to validate.
-    intersects : gpd.GeoSeries
+    intersects
         A GeoSeries containing the area of interest (AOI) geometry.
+
     Raises
     ------
     ValueError
@@ -245,27 +245,23 @@ def cascading_search(
     min_overlap_area: float = 20,
 ) -> list[gpd.GeoDataFrame]:
     """
-    Perform an cascading search to find overlapping datasets acquired within specific time ranges.
+    Perform a "cascading search" to find overlapping datasets acquired within specific time ranges.
 
-    Secondary datasets are searched based only on spatial overlap areas with previous datasets. In other words, the overlapping area is progressively reduced.
-
-    Temporal buffer is applied as either (datetime-buffer <= acquisition <= datetime+buffer)
-     or (start_datetime-buffer <= acquisition <= end_datetime+buffer)
+    Secondary datasets are searched based only on spatial overlap areas with previous datasets. In other words, the overlapping area is progressively reduced. Temporal buffer is applied as either (datetime-buffer <= acquisition <= datetime+buffer) or (start_datetime-buffer <= acquisition <= end_datetime+buffer)
 
     Parameters
     ----------
-    primary_dataset : gpd.GeoDataFrame
+    primary_dataset
         The primary dataset having 'datetime' or 'start_dateteime' and 'end_datetime' columns.
 
-    secondary_datasets : list of tuple, optional
+    secondary_datasets
         Each tuple contains the name of the secondary dataset and temporal buffer in days.
 
-    min_overlap_area : int, optional
-        The minimum overlap area in km^2. Default is 20.
+    min_overlap_area
+        The minimum overlap area in km².
 
     Returns
     -------
-    list of gpd.GeoDataFrame
         A list of GeoDataFrames containing the search results for each secondary dataset.
     """
     # Do searches on simple geometry, but intersect results with original geometry

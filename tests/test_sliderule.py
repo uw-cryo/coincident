@@ -124,10 +124,10 @@ class TestSlideRule:
         assert data.iloc[0].name.toordinal() == 738304
         assert int(data.iloc[0].h_mean) == 3178
 
-    @pytest.mark.xfail(reason="https://github.com/uw-cryo/coincident/issues/126")
     @pytest.mark.filterwarnings(
         "ignore:Geometry is in a geographic CRS:UserWarning:geopandas"
     )
+    @pytest.mark.xfail(reason="USGS TNM is often down", strict=False)
     def test_sample_3dep(self):
         gf = gpd.GeoDataFrame(
             geometry=gpd.points_from_xy(

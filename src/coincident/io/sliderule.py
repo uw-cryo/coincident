@@ -89,20 +89,19 @@ def subset_gedi02a(
 
     Parameters
     ----------
-    gf : gpd.GeoDataFrame
+    gf
         A GeoDataFrame of results from coincident.search.search(dataset='gedi')
-    aoi : gpd.GeoDataFrame, optional
+    aoi
         A GeoDataFrame with a POLYGON to subset The *envelope* of geometries is used to search.
-    include_worldcover : bool, optional
+    include_worldcover
         Whether to include WorldCover data in the processing. Default is False.
-    include_3dep : bool, optional
+    include_3dep
         Whether to include 3DEP data in the processing. Default is False.
-    sliderule_params : dict[Any], optional
+    sliderule_params
         A dictionary of additional parameters to be passed to SlideRule `gedi.gedi02ap`.
 
     Returns
     -------
-    gpd.GeoDataFrame
         A GeoDataFrame containing the subsetted GEDI L2A data.
 
     Notes
@@ -156,22 +155,21 @@ def subset_atl06(
 
     Parameters
     ----------
-    gf : gpd.GeoDataFrame
+    gf
         GeoDataFrame containing the input data.
-    aoi : gpd.GeoDataFrame, optional
+    aoi
         A GeoDataFrame with a POLYGON to subset The *envelope* of geometries is used to search.
-    dropna : bool, optional
-        Whether to drop rows with NaN values in the 'h_li' column, by default True.
-    include_worldcover : bool, optional
-        Whether to include WorldCover data in the processing. Default is False.
-    include_3dep : bool, optional
-        Whether to include 3DEP data in the processing. Default is False.
-    sliderule_params : dict[str, Any], optional
-        Additional parameters to pass to the SlideRule icesat2.atl06sp(), by default {}.
+    dropna
+        Whether to drop rows with NaN values in the 'h_li' column.
+    include_worldcover
+        Whether to include WorldCover data in the processing.
+    include_3dep
+        Whether to include 3DEP data in the processing.
+    sliderule_params
+        Additional parameters to pass to the SlideRule icesat2.atl06sp().
 
     Returns
     -------
-    gpd.GeoDataFrame
         GeoDataFrame with ATL06 standard product measurements.
     """
     params = _gdf_to_sliderule_params(gf)
@@ -231,22 +229,21 @@ def process_atl06sr(
 
     Parameters
     ----------
-    gf : gpd.GeoDataFrame
+    gf
         Input GeoDataFrame with ICESat-2 ATL03 Granule metadata
-    aoi : gpd.GeoDataFrame, optional
+    aoi
         A GeoDataFrame with a POLYGON to subset The *envelope* of geometries is used to search.
-    target_surface : str, optional
-        Specify which ATL08 filters to apply. Must be either 'ground' or 'canopy'. Default is 'ground'.
-    include_worldcover : bool, optional
-        Whether to include WorldCover data in the processing. Default is True.
-    include_3dep : bool, optional
-        Whether to include 3DEP data in the processing. Default is True.
-    sliderule_params : dict[str, Any] or None, optional
+    target_surface
+        Specify which ATL08 filters to apply. Must be either 'ground' or 'canopy'.
+    include_worldcover
+        Whether to include WorldCover data in the processing.
+    include_3dep
+        Whether to include 3DEP data in the processing.
+    sliderule_params
         Additional parameters for SlideRule processing. User-provided parameters take precedence over default settings.
 
     Returns
     -------
-    gpd.GeoDataFrame
         Processed GeoDataFrame with the results from SlideRule.
     """
 
@@ -315,14 +312,13 @@ def sample_3dep(
 
     Parameters
     ----------
-    gf : gpd.GeoDataFrame
+    gf
         A GeoDataFrame containing POINT geometries in EPSG:4326
-    project_name : str
+    project_name
         A WESM project name to restrict results to (e.g. "CO_WestCentral_2019_A19")
 
     Returns
     -------
-    gpd.GeoDataFrame
         A GeoDataFrame with sampled elevation data from the 3DEP 1-meter DEM.
     """
     # Just work with geometry column
@@ -377,14 +373,13 @@ def to_3d(
 
     Parameters
     ----------
-    gf : gpd.GeoDataFrame
+    gf
         A GeoDataFrame containing 2D lon,lat POINT
-    z_col : str
+    z_col
         The name of the column to use for the z-coordinate (e.g. h_li, elevation_lm, etc.)
 
     Returns
     -------
-    gpd.GeoDataFrame
         A GeoDataFrame with 3D POINT geometries.
     """
     points3D = gpd.points_from_xy(gf.geometry.x, gf.geometry.y, gf[z_col])

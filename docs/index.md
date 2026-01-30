@@ -29,7 +29,7 @@ See the following website for more details on the motivation for this project!
 :hidden:
 
 user_guide/index.md
-examples/index.md
 datasets/index.md
+examples/index.md
 api.rst
 ```

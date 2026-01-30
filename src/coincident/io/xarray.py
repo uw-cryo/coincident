@@ -48,14 +48,13 @@ def load_dem_7912(dataset: str, aoi: gpd.GeoDataFrame) -> xr.DataArray:
 
     Parameters
     ----------
-    dataset : str
+    dataset
         The name of the DEM dataset to load. Must be one of 'cop30', 'nasadem', or '3dep'.
-    aoi : gpd.GeoDataFrame
+    aoi
         Polygon with lon,lat coordinates to which the DEM will be clipped.
 
     Returns
     -------
-    xr.DataArray
         The clipped DEM data as an xarray DataArray.
 
     Notes
@@ -123,18 +122,19 @@ def to_dataset(
 
     Parameters
     ----------
-    gf : gpd.GeoDataFrame
+    gf
         The GeoDataFrame containing the geospatial data.
-    aoi : gpd.GeoDataFrame, optional
+    aoi
         GeoDataFrame containing area of interest (e.g. search polygon)
-    bands : str, optional
+    bands
         The asset keys to extract from the STAC items, by default ["data"].
-    **kwargs : dict
+    mask
+        Whether to clip the resulting Dataset to the AOI geometry extent.
+    kwargs
         Additional keyword arguments passed to `odc.stac.load`.
 
     Returns
     -------
-    xr.Dataset
         The resulting stacked xarray Dataset backed by dask arrays
     """
     if bands is None:
@@ -155,14 +155,13 @@ def open_maxar_browse(item: pystac.Item, overview_level: int = 0) -> xr.DataArra
 
     Parameters
     ----------
-    item : pystac.Item
+    item
         The STAC item containing the browse image asset.
-    overview_level : int, optional
-        The overview level to use when opening the image, by default 0.
+    overview_level
+        The overview level to use when opening the image.
 
     Returns
     -------
-    xr.DataArray
         The opened browse image as an xarray DataArray.
 
     Notes
@@ -195,11 +194,14 @@ def _aoi_to_polygon_string(geom: Polygon | MultiPolygon) -> str:
 
     This updated helper now accepts a shapely geometry (as produced in search.search).
 
-    Parameters:
-      geom (Polygon or MultiPolygon): Geometry defining the AOI.
+    Parameters
+    ----------
+    geom
+        Geometry defining the AOI.
 
-    Returns:
-      str: A string in the format "x1 y1, x2 y2, ..." representing the polygon coordinates.
+    Returns
+    -------
+        A string in the format "x1 y1, x2 y2, ..." representing the polygon coordinates.
     """
     if geom.geom_type == "Polygon":
         coords = list(geom.exterior.coords)
@@ -218,12 +220,17 @@ def _filter_items_by_project(
     HELPER FUNCTION FOR load_usgs_dem()
     Filter TNM API items to only include those corresponding to a specific project.
 
-    Parameters:
-      api_items (list): List of items (dictionaries) returned by the TNM API.
-      project_identifier (str): The project identifier to filter by.
+    Parameters
+    ----------
+    api_items
+      List of items (dictionaries) returned by the TNM API.
 
-    Returns:
-      list: A filtered list of API items matching the specified project.
+    project_identifier
+      The project identifier to filter by.
+
+    Returns
+    -------
+        A filtered list of API items matching the specified project.
     """
     filtered_items = []
     for item in api_items:
@@ -320,16 +327,24 @@ def load_usgs_dem(
     """
     Load and merge USGS 1-meter DEM tiles based on an AOI by querying the TNM API.
 
-    Parameters:
-        aoi (gpd.GeoDataFrame): Area of interest geometry to query against
-        project (str): Project identifier to filter results
-        tnmdataset (str): TNM dataset identifier (default "Digital Elevation Model (DEM) 1 meter")
-        res (int): Resolution factor to coarsen DEM by (default 1)
-        clip (bool): Use AOI to crop extent and apply valid data mask (default False)
-        clip_box (bool): Use AOI bounding box to crop extent (default True)
+    Parameters
+    ----------
+    aoi
+        Area of interest geometry to query against
+    project
+        Project identifier to filter results
+    tnmdataset
+        TNM dataset identifier
+    res
+        Resolution factor to coarsen DEM by
+    clip
+        Use AOI to crop extent and apply valid data mask
+    clip_box
+        Use AOI bounding box to crop extent
 
-    Returns:
-      xr.DataArray: The merged (and optionally clipped) DEM mosaic.
+    Returns
+    -------
+        The merged (and optionally clipped) DEM mosaic.
     """
     # Reproject AOI to EPSG:4326 for the TNM API query.
     aoi_in_4326 = aoi.to_crs(epsg=4326)
@@ -392,24 +407,24 @@ def load_neon_dem(
     """
     Load and merge NEON LiDAR tiles (DSM, DTM, or CHM) based on an AOI by querying the NEON API.
 
-    Steps:
-        1. Convert the datetime string to a month string in the format YYYY-MM.
-        2. Determine appropriate UTM CRS for the AOI.
-        3. Query the NEON API using a preset product code.
-        4. Filter the returned files based on product type and spatial intersection.
-        5. Load and optionally coarsen each GeoTIFF tile.
-        6. Merge the tiles and optionally clip the mosaic to the AOI.
+    Parameters
+    ----------
+    aoi
+        Area of interest geometry to query against
+    datetime_str
+        Date string in YYYY-MM-DD format
+    site_id
+        NEON site identifier
+    product
+        Product type to load ('dsm', 'dtm', or 'chm')
+    res
+        Resolution factor to coarsen DEM by
+    clip
+        Whether to clip final mosaic to AOI
 
-    Parameters:
-        aoi (gpd.GeoDataFrame): Area of interest geometry to query against
-        datetime_str (str): Date string in YYYY-MM-DD format
-        site_id (str): NEON site identifier
-        product (str): Product type to load ('dsm', 'dtm', or 'chm')
-        res (int): Resolution factor to coarsen DEM by (default 1)
-        clip (bool): Whether to clip final mosaic to AOI (default True)
-
-    Returns:
-        xr.DataArray: The merged (and optionally clipped) LiDAR mosaic
+    Returns
+    -------
+        The merged (and optionally clipped) LiDAR mosaic
     """
     # 1: Convert datetime_str to month string
     dt = datetime.strptime(datetime_str, "%Y-%m-%d")
@@ -481,29 +496,31 @@ def load_ncalm_dem(
     clip: bool = True,
 ) -> xr.DataArray:
     """
-    Load NCALM DEM (DTM or DSM) tiles directly from OpenTopography S3 and return as xarray DataArray.
-
-    NCALM provides:
-      - DTM (bare-earth) with file code GEG in folder suffix '_be'
-      - DSM (first-return) with file code GEF in folder suffix '_hh'
+    Load NCALM DEM (DTM or DSM) tiles directly from OpenTopography S3
 
     Parameters
     ----------
-    aoi : geopandas.GeoDataFrame
+    aoi
         Area of interest geometries (in EPSG:4326).
-    dataset_id : str or int
+    dataset_id
         NCALM dataset identifier (e.g., 'WA18_Wall').
-    product : str
+    product
         'dtm' for bare-earth, 'dsm' for first-return.
-    res : int, optional
-        Factor to coarsen the DEM (default 1 = no coarsening).
-    clip : bool, optional
-        Whether to clip final mosaic to the AOI (default True).
+    res
+        Factor to coarsen the DEM.
+    clip
+        Whether to clip final mosaic to the AOI.
 
     Returns
     -------
     xarray.DataArray or list of xarray.DataArray
         DEM tile arrays or merged mosaic with name 'elevation'.
+
+    Notes
+    -----
+    NCALM provides:
+      - DTM (bare-earth) with file code GEG in folder suffix '_be'
+      - DSM (first-return) with file code GEF in folder suffix '_hh'
     """
     # Validate product
     product = product.lower()
@@ -571,7 +588,10 @@ def _fetch_noaa_tile_geometry(
     url: str,
 ) -> tuple[str, Polygon, rasterio.crs.CRS]:
     # Open the raster header from S3 using rasterio.Env for proper configuration.
-    with rasterio.Env(), rasterio.open(url) as src:
+    with (
+        rasterio.Env(GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR"),
+        rasterio.open(url) as src,
+    ):
         bounds = src.bounds
         tile_crs = src.crs
     # Create a shapely bounding box polygon from the raster bounds.
@@ -598,25 +618,24 @@ def load_noaa_dem(
 
     Parameters
     ----------
-    aoi : geopandas.GeoDataFrame
+    aoi
         Area of interest geometry (assumed to be in EPSG:4326 or any other CRS that will be reprojected).
-    dataset_id : str or int
+    dataset_id
         NOAA dataset identifier (e.g., "8431" or "6260").
-    res : int, optional
-        Resolution factor. If greater than 1, the data will be coarsened by this factor. Defaults to 1.
-    clip : bool, optional
-        Whether to clip the output mosaic to the AOI. Defaults to True.
+    res
+        Resolution factor. If greater than 1, the data will be coarsened by this factor.
+    clip
+        Whether to clip the output mosaic to the AOI.
 
     Returns
     -------
-    xarray.DataArray
         An xarray DataArray containing DEM values clipped to the AOI.
 
     Notes
     -----
-    This function queries only the raster headers from S3 to retrieve bounds information quickly.
-    The header metadata is processed concurrently to reduce I/O latency.
-    Tiles are spatially filtered against the AOI and merged into a mosaic using xarray.
+    * This function queries only the raster headers from S3 to retrieve bounds information quickly.
+    * The header metadata is processed concurrently to reduce I/O latency.
+    * Tiles are spatially filtered against the AOI and merged into a mosaic using xarray.
     """
     # Step 1: List all .tif files within the NOAA dataset directory
     tif_files = _find_noaa_dem_files(dataset_id)
@@ -688,6 +707,36 @@ def load_gliht(
     mask: bool = False,
     **kwargs: Any,
 ) -> xr.DataArray:
+    """
+    Load a GLiHT GeoTIFF asset as an xarray DataArray.
+
+    Parameters
+    ----------
+    item
+        A STAC item represented as a GeoSeries, containing asset metadata.
+    aoi
+        An optional area of interest to which the raster will be clipped.
+    mask
+        Whether to mask the raster data.
+    **kwargs
+        Additional keyword arguments passed to `rioxarray.open_rasterio`.
+
+    Returns
+    -------
+        The loaded raster data as an xarray DataArray, with the "time" dimension set
+        to the item's datetime.
+
+    Raises
+    ------
+    ValueError
+        If no suitable .tif data assets are found in the item.
+
+    Notes
+    -----
+    - Only HTTPS GeoTIFF assets with the "data" role are considered.
+    - NASA Earthdata authentication is handled via environment variables and cookies.
+    """
+
     asset_items = item.assets
 
     # Find all data assets that are GeoTIFFs
@@ -715,7 +764,6 @@ def load_gliht(
         GDAL_HTTP_COOKIEFILE="/tmp/cookies.txt",
         GDAL_HTTP_COOKIEJAR="/tmp/cookies.txt",
     ):
-        # Unfortunately NASA STAC doesn't have proj extension, so we have to open one...
         da = rioxarray.open_rasterio(
             data_assets[asset_keys_to_load[0]]["href"],
             masked=mask,

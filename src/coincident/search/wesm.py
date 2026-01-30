@@ -60,12 +60,11 @@ def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
 
     Parameters
     ----------
-    gf : GeoDataFrame
+    gf
         The input GeoDataFrame with columns 'collect_start' and 'collect_end'.
 
     Returns
     -------
-    GeoDataFrame
         The modified GeoDataFrame with renamed columns and additional 'datetime' and 'duration' columns.
 
     Notes
@@ -106,12 +105,11 @@ def read_wesm_csv(url: str = wesm_gpkg_url) -> GeoDataFrame:
 
     Parameters
     ----------
-    url : str, optional
+    url
         The URL or file path to the WESM  index file
 
     Returns
     -------
-    GeoDataFrame
         A GeoDataFrame containing the metadata from the CSV file.
     """
     # TODO: Cache CSV locally, so subsequent reads are faster
@@ -134,18 +132,17 @@ def search_bboxes(
 
     Parameters
     ----------
-    url : str, optional
+    url
         The URL or file path to the GeoPackage (GPKG) file.
-    intersects : GeoDataFrame, optional
+    intersects
         A GeoDataFrame to spatially intersect with the convex hulls, by default None.
-    search_start : Timestamp, optional
+    search_start
         The start time for the temporal search, by default None.
-    search_end : Timestamp, optional
+    search_end
         The end time for the temporal search, by default None.
 
     Returns
     -------
-    GeoDataFrame
         A GeoDataFrame containing the convex hull geometries and FIDs in EPSG:4326
     """
     # NOTE: much faster to JUST read bboxes, not full geometry or other columns
@@ -192,19 +189,18 @@ def load_by_fid(
 
     Parameters
     ----------
-    fids : list(int)
+    fids
         List of Feature IDs (fids) to extract from GPKG
-    url : str
+    url
         The URL or file path to the GeoPackage (GPKG) file.
 
-    **kwargs : dict[str, Any], optional
-        Additional keyword arguments to pass to :meth:`~geopandas.read_file`
+    **kwargs
+        Additional keyword arguments to pass to :func:`geopandas.read_file`
 
     Returns
     -------
-    GeoDataFrame
         A GeoDataFrame containing the data from the GeoPackage file with column names
-        modified by :meth:`stacify_column_names`.
+        modified by :func:`stacify_column_names`.
     """
     # Format SQL: # special case for (a) not (a,)
     # Reading a remote WESM by specific FIDs is fast
@@ -276,16 +272,15 @@ def get_swath_polygons(
 
     Parameters
     ----------
-    fid : int
-        A pandas Series containing WESM feature ID (FID)
-    start_col : str, optional
+    workunit
+        The WESM workunit string.
+    start_col
         The name of the column containing the start times, by default 'START_TIME'.
-    end_col : str, optional
+    end_col
         The name of the column containing the end times, by default 'END_TIME'.
 
     Returns
     -------
-    GeoDataFrame
         A GeoDataFrame containing the swath polygons with swath time converted to datetime.
 
     Notes

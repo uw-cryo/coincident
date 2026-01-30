@@ -70,12 +70,11 @@ def _build_neon_point_gf(sites_url: str) -> gpd.GeoDataFrame:
 
     Parameters
     ----------
-    sites_url : str
+    sites_url
         The URL to the NEON API for retrieving site data.
 
     Returns
     -------
-    gpd.GeoDataFrame
         A GeoDataFrame with site information and point geometries.
     """
     sites_request = requests.get(sites_url, timeout=30)
@@ -124,16 +123,15 @@ def _temporal_filter_neon(
 
     Parameters
     ----------
-    gf_neon : gpd.GeoDataFrame
+    gf_neon
         The GeoDataFrame containing NEON site data.
-    search_start : pd.Timestamp
+    search_start
         The start of the time range.
-    search_end : pd.Timestamp
+    search_end
         The end of the time range.
 
     Returns
     -------
-    gpd.GeoDataFrame
         A filtered GeoDataFrame based on the temporal range.
     """
     return gf_neon[
@@ -157,14 +155,13 @@ def _get_neon_flight_geometry(url: str, fallback_geometry: Any) -> Any:
 
     Parameters
     ----------
-    url : str
+    url
         The URL to query NEON product data.
-    fallback_geometry : geometry
+    fallback_geometry
         A fallback geometry (e.g., the site point) if extraction fails.
 
     Returns
     -------
-    geometry
         The unioned flight geometry (in EPSG:4326) or the fallback geometry.
     """
     try:
@@ -212,16 +209,15 @@ def search_bboxes(
 
     Parameters
     ----------
-    intersects : gpd.GeoDataFrame | gpd.GeoSeries
+    intersects
         The area of interest (AOI) geometry (in EPSG:4326).
-    search_start : pd.Timestamp
+    search_start
         The start date of the temporal filter.
-    search_end : pd.Timestamp
+    search_end
         The end date of the temporal filter.
 
     Returns
     -------
-    gpd.GeoDataFrame
         A GeoDataFrame containing NEON site metadata with updated flight geometries in EPSG:4326.
     """
     # Set default time range if not provided
@@ -278,13 +274,18 @@ def query_neon_data_api(
     """
     Query the NEON API for LiDAR products for a given site and month.
 
-    Parameters:
-      site_id (str): The NEON site ID.
-      month_str (str): The month string in the format YYYY-MM.
-      product_code (str): The NEON product code (default is 'DP3.30024.001').
+    Parameters
+    ----------
+    site_id
+        The NEON site ID.
+    month_str
+        The month string in the format YYYY-MM.
+    product_code
+        The NEON product code.
 
-    Returns:
-      dict: The JSON response from the NEON API.
+    Returns
+    -------
+      The JSON response from the NEON API.
     """
     SERVER = "http://data.neonscience.org/api/v0/"
     query_url = f"{SERVER}data/{product_code}/{site_id}/{month_str}"
