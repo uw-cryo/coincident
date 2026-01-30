@@ -15,10 +15,8 @@ build:
       - free -h
       - curl -fsSL https://pixi.sh/install.sh | bash
       - $HOME/.pixi/bin/pixi list -e docs
-      - free -h
     build:
       html:
-        - free -h
         - $HOME/.pixi/bin/pixi run --environment docs docs
     post_build:
       # Report full size of html folder
