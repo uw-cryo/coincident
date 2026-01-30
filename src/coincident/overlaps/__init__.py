@@ -22,14 +22,13 @@ def subset_by_maximum_duration(
 
     Parameters
     ----------
-    gf : _gpd.GeoDataFrame
+    gf
         The input GeoDataFrame containing a 'duration' column.
-    max_duration : int, optional
+    max_duration
         The maximum duration in days to filter the GeoDataFrame. Default is 60 days.
 
     Returns
     -------
-    gpd.GeoDataFrame
         A GeoDataFrame filtered to include only rows where the 'duration' is less than or equal to the specified maximum duration.
     """
     max_duration = pd.Timedelta(days=max_duration)
@@ -48,18 +47,17 @@ def subset_by_temporal_overlap(
 
     Parameters
     ----------
-    gf : gpd.GeoDataFrame
+    gf
         The input GeoDataFrame with 'start_datetime' and 'end_datetime' columns
-    start_datetime : pd.Timestamp
+    start_datetime
         The start datetime for the overlap.
-    end_datetime : pd.Timestamp
+    end_datetime
         The end datetime for the overlap.
-    temporal_buffer : int, optional
-        The buffer in days to apply to the start and end datetimes (default is 14).
+    temporal_buffer
+        The buffer in days to apply to the start and end datetimes.
 
     Returns
     -------
-    gpd.GeoDataFrame
         A subset of the input GeoDataFrame with rows that overlap temporally with the specified span.
     """
     temporal_buffer = pd.Timedelta(days=temporal_buffer)
@@ -67,28 +65,27 @@ def subset_by_temporal_overlap(
     buffered_start = gf.start_datetime - temporal_buffer
     buffered_end = gf.end_datetime + temporal_buffer
 
-    results_intervals = gpd.pd.IntervalIndex.from_arrays(
+    results_intervals = pd.IntervalIndex.from_arrays(
         buffered_start, buffered_end, closed="both"
     )
-    search_interval = gpd.pd.Interval(start_datetime, end_datetime, closed="both")
+    search_interval = pd.Interval(start_datetime, end_datetime, closed="both")
     keep = results_intervals.overlaps(search_interval)  # pylint: disable=no-member
 
     return gf.loc[keep, :]
 
 
-def geographic_area(gf: gpd.GeoDataFrame) -> gpd.pd.Series:
+def geographic_area(gf: gpd.GeoDataFrame) -> pd.Series:
     """
-    Calculate the geographic area of each polygon in a GeoDataFrame in KM^2
+    Calculate the geographic area of each polygon in a GeoDataFrame in km².
 
     Parameters
     ----------
-    gf : gpd.GeoDataFrame
+    gf
         A GeoDataFrame containing the geometries for which the area needs to be calculated. The GeoDataFrame
         must have a geographic coordinate system (latitude and longitude).
 
     Returns
     -------
-    pd.Series
         A Pandas Series containing the area of each polygon in the input GeoDataFrame.
 
     Raises
@@ -98,8 +95,8 @@ def geographic_area(gf: gpd.GeoDataFrame) -> gpd.pd.Series:
 
     References
     ----------
-    - https://gis.stackexchange.com/questions/413349/calculating-area-of-lat-lon-polygons-without-transformation-using-geopandas
-    - https://pyproj4.github.io/pyproj/stable/api/geod.html
+        - https://gis.stackexchange.com/questions/413349/calculating-area-of-lat-lon-polygons-without-transformation-using-geopandas
+        - https://pyproj4.github.io/pyproj/stable/api/geod.html
     """
     if not gf.crs and gf.crs.is_geographic:
         msg = "geodataframe should have geographic coordinate system"
@@ -132,15 +129,14 @@ def subset_by_minimum_area(
 
     Parameters
     ----------
-    gf : gpd.GeoDataFrame
+    gf
         The input GeoDataFrame containing geographic features.
-    min_area : int, optional
+    min_area
         The minimum area threshold in square kilometers. Features with an area
-        less than or equal to this value will be included in the subset. Default is 20.
+        less than or equal to this value will be included in the subset.
 
     Returns
     -------
-    gpd.GeoDataFrame
         A GeoDataFrame containing only the features with an area less than or equal
         to the specified minimum area.
     """

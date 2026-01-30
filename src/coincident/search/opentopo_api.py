@@ -30,14 +30,13 @@ def _find_noaa_dem_files(
 
     Parameters
     ----------
-    dataset_id : str or int
+    dataset_id
         NOAA dataset identifier (e.g., "8431", "6260", or "10196").
     prefix : str
         The S3 prefix under which to look. Default is "dem/". Use "laz/" for point clouds.
 
     Returns
     -------
-    List[Dict[str, str]]
         A list of dicts, each with keys:
           - 'url': full HTTPS download URL
           - 'name': basename of the object key
@@ -121,21 +120,19 @@ def search_ncalm_noaa(
 
     Parameters
     ----------
-    dataset : str
+    dataset
         The dataset type (either "noaa" or "ncalm").
-    aoi : gpd.GeoDataFrame | gpd.GeoSeries
+    aoi
         A GeoDataFrame or GeoSeries containing a geometry to restrict the search area, by default does a global search.
-    search_start : Timestamp, optional
+    search_start
         The start datetime for the search, by default searches the entire catalog defined by 'dataset'.
-    search_end : Timestamp, optional
+    search_end
         The end datetime for the search, by default searches the entire catalog defined by 'dataset'.
-    product : str
+    product
         The product type, must be either "lpc" for LiDAR Point Cloud or "dem" for Digital Elevation Model.
-        Defaults to "lpc".
 
     Returns
     -------
-    gpd.GeoDataFrame
         A GeoDataFrame containing the search results.
 
     Raises
@@ -262,20 +259,19 @@ def search_opentopo(
 
     Parameters
     ----------
-    dataset : str
+    dataset
         Dataset alias ('noaa' or 'ncalm').
-    intersects : gpd.GeoDataFrame | gpd.GeoSeries
+    intersects
         The geometry to restrict the search.
-    search_start : Timestamp, optional
-        The start time for the temporal search, by default None.
-    search_end : Timestamp, optional
-        The end time for the temporal search, by default None.
-    **kwargs : Any
+    search_start
+        The start time for the temporal search.
+    search_end
+        The end time for the temporal search.
+    **kwargs
         Additional parameters for the search.
 
     Returns
     -------
-    gpd.GeoDataFrame
         A GeoDataFrame containing the search results from the OpenTopography API.
     """
     if search_start is None and search_end is None:

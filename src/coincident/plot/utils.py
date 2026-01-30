@@ -85,11 +85,11 @@ def sample_dem_at_points(
 
     Parameters
     ----------
-    da_dem: xr.DataArray
+    da_dem
         DEM as xarray DataArray with only 'x' and 'y' spatial dimensions
-    gdf_points: gpd.GeoDataFrame
+    gdf_points
         GeoDataFrame with point geometries to sample DEM at
-    diff_col: Optional[str]
+    diff_col
         Column in GeoDataFrame to difference [gdf_points[diff_col] - DEM]
 
     Returns
@@ -116,15 +116,15 @@ def sample_dem_at_points(
     return samples
 
 
-def calc_stats(s: gpd.pd.Series) -> dict[str, float]:
-    """Calculate basic statistics for a GeoPandas Series"""
-    s = s.dropna()
+def calc_stats(s: np.ndarray) -> dict[str, float]:
+    """Calculate basic statistics for an array of values"""
+    no_nans = s[~np.isnan(s)]
     return {
-        "Mean": np.mean(s),
-        "Median": np.median(s),
-        "Std": np.std(s),
-        "NMAD": stats.median_abs_deviation(s, scale="normal"),
-        "Count": s.size,
-        "Min": np.min(s) if not s.empty else np.nan,
-        "Max": np.max(s) if not s.empty else np.nan,
+        "Mean": np.mean(no_nans),
+        "Median": np.median(no_nans),
+        "Std": np.std(no_nans),
+        "NMAD": stats.median_abs_deviation(no_nans, scale="normal"),
+        "Count": no_nans.size,
+        "Min": np.min(no_nans) if no_nans.size > 0 else np.nan,
+        "Max": np.max(no_nans) if no_nans.size > 0 else np.nan,
     }

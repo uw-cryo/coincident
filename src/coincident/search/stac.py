@@ -54,12 +54,11 @@ def to_geopandas(
 
     Parameters
     ----------
-    collection : list[pystac.Item] | pystac.item_collection.ItemCollection | arro3.core.Table
+    collection
         The STAC ItemCollection to be converted.
 
     Returns
     -------
-    gpd.GeoDataFrame
         A GeoDataFrame containing the data from the STAC ItemCollection.
 
     Raises
@@ -90,16 +89,15 @@ def to_geopandas(
 
 def to_pystac_items(gf: gpd.GeoDataFrame) -> list[pystac.Item]:
     """
-    Converts a :class:`~geopandas.GeoDataFrame` to a list of PySTAC Items.
+    Converts a GeoDataFrame to a list of PySTAC Items.
 
     Parameters
     ----------
-    gf : GeoDataFrame
+    gf
         The GeoDataFrame to be converted.
 
     Returns
     -------
-    list[pystac.Item]
         A list of PySTAC Items created from the GeoDataFrame.
     """
 

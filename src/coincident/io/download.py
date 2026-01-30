@@ -76,22 +76,26 @@ async def read_href(
 
     Parameters
     ----------
-    item : pystac.Item
+    item
         The STAC item to be downloaded.
-    asset : str
+    asset
         The asset name to open (e.g. "cloud-cover" for maxar).
-    config : dict, optional
+    config
         dictionary of options for :class:`~stac_asset.Config`
 
     Returns
     -------
-    bytes
         Bytes read from file at corresponding href
 
     Examples
     --------
-    Read cloud-cover MultiPolygon estimate from Maxar API
-    >>> bytes = asyncio.run(read_href(item, "cloud-cover" config=MAXAR_CONFIG))
+
+        Read cloud-cover MultiPolygon estimate from Maxar API:
+
+        .. code-block:: python
+
+            bytes = asyncio.run(read_href(item, "cloud-cover"))
+            gf_clouds = gpd.read_file(bytes)
     """
     href = item.assets.get(asset).href
 
@@ -110,22 +114,26 @@ async def download_item(
 
     Parameters
     ----------
-    item : pystac.Item
+    item
         The STAC item to be downloaded.
-    path : str, optional
+    path
         The local directory path where the item will be downloaded. Default is "/tmp".
-    config : dict, optional
+    config
         dictionary of options for :class:`stac-asset:stac_asset.Config`
 
     Returns
     -------
-    pystac.Item
         The downloaded STAC item.
 
-    Examples
-    --------
-    Download all assets for given item to /tmp directory
-    >>> localitem = asyncio.run(download_item(item, config=MAXAR_CONFIG))
+    Example
+    -------
+
+        Download all assets for given item to /tmp directory
+
+        .. code-block:: python
+
+
+            localitem = asyncio.run(download_item(item))
     """
     posixpath = Path(path)
 
@@ -147,18 +155,17 @@ def download_files(
 
     Parameters
     ----------
-    files : list
+    files
         A list of file urls to download
-    output_dir : str
+    output_dir
         The directory path where files will be saved.
-    product : str, optional
+    product
         Product name used for customizing the progress description.
-    chunk_size : int, optional
+    chunk_size
         The chunk size to use when streaming downloads (default is 64KB).
 
     Returns
     -------
-    list
         A list of local file paths to each downloaded file
     """
     outer_desc = (
@@ -223,30 +230,21 @@ def download_usgs_dem(
     Download USGS 1-meter DEM tiles based on an AOI by querying the TNM API.
     https://data.usgs.gov/datacatalog/data/USGS:77ae0551-c61e-4979-aedd-d797abdcde0e
 
-    Steps:
-      1. Reproject the AOI to EPSG:4326.
-      2. Extract the first geometry from the exploded AOI.
-      3. Convert the geometry to a polygon string.
-      4. Query the TNM API and filter results.
-      5. Optionally save metadata as geoparquet.
-      6. Download each tile with progress tracking.
-
     Parameters
     ----------
-    aoi : gpd.GeoDataFrame
+    aoi
         Area of interest geometry.
-    project : str
+    project
         Project identifier to filter results.
-    path : str
+    output_dir
         Directory path where tiles will be downloaded.
-    save_parquet : bool, optional
-        Whether to save metadata as geoparquet (default True).
-    tnmdataset : str, optional
-        TNM dataset identifier (default "Digital Elevation Model (DEM) 1 meter").
+    save_parquet
+        Whether to save metadata as geoparquet.
+    tnmdataset
+        TNM dataset identifier.
 
     Returns
     -------
-    None
         Files are downloaded to the specified output path.
     """
     # 1: Reproject AOI to EPSG:4326 for the TNM API query
@@ -305,24 +303,18 @@ def _fetch_usgs_lpc_tiles(
     Query USGS TNMAccess for LPC products intersecting an AOI, assemble their
     bounding boxes into a GeoDataFrame (EPSG:4326), and optionally write to disk.
 
-    Steps:
-      1. Reproject AOI to EPSG:4326 and explode to a single geometry.
-      2. Convert that geometry into the TNM APIs `polygon` string format.
-      3. Call `query_tnm_api` to retrieve all LPC products (LAS/LAZ) in the AOI.
-      4. Filter the returned items by matching `project` via `_filter_items_by_project`.
-      5. Build a Shapely box from each items `boundingBox` coordinates.
-      6. Assemble into a GeoDataFrame in EPSG:4326.
-      7. If `output_dir` is provided, save as `usgs_lpc_products.geojson`.
+    Parameters
+    ----------
+      aoi
+          Area of interest.
+      project
+          A substring or identifier used to filter product titles.
+      output_dir
+          Directory to write out the GeoJSON. If None, no file is written.
 
-    Parameters:
-      aoi (gpd.GeoDataFrame): Area of interest.
-      project (str): A substring or identifier used to filter product titles.
-      output_dir (Optional[str]): Directory to write out the GeoJSON. If None,
-                                  no file is written.
-
-    Returns:
-      gpd.GeoDataFrame: Contains columns from the API plus a `geometry` column
-                        with each products bounding box in WGS84.
+    Returns
+    -------
+        Contains columns from the API plus a `geometry` column with each products bounding box in WGS84.
     """
     # 1. AOI in lon/lat for TNM query
     aoi_4326 = aoi.to_crs(epsg=4326)
@@ -383,26 +375,32 @@ def build_usgs_ept_pipeline(
     custom parameters (like writers and additional filters) to this pipeline
     before executing it with PDAL.
 
-    Parameters:
-        aoi (gpd.GeoDataFrame): Area of interest (can be in any CRS).
-        workunit (Optional[str]): The specific 3DEP workunit name from coincident.search.search(dataset="3dep")
-                                  (e.g., 'CO_CentralEasternPlains_1_2020').
-                                  If None, the function will attempt to find a
-                                  workunit intersecting the AOI using the USGS
-                                  resources GeoJSON.
-        output_dir (Optional[str]): Directory to write out the generated PDAL
-                                    pipeline JSON file. If None, no file is written.
+    Parameters
+    ----------
+    aoi
+        Area of interest (can be in any CRS).
+    workunit
+        The specific 3DEP workunit name from coincident.search.search(dataset="3dep")
+        (e.g., 'CO_CentralEasternPlains_1_2020').
+        If None, the function will attempt to find a
+        workunit intersecting the AOI using the USGS
+        resources GeoJSON.
+    output_dir
+        Directory to write out the generated PDAL
+        pipeline JSON file. If None, no file is written.
 
-    Returns:
-        dict: A dictionary representing the base PDAL pipeline JSON for subsetting.
+    Returns
+    -------
+        A dictionary representing the base PDAL pipeline JSON for subsetting.
 
-    Raises:
-        ValueError: If the AOI geometry is not a Polygon/MultiPolygon, or if
-                    no matching 3DEP workunit is found for the given AOI.
-        requests.exceptions.RequestException: If there's an issue fetching the
-                                              EPT metadata.
-        RuntimeError: If essential data like SRS WKT is missing/cannot be parsed,
-                      or if the resources GeoJSON cannot be read.
+    Raises
+    ------
+    ValueError
+        If the AOI geometry is not a Polygon/MultiPolygon, or if no matching 3DEP workunit is found for the given AOI.
+    requests.exceptions.RequestException
+        If there's an issue fetching the EPT metadata.
+    RuntimeError
+        If essential data like SRS WKT is missing/cannot be parsed, or if the resources GeoJSON cannot be read.
     """
     if not aoi.geom_type.isin(["Polygon", "MultiPolygon"]).all():
         aoi_geom_msg = (
@@ -552,15 +550,22 @@ def download_neon_dem(
       4. Filter the returned files based on product type and spatial intersection.
       5. Download filtered tiles with progress tracking.
 
-    Parameters:
-      aoi (gpd.GeoDataFrame): Area of interest geometry to query against.
-      datetime_str (str): Date string in YYYY-MM-DD format.
-      site_id (str): NEON site identifier.
-      product (str): Product type to download ('dsm', 'dtm', or 'chm').
-      output_dir (str): Directory path where tiles will be downloaded (default "/tmp").
+    Parameters
+    ----------
+    aoi
+        Area of interest geometry to query against.
+    datetime_str
+        Date string in YYYY-MM-DD format.
+    site_id
+        NEON site identifier.
+    product
+        Product type to download ('dsm', 'dtm', or 'chm').
+    output_dir
+        Directory path where tiles will be downloaded.
 
-    Returns:
-      returns None after downloading files
+    Returns
+    -------
+        Returns None after downloading files.
     """
     if product not in ["dsm", "dtm", "chm"]:
         msg_invalid_prod = "Invalid product type. Choose from 'dsm', 'dtm', 'chm'."
@@ -617,15 +622,20 @@ def _fetch_neon_lpc_tiles(
       6. Assemble into a GeoDataFrame and reproject to EPSG:4326.
       7. If `output_dir` is provided, save the GeoDataFrame as `lpc_tiles.geojson`.
 
-    Parameters:
-      aoi (gpd.GeoDataFrame): AOI geometries.
-      datetime_str (str): Date in “YYYY-MM-DD” format.
-      site_id (str): NEON site identifier.
-      output_dir (Optional[str]): Directory to write `lpc_tiles.geojson`.
-                                  If None, nothing is written.
+    Parameters
+    ----------
+      aoi
+        AOI geometries.
+      datetime_str
+        Date in “YYYY-MM-DD” format.
+      site_id
+        NEON site identifier.
+      output_dir
+        Directory to write `lpc_tiles.geojson`. If None, nothing is written.
 
-    Returns:
-      gpd.GeoDataFrame: Tile extent polygons in lon/lat.
+    Returns
+    -------
+        Tile extent polygons in lon/lat.
     """
     # 1. Month string
     dt = datetime.strptime(datetime_str, "%Y-%m-%d")
@@ -697,20 +707,19 @@ def download_noaa_dem(
 
     Parameters
     ----------
-    aoi : geopandas.GeoDataFrame
+    aoi
         Area of interest geometry (assumed to be in EPSG:4326 or any other CRS that will be reprojected).
-    dataset_id : str or int
+    dataset_id
         NOAA dataset identifier (e.g., "8431" or "6260").
-    output_dir : str, optional
-        Directory to save downloaded output files. Defaults to "/tmp".
-    res : int, optional
-        Resolution factor. If greater than 1, the DEMs will be coarsened by this factor. Defaults to 1.
-    clip : bool, optional
-        Whether to clip each DEM tile to the AOI. Defaults to True.
+    output_dir
+        Directory to save downloaded output files.
+    res
+        Resolution factor. If greater than 1, the DEMs will be coarsened by this factor.
+    clip
+        Whether to clip each DEM tile to the AOI.
 
     Returns
     -------
-    None
         Processed DEM tiles are saved as GeoTIFF files to the specified output directory.
 
     Notes
@@ -801,14 +810,18 @@ def _fetch_noaa_lpc_tiles(
       6. Assemble into a GeoDataFrame and reproject to EPSG:4326.
       7. If output_dir is provided, save the GeoDataFrame as noaa_dem_tiles.geojson.
 
-    Parameters:
-      aoi (gpd.GeoDataFrame): AOI geometries.
-      dataset_id (str): NOAA dataset identifier.
-      output_dir (Optional[str]): Directory to write noaa_dem_tiles.geojson.
-                                  If None, nothing is written.
+    Parameters
+    ----------
+      aoi
+        AOI geometries.
+      dataset_id
+        NOAA dataset identifier.
+      output_dir
+        Directory to write noaa_dem_tiles.geojson. If None, nothing is written.
 
-    Returns:
-      gpd.GeoDataFrame: Tile extent polygons in lon/lat.
+    Returns
+    -------
+        Tile extent polygons in lon/lat.
     """
     # 1. Estimate UTM CRS for AOI
     utm_crs = aoi.estimate_utm_crs()
@@ -975,20 +988,19 @@ def download_ncalm_dem(
 
     Parameters
     ----------
-    aoi : geopandas.GeoDataFrame
+    aoi
         Area of interest geometry (assumed to be in EPSG:4326).
-    dataset_id : str or int
+    dataset_id
         Dataset identifier (e.g., "WA18_Wall" or "OTLAS.072019.6339.1"). This is used as the
         prefix for S3 object keys.
-    product : str
+    product
         'dtm' to download the bare-earth DEM (GEG),
         'dsm' to download the first-return DEM (GEF).
-    output_dir : str, optional
-        Directory to save output files. Defaults to "/tmp".
+    output_dir
+        Directory to save output files.
 
     Returns
     -------
-    None
         The function writes the cropped/clipped output files to the specified output directory.
     """
     product = product.lower()
@@ -1064,20 +1076,16 @@ def _fetch_ncalm_lpc_tiles(
 
     Parameters
     ----------
-    aoi : geopandas.GeoDataFrame
+    aoi
         AOI geometries (any CRS, but assumed geographic or projected).
-    dataset_name : str
+    dataset_name
         NCALM project shortname (e.g. "WA18_Wall").
-    output_dir : str | None
+    output_dir
         If provided, directory to download .laz files into.
 
     Returns
     -------
-    geopandas.GeoDataFrame
-        Columns:
-          - key: S3 object key (e.g. "WA18_Wall/617000_5148000.laz")
-          - url: full http URL to the LAZ tile
-          - geometry: shapely Polygon of the 1 km tile, in EPSG:4326
+        GeoDataFrame of intersecting LPC tiles
     """
     # 1. Determine AOI's UTM CRS and reproject
     utm_crs = aoi.estimate_utm_crs()
@@ -1151,24 +1159,23 @@ def fetch_lpc_tiles(
 
     Parameters
     ----------
-    aoi : gpd.GeoDataFrame
+    aoi
         Area of interest.
-    dataset_id : str
+    dataset_id
         Identifier string for the dataset of interest
           - NOAA: dataset ID, all digits length 1-5. e.g. 10149
           - NEON: dataset ID,4-character uppercase string. e.g. 'ARIK'
           - USGS: 3DEP project name, not to be confused with the workunit, e.g. 'CO_CentralEasternPlains_2020_D20'
           - NCALM: dataset name, not to be confused with the dataset ID, e.g. 'WA18_Wall'
-    provider : str
+    provider
         Provider of LPC data. One of 'usgs', 'noaa', 'ncalm', 'neon'.
-    datetime_str : str, optional
+    datetime_str
         For NEON provider only, a date in 'YYYY-MM-DD' format.
-    output_dir : str, optional
+    output_dir
         Directory to write provider-specific GeoJSON output.
 
     Returns
     -------
-    gpd.GeoDataFrame
         Tile geometries with 'name', 'url', and 'geometry'.
 
     Notes
