@@ -588,7 +588,10 @@ def _fetch_noaa_tile_geometry(
     url: str,
 ) -> tuple[str, Polygon, rasterio.crs.CRS]:
     # Open the raster header from S3 using rasterio.Env for proper configuration.
-    with rasterio.Env(), rasterio.open(url) as src:
+    with (
+        rasterio.Env(GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR"),
+        rasterio.open(url) as src,
+    ):
         bounds = src.bounds
         tile_crs = src.crs
     # Create a shapely bounding box polygon from the raster bounds.
@@ -732,7 +735,6 @@ def load_gliht(
     -----
     - Only HTTPS GeoTIFF assets with the "data" role are considered.
     - NASA Earthdata authentication is handled via environment variables and cookies.
-    - The function expects the item to have a `datetime` attribute.
     """
 
     asset_items = item.assets
@@ -762,7 +764,6 @@ def load_gliht(
         GDAL_HTTP_COOKIEFILE="/tmp/cookies.txt",
         GDAL_HTTP_COOKIEJAR="/tmp/cookies.txt",
     ):
-        # Unfortunately NASA STAC doesn't have proj extension, so we have to open one...
         da = rioxarray.open_rasterio(
             data_assets[asset_keys_to_load[0]]["href"],
             masked=mask,
