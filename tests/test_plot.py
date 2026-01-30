@@ -83,12 +83,11 @@ def test_plot_dem_no_hillshade(dem_tiny):
 def test_plot_dem_with_hillshade(dem_tiny):
     """Test plot_dem with tiny DEM input with hillshade"""
 
-    hillshade = coincident.io.gdal.gdaldem(dem_tiny.elevation, "hillshade")
-    _fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     coincident.plot.plot_dem(
         dem_tiny.elevation.squeeze(),
         ax,
-        da_hillshade=hillshade,
+        add_hillshade=True,
         alpha=0.5,
     )
     # Check that both hillshade and DEM layers are present

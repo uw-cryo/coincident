@@ -49,6 +49,7 @@ def test_to_dataset_with_worldcover_lazy(aoi):
 @pytest.mark.filterwarnings(
     "ignore:Supplying chunks as dimension-order tuples is deprecated.*:DeprecationWarning"
 )
+@pytest.mark.xfail(reason="USGS TNM is often down")
 def test_load_usgs_dem(usgs_neon_dem_bbox):
     da_usgs_dem = coincident.io.xarray.load_usgs_dem(
         usgs_neon_dem_bbox, "CO_CentralEasternPlains_2020_D20"
