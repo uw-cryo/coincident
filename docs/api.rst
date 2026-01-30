@@ -56,6 +56,7 @@ IO
    xarray.load_neon_dem
    xarray.load_noaa_dem
    xarray.load_ncalm_dem
+   xarray.load_gliht
    download.download_item
    download.read_href
    download.build_usgs_ept_pipeline
