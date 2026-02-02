@@ -5,6 +5,7 @@ https://slideruleearth.io
 
 from __future__ import annotations
 
+import typing
 import warnings
 from pathlib import Path
 from typing import Any
@@ -12,7 +13,8 @@ from typing import Any
 import geopandas as gpd
 
 try:
-    from sliderule import earthdata, gedi, icesat2, raster, toregion
+    import sliderule
+    from sliderule import earthdata, raster, toregion
 except ImportError:
     warnings.warn(
         "'sliderule' package not found. Install for GEDI & ICESat2 functionality: https://slideruleearth.io/web/rtd/getting_started/Install.html",
@@ -61,12 +63,15 @@ def _decode_worldcover(gf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return gf.replace({"worldcover.value": mapping})
 
 
-def _add_raster_samples(include_worldcover: bool, include_3dep: bool) -> dict[str, Any]:
+@typing.no_type_check
+def _add_raster_samples(
+    include_worldcover: bool, include_3dep: bool
+) -> dict[str, dict[str, Any]]:
     samples = {}
     if include_worldcover:
-        samples.update(
-            {"worldcover": {"asset": "esa-worldcover-10meter", "use_poi_time": True}}
-        )
+        # SlidRule uses 2021 version (timestamped 2021-06-30)
+        # https://github.com/SlideRuleEarth/sliderule/blob/220e39bcad6d6682ba2b0d0ea502fc2ab142c3c5/packages/core/extensions/earth_data_query.lua#L205-L208
+        samples.update({"worldcover": {"asset": "esa-worldcover-10meter"}})
     if include_3dep:
         # NOTE: use "substr" to restrict to specific WESM project?
         # https://slideruleearth.io/web/rtd/user_guide/SlideRule.html#raster-sampling
@@ -98,7 +103,7 @@ def subset_gedi02a(
     include_3dep
         Whether to include 3DEP data in the processing. Default is False.
     sliderule_params
-        A dictionary of additional parameters to be passed to SlideRule `gedi.gedi02ap`.
+        A dictionary of additional parameters to be passed to SlideRule gedi02ax API.
 
     Returns
     -------
@@ -127,7 +132,8 @@ def subset_gedi02a(
     if sliderule_params is not None:
         params.update(sliderule_params)
 
-    gfsr = gedi.gedi02ap(params, resources=granule_names)
+    gfsr = sliderule.run("gedi02ax", params, resources=granule_names)
+
     if gfsr.empty:
         message = "SlideRule returned an empty GeoDataFrame. Check spatial/temporal overlap and filter parameters."
         warnings.warn(
@@ -187,7 +193,7 @@ def subset_atl06(
     if sliderule_params is not None:
         params.update(sliderule_params)
 
-    gfsr = icesat2.atl06sp(params, resources=granule_names)
+    gfsr = sliderule.run("atl06x", params, resources=granule_names)
 
     if gfsr.empty:
         message = "SlideRule returned an empty GeoDataFrame. Check spatial/temporal overlap and filter parameters."
@@ -253,13 +259,15 @@ def process_atl06sr(
     # https://github.com/SlideRuleEarth/sliderule/issues/448
     params.update(
         {
-            "cnf": 0,
-            "srt": -1,
-            "ats": 20.0,
-            "cnt": 5,
-            "len": 40.0,
-            "res": 20.0,
-            "maxi": 6,
+            "cnf": 0,  # -2:tep, -1:not considered, 0:background, 1:within 10m, 2:low, 3:medium, 4:high (default=2)
+            "srt": -1,  # -1:dynamic, 0:land, 1:ocean, 2:sea ice, 3:land ice, 4:inland water (default=-1)
+            "ats": 20.0,  # Minimum allowed along track spread of a photon segment (m) (default=20.0)
+            "cnt": 5,  # Minimum allowed number of photons in a segment (default=10)
+            "len": 40.0,  # Length of photon segment (m) (default=40.0)
+            "res": 20.0,  # Resolution or step size of photon segment (m) (default=20.0)
+            "fit": {
+                "maxi": 5  # Maximum iterations on least squares fit	 (default=5)
+            },
         }
     )
 
@@ -283,7 +291,8 @@ def process_atl06sr(
     if sliderule_params is not None:
         params.update(sliderule_params)
 
-    gfsr = icesat2.atl06p(params, resources=granule_names)
+    # gfsr = icesat2.atl06p(params, resources=granule_names)
+    gfsr = sliderule.run("atl03x", params, resources=granule_names)
 
     # Drop columns we don't need?
     # dropcols = ['worldcover.time','worldcover.flags','worldcover.file_id',
