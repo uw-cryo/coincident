@@ -16,10 +16,8 @@ network = pytest.mark.network
 # Always dump sliderule version info to stdout for debugging
 def test_sliderule_versions(capsys):
     with capsys.disabled():
-        if os.environ.get("PS_GITHUB_TOKEN"):
-            message = (
-                "PS_GITHUB_TOKEN is set, so using UW Cluster instead of public cluster"
-            )
+        if os.environ.get("SLIDERULE_GITHUB_TOKEN"):
+            message = "SLIDERULE_GITHUB_TOKEN is set, so using Private Cluster instead of public cluster"
             print("\n-------\n" + message + "\n-------\n")
         version_dict = sliderule.get_version()
         print("\nSliderule Version Info:\n")
@@ -40,10 +38,56 @@ def test_gdf_to_sliderule_polygon():
     assert len(poly) == 5
 
 
+@pytest.fixture(scope="class")
+def expected_gedi_columns():
+    return {
+        "beam",
+        "elevation_hr",
+        "elevation_lm",
+        "flags",
+        "geometry",
+        "orbit",
+        "sensitivity",
+        "shot_number",
+        "solar_elevation",
+        "srcid",
+        "track",
+    }
+
+
+@pytest.fixture(scope="class")
+def expected_is2_columns():
+    return {
+        "atl06_quality_summary",
+        "bsnow_conf",
+        "bsnow_h",
+        "cycle",
+        "dh_fit_dx",
+        "geometry",
+        "gt",
+        "h_li",
+        "h_li_sigma",
+        "h_robust_sprd",
+        "n_fit_photons",
+        "r_eff",
+        "region",
+        "rgt",
+        "seg_azimuth",
+        "segment_id",
+        "sigma_geo_h",
+        "spot",
+        "srcid",
+        "tide_ocean",
+        "w_surface_window_final",
+        "x_atc",
+        "y_atc",
+    }
+
+
 @network
 @pytest.mark.usefixtures("initialize_sliderule")
 class TestSlideRule:
-    def test_subset_gedi02a(self, tinyaoi):
+    def test_subset_gedi02a(self, tinyaoi, expected_gedi_columns):
         gf_gedi = coincident.search.search(
             dataset="gedi", intersects=tinyaoi, datetime="2022"
         )
@@ -51,75 +95,58 @@ class TestSlideRule:
             gf_gedi, aoi=tinyaoi, include_worldcover=True
         )
 
-        expected_columns = {
-            "orbit",
-            "beam",
-            "elevation_lm",
-            "solar_elevation",
-            "elevation_hr",
-            "sensitivity",
-            "track",
-            "flags",
-            "geometry",
-            "worldcover.flags",
-            "worldcover.file_id",
-            "worldcover.value",
-            "worldcover.time",
-        }
+        assert "request" in data.attrs["meta"]
+        assert isinstance(data, gpd.GeoDataFrame)
+        assert set(data.columns) == expected_gedi_columns
+        # assert data.iloc[0].name.to_pydatetime().toordinal() == 738192
+        # assert data.iloc[0]["worldcover.value"] == "Tree cover"
+        assert data.shape == (262, 14)
+
+    def test_include_raster_samples(self, tinyaoi, expected_is2_columns):
+        gf_is2 = coincident.search.search(
+            dataset="icesat-2", intersects=tinyaoi, datetime="2022"
+        )
+
+        data = coincident.io.sliderule.subset_atl06(
+            gf_is2, aoi=tinyaoi, include_worldcover=True
+        )
+        expected_is2_columns.update(
+            {"worldcover.time_ns", "worldcover.value", "worldcover.fileid"}
+        )
 
         assert isinstance(data, gpd.GeoDataFrame)
-        assert set(data.columns) == expected_columns
-        assert data.iloc[0].name.toordinal() == 738192
-        assert data.iloc[0]["worldcover.value"] == "Tree cover"
-        assert data.shape == (262, 13)
+        assert len(data.attrs["meta"]["request"]["resources"]) == 6
+        assert len(set(data.attrs["meta"]["srctbl"].values())) == 6
+        assert set(data.columns) == expected_is2_columns
+        assert {1034, 615} == set(data.rgt)
+        # NOTE: not sure order is deterministic...
+        assert data.iloc[0].name.toordinal() == 738395
+        assert data.shape == (413, 23)
 
-    def test_subset_atl06(self, tinyaoi):
+    def test_subset_atl06(self, tinyaoi, expected_is2_columns):
         gf_is2 = coincident.search.search(
             dataset="icesat-2", intersects=tinyaoi, datetime="2022"
         )
         data = coincident.io.sliderule.subset_atl06(gf_is2, aoi=tinyaoi)
 
-        expected_columns = {
-            "bsnow_h",
-            "w_surface_window_final",
-            "h_robust_sprd",
-            "r_eff",
-            "n_fit_photons",
-            "sigma_geo_h",
-            "segment_id",
-            "gt",
-            "cycle",
-            "y_atc",
-            "atl06_quality_summary",
-            "spot",
-            "dh_fit_dx",
-            "h_li_sigma",
-            "seg_azimuth",
-            "h_li",
-            "bsnow_conf",
-            "rgt",
-            "x_atc",
-            "tide_ocean",
-            "geometry",
-        }
-
         assert isinstance(data, gpd.GeoDataFrame)
-        assert set(data.columns) == expected_columns
-        assert 1034 in data.rgt.unique()
-        assert data.iloc[0].name.toordinal() == 738304
-        assert data.shape == (413, 21)
+        assert len(data.attrs["meta"]["request"]["resources"]) == 6
+        assert len(set(data.attrs["meta"]["srctbl"].values())) == 6
+        assert set(data.columns) == expected_is2_columns
+        assert {1034, 615} == set(data.rgt)
+        # NOTE: not sure order is deterministic...
+        assert data.iloc[0].name.toordinal() == 738395
+        assert data.shape == (413, 23)
 
     @pytest.mark.xfail(reason="https://github.com/uw-cryo/coincident/issues/126")
-    def test_process_atl06sr(self, tinyaoi):
+    def test_process_atl06sr(self, tinyaoi, expected_is2_columns):
         gf_is2 = coincident.search.search(
             dataset="icesat-2", intersects=tinyaoi, datetime="2022"
         )
-        data = coincident.io.sliderule.process_atl06sr(
-            gf_is2, aoi=tinyaoi, include_3dep=True
-        )
+        data = coincident.io.sliderule.process_atl06sr(gf_is2, aoi=tinyaoi)
+
         assert isinstance(data, gpd.GeoDataFrame)
-        assert "n_fit_photons" in data.columns
-        assert "3dep.value" in data.columns
+        assert set(data.columns) == expected_is2_columns
         assert data.shape == (367, 20)
         assert data.iloc[0].name.toordinal() == 738304
         assert int(data.iloc[0].h_mean) == 3178

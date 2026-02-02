@@ -12,7 +12,7 @@ from shapely.geometry import box
 
 @pytest.fixture(scope="session")
 def initialize_sliderule():
-    if os.environ.get("PS_GITHUB_TOKEN"):
+    if os.environ.get("SLIDERULE_GITHUB_TOKEN"):
         initialized = sliderule.init(
             verbose=True,
             organization="uw",
