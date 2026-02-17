@@ -49,7 +49,7 @@ IO
    sliderule.subset_gedi02a
    sliderule.subset_atl06
    sliderule.process_atl06sr
-   sliderule.sample_3dep
+   sliderule.sample_raster
    xarray.to_dataset
    xarray.open_maxar_browse
    xarray.load_usgs_dem

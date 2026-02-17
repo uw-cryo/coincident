@@ -108,21 +108,13 @@ def search(
             client = stac.configure_maxar_client(dataset.area_based_calc)  # type: ignore[attr-defined]
             item_collection = stac.search(client, **stac_api_kwargs)
             gf = stac.to_geopandas(item_collection)
+            # TODO: don't add this restriction? Just add to documentation?
             # Client-side reduce to only acquisitions having stereo pairs
             gf = gf.loc[gf.stereo_pair_identifiers.str[0].dropna().index]
 
         else:
-            # NOTE: NASA-CMR-STAC seems to require GET, but default is POST (maxar API w/ GET throws error for large polygons)
-            # NOTE: In July 2025, ICESat-2 ATL03 endpoint moved from SIDC_ECS to NSIDC_CPRD, this works with POST
-            # if (dataset.provider == "nasa") & (dataset.alias != "icesat-2"):
-            if dataset.provider == "nasa":
-                stac_api_kwargs["method"] = "GET"
-                client = stac.configure_stac_client(dataset.search)  # type: ignore[arg-type]
-            # Generic STAC endpoint w/o additional config
-            else:
-                client = stac.configure_stac_client(dataset.search)  # type: ignore[arg-type]
+            client = stac.configure_stac_client(dataset.search)  # type: ignore[arg-type]
             item_collection = stac.search(client, **stac_api_kwargs)
-
             gf = stac.to_geopandas(item_collection)
 
     elif dataset.alias == "3dep-1m":

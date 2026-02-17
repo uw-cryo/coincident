@@ -27,7 +27,7 @@ class ICESat2(Dataset):
     type: str = "altimeter"
     alias: str = "icesat-2"
     collections: list[str] = field(
-        default_factory=lambda: ["ATL03_006"]
+        default_factory=lambda: ["ATL03_007"]
     )  # ATL08_006 etc.
     provider: str = "nasa"
 
