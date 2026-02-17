@@ -304,14 +304,9 @@ def process_atl06sr(
 
 
 @depends_on_optional("sliderule")
-def sample_worldcover(gf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
-    points = [[x, y] for x, y in zip(gf.geometry.x, gf.geometry.y, strict=False)]
-    return raster.sample("esa-worldcover-10meter", points)
-
-
-@depends_on_optional("sliderule")
-def sample_3dep(
+def sample_raster(
     gf: gpd.GeoDataFrame,
+    asset_key: str = "usgs3dep-1meter-dem",
     project_name: str | None = None,
 ) -> gpd.GeoDataFrame:
     """
@@ -323,8 +318,10 @@ def sample_3dep(
     ----------
     gf
         A GeoDataFrame containing POINT geometries in EPSG:4326
+    asset_key
+        Sliderule asset key to sample (e.g. "usgs3dep-1meter-dem" or "esa-worldcover-10meter")
     project_name
-        A WESM project name to restrict results to (e.g. "CO_WestCentral_2019_A19")
+        For 3dep, a WESM project name to restrict results to (e.g. "CO_WestCentral_2019_A19")
 
     Returns
     -------
@@ -334,42 +331,47 @@ def sample_3dep(
     gf = gf[["geometry"]].reset_index(drop=True)
 
     # Ensure passed geodataframe is lon/lat for arguments to sliderule
-    gfll = gf.to_crs("EPSG:7912")
+    gfll = gf.to_crs("EPSG:9989")
     points = [[x, y] for x, y in zip(gfll.geometry.x, gfll.geometry.y, strict=False)]
-    poly = _gdf_to_sliderule_polygon(gfll)
 
-    geojson = earthdata.tnm(
-        short_name="Digital Elevation Model (DEM) 1 meter", polygon=poly
-    )
-
-    gfsr = raster.sample("usgs3dep-1meter-dem", points, {"catalog": geojson})
-
-    if project_name is not None:
-        # Allow NaNs if restricting to a single WESM project
-        gfsr = (
-            gfsr[gfsr.file.str.contains(project_name)]
-            .drop_duplicates("geometry")
-            .reset_index()
-        )
+    if asset_key != "usgs3dep-1meter-dem":
+        samples = raster.sample(asset_key, points)
     else:
-        # Drop NaNs if sampling among multiple WESM projects
-        gfsr = gfsr[gfsr.value.notna()].drop_duplicates("geometry").reset_index()
+        poly = _gdf_to_sliderule_polygon(gfll)
+        geojson = earthdata.tnm(
+            short_name="Digital Elevation Model (DEM) 1 meter", polygon=poly
+        )
 
-    # Use acquisition datetime instead of upload time
-    # https://github.com/SlideRuleEarth/sliderule/issues/444
-    dfwesm = stacify_column_names(read_wesm_csv())
+        gfsr = raster.sample(asset_key, points, {"catalog": geojson})
 
-    def get_wesm_datetime(filename: str) -> gpd.pd.Timestamp:
-        project_name = filename.split("/")[-3]
-        return dfwesm[dfwesm.project == project_name].datetime.iloc[0]
+        if project_name is not None:
+            # Allow NaNs if restricting to a single WESM project
+            gfsr = (
+                gfsr[gfsr.file.str.contains(project_name)]
+                .drop_duplicates("geometry")
+                .reset_index()
+            )
+        else:
+            # Drop NaNs if sampling among multiple WESM projects
+            gfsr = gfsr[gfsr.value.notna()].drop_duplicates("geometry").reset_index()
 
-    gfsr["time"] = gfsr.file.apply(get_wesm_datetime)
+        # Use acquisition datetime instead of upload time
+        # https://github.com/SlideRuleEarth/sliderule/issues/444
+        dfwesm = stacify_column_names(read_wesm_csv())
 
-    # Return results in original CRS of passed dataframe
-    gf3dep = gfsr.to_crs(gf.crs)
+        def get_wesm_datetime(filename: str) -> gpd.pd.Timestamp:
+            project_name = filename.split("/")[-3]
+            return dfwesm[dfwesm.project == project_name].datetime.iloc[0]
 
-    # Return with order matching input geodataframe
-    return gf.sjoin_nearest(gf3dep, how="left").drop(columns="index_right")
+        gfsr["time"] = gfsr.file.apply(get_wesm_datetime)
+
+        # Return results in original CRS of passed dataframe
+        gf3dep = gfsr.to_crs(gf.crs)
+
+        # Return with order matching input geodataframe
+        samples = gf.sjoin_nearest(gf3dep, how="left").drop(columns="index_right")
+
+    return samples
 
 
 def to_3d(
