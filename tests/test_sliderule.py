@@ -214,10 +214,14 @@ class TestSlideRule:
             geometry=gpd.points_from_xy(
                 [-106.46953038438801, -106.47209604357627],
                 [38.781089777057986, 38.78292421778072],
-                crs="EPSG:4326",
+                crs="EPSG:9989",
             )
         )
         samples = coincident.io.sliderule.sample_raster(gf)
+
+        assert isinstance(samples, gpd.GeoDataFrame)
+        # NOTE: results in same CRS as input
+        assert samples.crs == "EPSG:9989"
         assert {"file", "geometry", "time", "value"} == set(samples.columns)
         assert samples.time.dtype == "<M8[ns]"
         assert str(samples.time.dt.date.iloc[0]) == "2019-09-04"

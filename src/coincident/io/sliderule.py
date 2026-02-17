@@ -326,6 +326,10 @@ def sample_raster(
     Returns
     -------
         A GeoDataFrame with sampled elevation data from the 3DEP 1-meter DEM.
+
+    Notes
+    -----
+        Sliderule automatically reprojects to ITRF2020. For 3DEP 1m this means going from tiffs stored as NAD83(2011) + NAVD88 height in various UTM zones.
     """
     # Just work with geometry column
     gf = gf[["geometry"]].reset_index(drop=True)
