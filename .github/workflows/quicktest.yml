@@ -1,0 +1,30 @@
+# Run a specific test on demand
+name: Quick Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      test-name:
+        description: "Name of the test to run (e.g., networktest)"
+        required: true
+        default: "test_load_gliht"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: prefix-dev/setup-pixi@v0.9.4
+        with:
+          environments: dev
+          manifest-path: pyproject.toml
+          cache: true
+          frozen: true
+
+      - name: Run Pytest
+        env:
+          MAXAR_API_KEY: ${{ secrets.MAXAR_API_KEY}}
+          EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN}}
+        run: |
+          pixi run networktest -k ${{ github.event.inputs.test-name }}
