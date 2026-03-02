@@ -12,6 +12,7 @@ from typing import Any
 import boto3
 import geopandas as gpd
 import numpy as np
+import obstore.store as obs_store
 import odc.stac
 import pystac
 import rasterio
@@ -580,6 +581,72 @@ def load_ncalm_dem(
         da = da.rio.clip(aoi_utm.geometry, aoi_crs, drop=True)
 
     da.name = "elevation"
+    return da
+
+
+def load_ncalm_dem2(
+    aoi: gpd.GeoDataFrame,
+    dataset_id: str | int,
+    product: str,
+) -> xr.DataArray:
+    """
+    Load NCALM DEM (DTM or DSM) tiles directly from OpenTopography S3 using obstore.
+
+    Uses the `obstore` library instead of `boto3` for anonymous S3 access.
+
+    Parameters
+    ----------
+    aoi
+        Area of interest geometries (in EPSG:4326).
+    dataset_id
+        NCALM dataset identifier (e.g., 'WA18_Wall').
+    product
+        'dtm' for bare-earth, 'dsm' for first-return.
+
+    Returns
+    -------
+    xarray.DataArray
+        DEM tile array or merged mosaic with name 'elevation'.
+
+    Notes
+    -----
+    NCALM provides:
+      - DTM (bare-earth) with folder suffix '_be'
+      - DSM (first-return) with folder suffix '_hh'
+    """
+    # TODO: confirm all NCALM is NAD83(2011) UTM + NAVDD88
+    # https://portal.opentopography.org/datasetMetadata?otCollectionID=OT.072019.6339.1
+    # Validate product
+    product = product.lower()
+    if product not in ("dtm", "dsm"):
+        msg_invalid_prod = "product must be 'dtm' or 'dsm'"
+        raise ValueError(msg_invalid_prod)
+
+    # Determine folder suffix
+    folder_suffix = "_be" if product == "dtm" else "_hh"
+
+    # S3 setup using obstore with anonymous access to the OpenTopography endpoint
+    bucket = "raster"
+    endpoint_url = "https://opentopography.s3.sdsc.edu"
+    store = obs_store.S3Store(
+        bucket,
+        skip_signature=True,
+        endpoint=endpoint_url,
+        # virtual_hosted_style_request=False,
+    )
+
+    # There should be only one DTM or DSM
+    prefix = f"{dataset_id}/{dataset_id}{folder_suffix}"
+    key = next(iter(store.list(prefix)))[0]["path"]
+    url = f"{endpoint_url}/{bucket}/{key}"
+
+    # Use a rasterio.Env context to handle authentication for remote NASA access
+    with rasterio.Env(GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR"):
+        da = rioxarray.open_rasterio(url).squeeze()
+
+        if aoi is not None:
+            da = da.rio.clip_box(*aoi.total_bounds, crs=aoi.crs)
+
     return da
 
 

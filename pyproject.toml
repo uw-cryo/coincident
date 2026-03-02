@@ -41,11 +41,11 @@ dependencies = [
   "odc-stac",
   "requests",
   "rioxarray",
+  "rustac",
   "s3fs>=2025.12.0,<2026",
   "scipy",
   "sliderule",
   "stac-asset>=0.4.7,<0.5",
-  "rustac",
   "tqdm"]
 
 [project.optional-dependencies]
@@ -114,7 +114,7 @@ report.exclude_also = [
 run.source = ["coincident"]
 
 [tool.codespell]
-ignore-words-list = "ALOS,ALS,HSI,als"
+ignore-words-list = "OT,ALOS,ALS,HSI,als"
 skip = "pixi.lock,docs/examples/elevation_plotting.ipynb"
 
 [tool.mypy]
@@ -230,6 +230,7 @@ tqdm = ">=4.67.1,<5"
 contextily = ">=1.7.0,<2"
 matplotlib-scalebar = ">=0.9.0,<0.10"
 cartopy = ">=0.25.0,<0.26"
+obstore = ">=0.8.2,<0.9"
 
 [tool.pixi.feature.dev.dependencies]
 mypy = ">=1.19.1,<2"

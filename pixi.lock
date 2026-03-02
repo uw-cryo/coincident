@@ -190,6 +190,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/nlohmann_json-3.12.0-h54a6638_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/numcodecs-0.16.5-py314ha0b5721_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.4.0-py314h2b28147_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/obstore-0.8.2-py314ha5689aa_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-geo-0.5.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-loader-0.6.4-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-stac-0.5.2-pyhd8ed1ab_0.conda
@@ -490,6 +491,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nlohmann_json-3.12.0-h248ca61_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/numcodecs-0.16.5-py314ha3d490a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/numpy-2.4.0-py314hae46ccb_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/obstore-0.8.2-py314h8d4a433_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-geo-0.5.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-loader-0.6.4-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-stac-0.5.2-pyhd8ed1ab_0.conda
@@ -817,6 +819,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/nodeenv-1.10.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/numcodecs-0.16.5-py314ha0b5721_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.4.0-py314h2b28147_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/obstore-0.8.2-py314ha5689aa_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-geo-0.5.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-loader-0.6.4-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-stac-0.5.2-pyhd8ed1ab_0.conda
@@ -1144,6 +1147,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/nodeenv-1.10.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/numcodecs-0.16.5-py314ha3d490a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/numpy-2.4.0-py314hae46ccb_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/obstore-0.8.2-py314h8d4a433_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-geo-0.5.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-loader-0.6.4-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-stac-0.5.2-pyhd8ed1ab_0.conda
@@ -1491,6 +1495,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/nlohmann_json-3.12.0-h54a6638_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/numcodecs-0.16.5-py314ha0b5721_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.4.0-py314h2b28147_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/obstore-0.8.2-py314ha5689aa_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-geo-0.5.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-loader-0.6.4-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-stac-0.5.2-pyhd8ed1ab_0.conda
@@ -1833,6 +1838,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/nlohmann_json-3.12.0-h248ca61_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/numcodecs-0.16.5-py314ha3d490a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/numpy-2.4.0-py314hae46ccb_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/obstore-0.8.2-py314h8d4a433_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-geo-0.5.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-loader-0.6.4-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/odc-stac-0.5.2-pyhd8ed1ab_0.conda
@@ -3192,8 +3198,8 @@ packages:
   timestamp: 1765303462831
 - pypi: ./
   name: coincident
-  version: 0.4.2.dev58+gd35adff08.d20260131
-  sha256: 6837160d65b458d833d91c28675b092c5e3148d7e8758f298361f6db36890d42
+  version: 0.4.2.dev66+g76734aec0.d20260302
+  sha256: ec6daac80064dc3fb332ca396d0309246b4f766ee345d11d4b48fa73d29717fd
   requires_dist:
   - aiobotocore[boto3]>=2.26.0,<3
   - arro3-core
@@ -7010,6 +7016,38 @@ packages:
   - pyjwt>=2.0.0,<3 ; extra == 'signedtoken'
   - blinker>=1.4.0 ; extra == 'signals'
   requires_python: '>=3.8'
+- conda: https://conda.anaconda.org/conda-forge/linux-64/obstore-0.8.2-py314ha5689aa_0.conda
+  sha256: 431fc95d7a9c60b5c3afe1cbe383922b245de112c39d8585d7557e5f703107a6
+  md5: bf2d33b799a013fa275c082fd6642395
+  depends:
+  - __glibc >=2.17,<3.0.a0
+  - libgcc >=14
+  - python >=3.14.0rc2,<3.15.0a0
+  - python_abi 3.14.* *_cp314
+  constrains:
+  - __glibc >=2.17
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/obstore?source=hash-mapping
+  size: 2975894
+  timestamp: 1758090744711
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/obstore-0.8.2-py314h8d4a433_0.conda
+  sha256: c4c2d5006e7290656755ef2ef0ee1a250c5fb0ea383076148836f590e253ede6
+  md5: ef66a5ebac18b9399fbc94952e3d5f1c
+  depends:
+  - __osx >=11.0
+  - python >=3.14.0rc2,<3.15.0a0
+  - python >=3.14.0rc2,<3.15.0a0 *_cp314
+  - python_abi 3.14.* *_cp314
+  constrains:
+  - __osx >=11.0
+  license: MIT
+  license_family: MIT
+  purls:
+  - pkg:pypi/obstore?source=hash-mapping
+  size: 2672069
+  timestamp: 1758091382556
 - conda: https://conda.anaconda.org/conda-forge/noarch/odc-geo-0.5.0-pyhd8ed1ab_0.conda
   sha256: 9b15e4fe5e04e15cf2e851aac0b7307046b90d088c00b1bc0ed3ce0a6f39a03d
   md5: f2cd146b3824ff96ec1dd3f3d90d1188

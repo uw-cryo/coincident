@@ -43,6 +43,15 @@ def _filter_assets(assets: gpd.GeoDataFrame) -> dict[str, str]:
     return {key: assets[key] for key in keep_keys}
 
 
+async def walk_static_stac_items(catalog: str) -> list:  # type: ignore[type-arg]
+    """Given a STAC catalog URL, walk through the catalog and return a list of all items."""
+    catalog = await rustac.read(catalog)
+    all_items = []
+    async for _, _, items in rustac.walk(catalog):
+        all_items.extend(items)
+    return all_items
+
+
 def to_geopandas(
     collection: list[pystac.Item]
     | pystac.item_collection.ItemCollection
