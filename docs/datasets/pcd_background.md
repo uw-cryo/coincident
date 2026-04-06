@@ -29,7 +29,7 @@ each site.
 
 - **Airborne Lidar**: **USGS 3DEP**, **NEON**, and **NCALM** acquisitions.
 - **Satellite Lidar**: **ICESat-2** (ATL06) and **GEDI** (L2A).
-- **Stereo Imagery**: **Maxar** in-track stereo images.
+- **Stereo Imagery**: **Vantor** in-track stereo images.
 
 The output from the download script includes GeoJSONs for each data provider and
 data type (e.g., ALS footprints, ICESat-2 tracks, stereo footprints, and the

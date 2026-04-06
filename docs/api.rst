@@ -51,7 +51,7 @@ IO
    sliderule.process_atl06sr
    sliderule.sample_raster
    xarray.to_dataset
-   xarray.open_maxar_browse
+   xarray.open_vantor_browse
    xarray.load_usgs_dem
    xarray.load_neon_dem
    xarray.load_noaa_dem
@@ -79,7 +79,7 @@ Plot
    :nosignatures:
    :toctree: generated/
 
-   plot_maxar_browse
+   plot_vantor_browse
    plot_esa_worldcover
    plot_dem
    compare_dems

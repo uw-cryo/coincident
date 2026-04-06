@@ -81,12 +81,12 @@ pip install coincident
 
 ## Authentication
 
-Some datasets require authentication to _search_ (Maxar) others only require
+Some datasets require authentication to _search_ (Vantor) others only require
 authentication to _download_ data (NASA). `coincident` assumes you have the
 following Environment Variables defined:
 
 ```bash
-export MAXAR_API_KEY=ccccc
+export VANTOR_API_KEY=ccccc
 export EARTHDATA_TOKEN=aaaaa
 ```
 
