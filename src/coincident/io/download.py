@@ -45,10 +45,10 @@ def _set_config(
     item: Item,
     config: dict[str, Any] | None = None,
 ) -> stac_asset.Config:
-    """Set stac_asset config. Automatically add Maxar API key if needed"""
-    if item.properties.get("constellation") == "maxar" and config is None:
+    """Set stac_asset config. Automatically add Vantor API key if needed"""
+    if item.properties.get("constellation") == "vantor" and config is None:
         config = stac_asset.Config(
-            http_headers={"MAXAR-API-KEY": os.environ.get("MAXAR_API_KEY")}
+            http_headers={"VANTOR-API-KEY": os.environ.get("VANTOR_API_KEY")}
         )
     elif "nasa.gov" in item.get_self_href() and config is None:
         exclude_keys = []
@@ -79,7 +79,7 @@ async def read_href(
     item
         The STAC item to be downloaded.
     asset
-        The asset name to open (e.g. "cloud-cover" for maxar).
+        The asset name to open (e.g. "cloud-cover" for vantor).
     config
         dictionary of options for :class:`~stac_asset.Config`
 
@@ -90,7 +90,7 @@ async def read_href(
     Examples
     --------
 
-        Read cloud-cover MultiPolygon estimate from Maxar API:
+        Read cloud-cover MultiPolygon estimate from Vantor API:
 
         .. code-block:: python
 

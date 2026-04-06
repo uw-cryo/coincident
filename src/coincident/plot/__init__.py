@@ -15,7 +15,7 @@ from coincident.plot.matplotlib import (
     plot_dem,
     plot_diff_hist,
     plot_esa_worldcover,
-    plot_maxar_browse,
+    plot_vantor_browse,
 )
 from coincident.plot.utils import (
     get_aspect,
@@ -40,6 +40,6 @@ __all__ = [
     "plot_dem",
     "plot_diff_hist",
     "plot_esa_worldcover",
-    "plot_maxar_browse",
+    "plot_vantor_browse",
     "sample_dem_at_points",
 ]

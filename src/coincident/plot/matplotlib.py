@@ -20,7 +20,7 @@ from shapely.geometry import box
 
 from coincident.datasets.planetary_computer import WorldCover
 from coincident.io.gdal import gdaldem
-from coincident.io.xarray import open_maxar_browse, to_dataset
+from coincident.io.xarray import open_vantor_browse, to_dataset
 from coincident.plot import utils
 from coincident.search import search
 
@@ -119,11 +119,11 @@ def plot_esa_worldcover(
     return ax
 
 
-def plot_maxar_browse(
+def plot_vantor_browse(
     item: pystac.Item, ax: plt.Axes | None = None, overview_level: int = 0
 ) -> plt.Axes:
     """
-    Map view of Maxar browse image from a STAC item using Matplotlib.
+    Map view of Vantor browse image from a STAC item using Matplotlib.
 
     Parameters
     ----------
@@ -136,7 +136,7 @@ def plot_maxar_browse(
     -------
         The Matplotlib Axes object with the plot.
     """
-    da = open_maxar_browse(item, overview_level=overview_level)
+    da = open_vantor_browse(item, overview_level=overview_level)
 
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 11))
@@ -149,7 +149,7 @@ def plot_maxar_browse(
         da.plot.imshow(rgb="band", add_labels=False, ax=ax, add_colorbar=False)
     else:
         error_message = (
-            f"Maxar browse image must have 1 or 3 bands. Found: {nbands} bands."
+            f"Vantor browse image must have 1 or 3 bands. Found: {nbands} bands."
         )
         raise ValueError(error_message)
 
