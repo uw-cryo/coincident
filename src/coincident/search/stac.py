@@ -18,17 +18,17 @@ from pystac_client.stac_api_io import StacApiIO
 try:
     import maxar_platform
 except ImportError:
-    msg_notfound = "'maxar-platform' package not found. Install for maxar functionality: https://pypi.org/project/maxar-platform/"
+    msg_notfound = "'maxar-platform' package not found. Install for vantor functionality: https://pypi.org/project/maxar-platform/"
     warnings.warn(msg_notfound, stacklevel=2)
 
 try:
     import maxar_platform.discovery
 except maxar_platform.session.NoSessionCredentials:
-    msg_noauth = "Unable to authenticate with Maxar API. Please set MAXAR_API_KEY environment variable."
+    msg_noauth = "Unable to authenticate with Vantor API. Please set VANTOR_API_KEY environment variable."
     warnings.warn(msg_noauth, stacklevel=2)
 except maxar_platform.exceptions.UnAuthorizedException:
     msg_noauth = (
-        "Unable to authenticate with Maxar API. Please check MAXAR_API_KEY is valid."
+        "Unable to authenticate with Vantor API. Please check VANTOR_API_KEY is valid."
     )
     warnings.warn(msg_noauth, stacklevel=2)
 
@@ -120,11 +120,13 @@ def search(
     return results.item_collection()  # actually run the query
 
 
-def configure_maxar_client(area_based_calc: bool = True) -> pystac_client.client.Client:
+def configure_vantor_client(
+    area_based_calc: bool = True,
+) -> pystac_client.client.Client:
     # automatically checks authentication
 
     client = maxar_platform.discovery.open_catalog(catalog="imagery")
-    # Custom Maxar setting
+    # Custom Vantor setting
     client.area_based_calc = area_based_calc
 
     return client

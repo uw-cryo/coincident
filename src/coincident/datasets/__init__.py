@@ -14,18 +14,18 @@ from __future__ import annotations
 
 from coincident.datasets import (
     csda,
-    maxar,
     nasa,
     neon,
     opentopo,
     planetary_computer,
     usgs,
+    vantor,
 )
 from coincident.datasets.general import Dataset
 
 # Convenience mapping of string aliases to supported dataset classes
 _datasets = [
-    maxar.Stereo(),
+    vantor.Stereo(),
     usgs.ThreeDEP(),
     usgs.ThreeDEP_1m(),
     nasa.ICESat2(),
@@ -44,4 +44,12 @@ _datasets = [
 aliases = [x.alias for x in _datasets]
 _alias_to_Dataset = dict(zip(aliases, _datasets, strict=False))
 
-__all__ = ["Dataset", "csda", "maxar", "nasa", "opentopo", "planetary_computer", "usgs"]
+__all__ = [
+    "Dataset",
+    "csda",
+    "nasa",
+    "opentopo",
+    "planetary_computer",
+    "usgs",
+    "vantor",
+]

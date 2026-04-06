@@ -9,7 +9,7 @@ of the data used by this library.
 | Dataset                      | Alias      | Type      | Start      | End        | Extent         | Source                                                                      |
 | ---------------------------- | ---------- | --------- | ---------- | ---------- | -------------- | --------------------------------------------------------------------------- |
 | TanDEM-X                     | tdx        | SAR       | 2007-07-01 |            | global         | [NASA CSDAP](https://csdap.earthdata.nasa.gov/stac/collections/airbus)      |
-| Maxar Stereo                 | maxar      | VHR       | 2007-07-01 |            | global         | [Maxar](https://developers.maxar.com/docs/discovery/)                       |
+| Vantor Stereo                | vantor     | VHR       | 2007-07-01 |            | global         | [Vantor](https://developers.maxar.com/docs/discovery/)                      |
 | Coperincus DEM               | cop30      | SAR       | 2021-04-22 |            | global         | [Microsoft](https://planetarycomputer.microsoft.com/dataset/cop-dem-glo-30) |
 | ICESat-2 ATL06               | atl06      | Altimeter | 2018-10-13 |            | global         | [NASA](https://nsidc.org/data/atl03)                                        |
 | GEDI L2A                     | gedi       | Altimeter | 2019-04-04 | 2023-03-17 | mid-latitudes  | [NASA](https://lpdaac.usgs.gov/products/gedi02_av002/)                      |
@@ -36,7 +36,7 @@ to open an [issue](https://github.com/uw-cryo/coincident/issues).
 
 pcd_background
 pcd
-maxar
+vantor
 G-LiHT
 NCALM
 noaa-coastal-lidar

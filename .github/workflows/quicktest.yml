@@ -24,7 +24,7 @@ jobs:
 
       - name: Run Pytest
         env:
-          MAXAR_API_KEY: ${{ secrets.MAXAR_API_KEY}}
+          VANTOR_API_KEY: ${{ secrets.VANTOR_API_KEY}}
           EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN}}
         run: |
           pixi run networktest -k ${{ github.event.inputs.test-name }}

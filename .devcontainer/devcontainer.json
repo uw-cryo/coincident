@@ -22,8 +22,8 @@
     }
   },
   "secrets": {
-    "MAXAR_API_KEY": {
-      "description": "Maxar Platform API Key",
+    "VANTOR_API_KEY": {
+      "description": "Vantor API Key",
       "documentationUrl": "https://developers.maxar.com/docs/authentication/guides/api-key"
     },
     "EARTHDATA_TOKEN": {

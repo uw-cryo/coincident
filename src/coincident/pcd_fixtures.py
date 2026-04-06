@@ -26,7 +26,7 @@ class _NeonFilter(TypedDict):
     site: str
 
 
-class _MaxarFilter(TypedDict):
+class _VantorFilter(TypedDict):
     stereo_ids: list[str]
 
 
@@ -40,7 +40,7 @@ _PcdFilters = TypedDict(
         "3dep": _3depFilter,
         "neon": _NeonFilter,
         "ncalm": dict[str, str],
-        "maxar": _MaxarFilter,
+        "vantor": _VantorFilter,
         "icesat-2": _SatelliteFilter,
         "gedi": _SatelliteFilter,
     },
@@ -64,7 +64,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-122.49869579540385 37.7225321435048, -122.51421754728509 37.78265684820127, -122.47378332685508 37.80994995226257, -122.39815883627537 37.80791177118956, -122.4616240341796 37.74745501281027, -122.49869579540385 37.7225321435048))",
         "filters": {
             "3dep": {"workunit": "CA_SanFrancisco_1_B23"},
-            "maxar": {"stereo_ids": ["10200100DE097E00", "10200100DC70E900"]},
+            "vantor": {"stereo_ids": ["10200100DE097E00", "10200100DC70E900"]},
             "icesat-2": {
                 "granule_ids": [
                     "ATL03_20230117092727_04251806_007_02.h5",
@@ -86,7 +86,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-111.0813927224041 31.894609808770994, -111.01953572428549 31.94798227506963, -111.01317668582358 31.947098123594788, -111.01244165184261 31.886079708871957, -111.07866693825639 31.82683230205409, -111.0813927224041 31.894609808770994))",
         "filters": {
             "3dep": {"workunit": "AZ_PimaCo_2_2021"},
-            "maxar": {"stereo_ids": ["104001006D788E00", "104001006E942500"]},
+            "vantor": {"stereo_ids": ["104001006D788E00", "104001006E942500"]},
             "icesat-2": {
                 "granule_ids": [
                     "ATL03_20211018062519_03941306_007_01.h5",
@@ -109,7 +109,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-98.283830547 40.8319992894, -98.28805470114001 41.185077194343826, -98.26500850845709 41.26193292321868, -98.12052091014777 41.26082060738351, -98.16070277564374 40.89950149849092, -98.283830547 40.8319992894))",
         "filters": {
             "3dep": {"workunit": "NE_Northeast_Phase2_2_2020"},
-            "maxar": {
+            "vantor": {
                 "stereo_ids": [
                     "10200100A1228A00",
                     "102001009D48BC00",
@@ -154,7 +154,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-88.08851055495393 44.65002443734368, -88.07680590851425 44.67237307709082, -88.03832665179429 44.655758940856884, -88.0173511796351 44.62591728077161, -88.03829737314108 44.49921466897285, -88.0855997216971 44.49804855713017, -88.08851055495393 44.65002443734368))",
         "filters": {
             "3dep": {"workunit": "WI_Brown_2_2020"},
-            "maxar": {"stereo_ids": ["104001005ACC6E00", "104001005B461800"]},
+            "vantor": {"stereo_ids": ["104001005ACC6E00", "104001005B461800"]},
             "icesat-2": {"granule_ids": ["ATL03_20200503062653_05760706_007_01.h5"]},
             "gedi": {
                 "granule_ids": [
@@ -171,7 +171,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-84.12671569644924 31.01941095632088, -84.13329816636715 31.568656984115982, -84.11305907559789 31.746612946981553, -84.05059072866084 31.69169387974824, -84.0310090441035 31.606427307310568, -84.02359554302821 31.222141221316225, -84.0384748132213 31.02889768223571, -84.12671569644924 31.01941095632088))",
         "filters": {
             "3dep": {"workunit": "GA_Central_3_2019"},
-            "maxar": {"stereo_ids": ["10300100A26FD700", "10300100A132F900"]},
+            "vantor": {"stereo_ids": ["10300100A26FD700", "10300100A132F900"]},
             "icesat-2": {
                 "granule_ids": [
                     "ATL03_20200203102127_05910606_007_01.h5",
@@ -204,7 +204,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-119.5492575968371 38.06526583204277, -119.53734167552687 38.158315268657255, -119.5179123158 38.142176044699994, -119.51402521180002 38.1612131398, -119.4894348269374 38.16262019618275, -119.4619867552 38.11630312370001, -119.42909732468549 38.120153556330095, -119.41637399179986 38.06973536669182, -119.5492575968371 38.06526583204277))",
         "filters": {
             "3dep": {"workunit": "CA_YosemiteNP_2019"},
-            "maxar": {"stereo_ids": ["102001008E543300", "102001008EE06B00"]},
+            "vantor": {"stereo_ids": ["102001008E543300", "102001008EE06B00"]},
             "icesat-2": {"granule_ids": ["ATL03_20191008182255_01810506_007_02.h5"]},
             "gedi": {
                 "granule_ids": [
@@ -221,7 +221,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "MULTIPOLYGON (((-105.75648307892891 31.48802043744102, -105.74044466388929 31.628299278519673, -105.66532015794972 31.60785307566191, -105.6817150069322 31.462434793354177, -105.75648307892891 31.48802043744102)), ((-105.71457893360392 31.81479372478263, -105.70834640640595 31.866955289316444, -105.6454916290212 31.825676001630708, -105.64514768085348 31.78739286540503, -105.68387842249429 31.787950501271613, -105.71457893360392 31.81479372478263)))",
         "filters": {
             "3dep": {"workunit": "TX_DesertMountains_B1_2018"},
-            "maxar": {"stereo_ids": ["1030010097D5CC00", "10300100984A3A00"]},
+            "vantor": {"stereo_ids": ["1030010097D5CC00", "10300100984A3A00"]},
             "icesat-2": {"granule_ids": ["ATL03_20190924180456_13540406_007_02.h5"]},
             "gedi": {
                 "granule_ids": [
@@ -241,7 +241,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "MULTIPOLYGON (((-106.8087159664412 38.650074344601826, -106.73016207984253 38.712207247211836, -106.71836013228334 38.708171939366025, -106.72185460200924 38.64390009787436, -106.79085198080406 38.59952250275771, -106.8087159664412 38.650074344601826)), ((-106.80789338847443 38.82538692772677, -106.80703647763674 38.98583952996138, -106.79181281241124 38.997555854547585, -106.75071116255369 38.97004033224472, -106.72765182335152 38.78453016515039, -106.80789338847443 38.82538692772677)))",
         "filters": {
             "3dep": {"workunit": "CO_WestCentral_2019"},
-            "maxar": {"stereo_ids": ["102001008BD60800", "1020010088168700"]},
+            "vantor": {"stereo_ids": ["102001008BD60800", "1020010088168700"]},
             "icesat-2": {"granule_ids": ["ATL03_20191008052407_01730502_007_02.h5"]},
             "gedi": {
                 "granule_ids": [
@@ -259,7 +259,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-109.63272177563503 43.16570451142812, -109.68179261170016 43.510454255175134, -109.66662928596925 43.53324932573008, -109.50051092431917 43.60620231011112, -109.46371826882357 43.57911683711135, -109.48539679398097 43.182155622226006, -109.63272177563503 43.16570451142812))",
         "filters": {
             "3dep": {"workunit": "WY_FEMA_East_B9_2019"},
-            "maxar": {"stereo_ids": ["1020010086976A00", "1020010089403600"]},
+            "vantor": {"stereo_ids": ["1020010086976A00", "1020010089403600"]},
             "icesat-2": {
                 "granule_ids": [
                     "ATL03_20190721091907_03560402_007_02.h5",
@@ -294,7 +294,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-111.7469617770448 40.78845879512573, -111.80059326210007 40.76843628665632, -111.79312640671719 40.82830749058919, -111.7439004944288 40.828639975426405, -111.7469617770448 40.78845879512573))",
         "filters": {
             "neon": {"site": "REDB"},
-            "maxar": {
+            "vantor": {
                 "stereo_ids": [
                     "10200100B1301200",
                     "10200100B1172E00",
@@ -317,7 +317,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-71.28063099480259 43.987633244325664, -71.29835822129166 44.02732951660264, -71.20408121118402 44.02583039135407, -71.20107586677035 43.98781654969867, -71.28063099480259 43.987633244325664))",
         "filters": {
             "neon": {"site": "BART"},
-            "maxar": {
+            "vantor": {
                 "stereo_ids": [
                     "10300100988FA400",
                     "1030010098464200",
@@ -345,7 +345,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-122.00390477808023 45.779209212637085, -122.0344861746451 45.82361234666161, -121.99166117102219 45.845309058661, -121.99238741969438 45.78813979017355, -122.00390477808023 45.779209212637085))",
         "filters": {
             "neon": {"site": "WREF"},
-            "maxar": {"stereo_ids": ["10300100965CBA00", "10300100962F3500"]},
+            "vantor": {"stereo_ids": ["10300100965CBA00", "10300100962F3500"]},
             "icesat-2": {
                 "granule_ids": [
                     "ATL03_20190529005739_09280306_007_02.h5",
@@ -366,7 +366,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-115.73124807944741 33.35440577353728, -115.78901631590048 33.401096326313194, -115.79498918906548 33.42186189441148, -115.74678165992853 33.38575032566509, -115.73124807944741 33.35440577353728))",
         "filters": {
             "neon": {"site": "OTLAS.092021.32611.1"},
-            "maxar": {"stereo_ids": ["10300100A178D600", "10300100A3456700"]},
+            "vantor": {"stereo_ids": ["10300100A178D600", "10300100A3456700"]},
             "icesat-2": {
                 "granule_ids": [
                     "ATL03_20200126004754_04630602_007_01.h5",
@@ -449,7 +449,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
 
 # NOTE: could adjust the below to do a cascading_search but this works easier with how
 # I set up the PCD_SITES dict and also the cascading_search automatically dissolves
-# maxar stereo where this preserves both images
+# vantor stereo where this preserves both images
 def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
     """
     Performs on-demand searches to retrieve all data for a given PCD site.
@@ -506,12 +506,12 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
     else:
         gf_als = gpd.GeoDataFrame()
 
-    msg_maxar = "Searching for Maxar data..."
-    logging.info(msg_maxar)
-    gf_maxar = search(
-        dataset="maxar", intersects=gf_overlap_search, datetime=search_date
+    msg_vantor = "Searching for Vantor data..."
+    logging.info(msg_vantor)
+    gf_vantor = search(
+        dataset="vantor", intersects=gf_overlap_search, datetime=search_date
     )
-    gf_maxar = gf_maxar[gf_maxar.id.isin(filters["maxar"]["stereo_ids"])]
+    gf_vantor = gf_vantor[gf_vantor.id.isin(filters["vantor"]["stereo_ids"])]
 
     msg_gedi = "Searching for GEDI data..."
     logging.info(msg_gedi)
@@ -527,7 +527,7 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
 
     return {
         "als": gf_als,
-        "maxar": gf_maxar,
+        "vantor": gf_vantor,
         "is2": gf_is2,
         "gedi": gf_gedi,
         "overlap": gf_overlap_original,
@@ -577,7 +577,7 @@ def download_pcd_files(
         # in-memory stores for GeoDataFrames for the current provider
         provider_data: dict[str, list[gpd.GeoDataFrame]] = {
             "als": [],
-            "maxar": [],
+            "vantor": [],
             "is2": [],
             "gedi": [],
             "overlap": [],
@@ -620,7 +620,7 @@ def download_pcd_files(
                 # so 'pcd_id' column is now redundant, so we drop it.
                 full_gdf = full_gdf.drop(columns=["pcd_id"])
             else:
-                # The provider-specific column does not exist (e.g., for maxar, gedi, anything not usgs als),
+                # The provider-specific column does not exist (e.g., for vantor, gedi, anything not usgs als),
                 # rename our 'pcd_id' column to create it.
                 full_gdf = full_gdf.rename(columns={"pcd_id": id_col_name})
 

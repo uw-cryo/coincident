@@ -90,7 +90,7 @@ filterwarnings = [
   "ignore::pydantic.warnings.PydanticDeprecatedSince20",
   "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning", # Coming from sliderule and boto
   "ignore:datetime.datetime.utcnow().*:DeprecationWarning", # Optional imports
-  "ignore:Unable to authenticate with Maxar API:UserWarning",
+  "ignore:Unable to authenticate with Vantor API:UserWarning",
   "ignore:.* not found:UserWarning", # NOTE: should be able to remove with geopandas 1.1
   "ignore:.*shapely.geos.*:DeprecationWarning:geopandas", # NOTE: only occurring in CI Python 3.10?!
   "ignore:.*unclosed transport.*:ResourceWarning:asyncio",

@@ -19,8 +19,8 @@ try:
     not_authenticated = False
 except:  # noqa: E722
     not_authenticated = True
-maxar_authenticated = pytest.mark.skipif(
-    not_authenticated, reason="Not authenticated with Maxar API"
+vantor_authenticated = pytest.mark.skipif(
+    not_authenticated, reason="Not authenticated with Vantor API"
 )
 
 expected_stac_version = "1.1.0" if version("pystac") >= "1.12" else "1.0.0"
@@ -123,14 +123,14 @@ def test_3d_poly_search():
     assert len(gf_is2_stac) == 4
 
 
-# MAXAR
+# VANTOR
 # =======
 @network
-@maxar_authenticated
+@vantor_authenticated
 @pytest.mark.filterwarnings("ignore:Server does not conform")
-def test_maxar_search(aoi):
+def test_vantor_search(aoi):
     gf = coincident.search.search(
-        dataset="maxar",
+        dataset="vantor",
         intersects=aoi,
         datetime="2023",
         filter="eo:cloud_cover < 20",
@@ -148,10 +148,10 @@ def test_maxar_search(aoi):
 
 
 @network
-@maxar_authenticated
-def test_maxar_large_aoi(large_aoi):
+@vantor_authenticated
+def test_vantor_large_aoi(large_aoi):
     gf = coincident.search.search(
-        dataset="maxar",
+        dataset="vantor",
         intersects=large_aoi,
         datetime="2023",
         # NOTE: this limits total *mono* results, which may or may not have stereo
@@ -161,10 +161,10 @@ def test_maxar_large_aoi(large_aoi):
 
 
 @network
-@maxar_authenticated
-def test_maxar_specific_ids():
+@vantor_authenticated
+def test_vantor_specific_ids():
     gf = coincident.search.search(
-        dataset="maxar", ids=["102001008EC5AC00", "102001008BE9BB00"]
+        dataset="vantor", ids=["102001008EC5AC00", "102001008BE9BB00"]
     )
     assert set(gf.id) == {"102001008BE9BB00", "102001008EC5AC00"}
 

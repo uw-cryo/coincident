@@ -103,9 +103,9 @@ def search(
         stac_api_kwargs["collections"] = dataset.collections
         stac_api_kwargs["intersects"] = aoi
 
-        if dataset.provider == "maxar":
+        if dataset.provider == "vantor":
             # NOTE: not sure how to avoid incompatible type "str | None"; expected "str" for Dataset.attrs
-            client = stac.configure_maxar_client(dataset.area_based_calc)  # type: ignore[attr-defined]
+            client = stac.configure_vantor_client(dataset.area_based_calc)  # type: ignore[attr-defined]
             item_collection = stac.search(client, **stac_api_kwargs)
             gf = stac.to_geopandas(item_collection)
             # TODO: don't add this restriction? Just add to documentation?
@@ -230,7 +230,7 @@ def _validate_spatial_bounds(
 def cascading_search(
     primary_dataset: gpd.GeoDataFrame,
     secondary_datasets: list[tuple[str, int]] = [  # noqa: B006
-        ("maxar", 14),
+        ("vantor", 14),
         ("icesat", 40),
         ("gedi", 40),
     ],
@@ -278,7 +278,7 @@ def cascading_search(
             datetime=date_range,
         )
 
-        if dataset == "maxar":
+        if dataset == "vantor":
             gfs["stereo_pair_id"] = gfs.stereo_pair_identifiers.str[0]
             gfs = gfs.dissolve(by="stereo_pair_id", as_index=False)
 

@@ -71,6 +71,7 @@ def expected_atl06SR_columns():
         "region",
         "rgt",
         "rms_misfit",
+        "segment_id_beg",
         "spot",
         "srcid",
         "w_surface_window_final",
@@ -200,7 +201,7 @@ class TestSlideRule:
         assert set(data.columns) == expected_atl06SR_columns
         # TODO: difference when updating to sliderule v5/icesat-2 v7 ?...
         # assert data.shape == (367, 20)
-        assert data.shape == (494, 17)
+        assert data.shape == (494, 18)
         assert data.index.min().toordinal() == 738304
         assert {1034, 615} == set(data.rgt)
         assert int(data.h_mean.max()) == 3568
