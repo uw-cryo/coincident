@@ -4,6 +4,8 @@ STAC Search Functions
 
 from __future__ import annotations
 
+# maxar-platorm still hasn't renamed and expects MAXAR_API_KEY, so make sure we have both environment variables set before importing!
+import os
 import warnings
 from typing import Any
 
@@ -14,7 +16,9 @@ import pystac_client
 import rustac
 from pystac_client.stac_api_io import StacApiIO
 
-# Any import that requires auth to work will be optional
+if "MAXAR_API_KEY" not in os.environ and "VANTOR_API_KEY" in os.environ:
+    os.environ["MAXAR_API_KEY"] = os.environ["VANTOR_API_KEY"]
+
 try:
     import maxar_platform
 except ImportError:

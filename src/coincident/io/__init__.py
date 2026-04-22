@@ -12,6 +12,18 @@ sliderule.*  Server-side sliderule processing. Return GeoDataFrames or directly 
 
 from __future__ import annotations
 
+import os
+import warnings
+
+if not os.environ.get("EARTHDATA_TOKEN"):
+    warnings.warn(
+        "The 'EARTHDATA_TOKEN' environment variable is not set. "
+        "Some download functionality may not work. "
+        "See https://urs.earthdata.nasa.gov/documentation/for_users/user_token to obtain a token.",
+        UserWarning,
+        stacklevel=2,
+    )
+
 from coincident.io import download, gdal, proj, sliderule, xarray
 
 __all__ = ["download", "gdal", "proj", "sliderule", "xarray"]

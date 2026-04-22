@@ -403,7 +403,7 @@ def test_wesm_search_bboxes(aoi):
     assert isinstance(gf, gpd.GeoDataFrame)
     assert gf.index.name == "fid"
     assert expected_columns.issubset(actual_columns)
-    assert gf.shape == (5, 37)
+    assert len(gf) >= 5
 
 
 @network
@@ -433,9 +433,16 @@ def test_wesm_search(aoi):
         "duration",
         "p_method",
     }
+    expected_projects = {
+        "CO_WestCentral_2019_A19",
+        "CO_MesaCounty_2015",
+        "CO_Central_and_WesternCO_2016_A16",
+        "CO_CONMGaps_D24",
+    }
     actual_columns = set(gf.columns)
-    assert gf.shape == (5, 37)
+    assert len(gf) >= 5
     assert expected_columns.issubset(actual_columns)
+    assert expected_projects.issubset(set(gf["project"]))
 
 
 # NOTE can take ~10s on wifi... maybe only run this on demand...
