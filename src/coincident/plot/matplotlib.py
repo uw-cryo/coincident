@@ -407,6 +407,9 @@ def compare_dems(
     altimetry_pointsize: float = 1.0,
     figsize: tuple[float, float] | None = None,
     suptitle: str | None = None,
+    out_fn: str | None = None,
+    remove_builtup: bool = False,
+    gedi_surface_percentile: int | None = None,
 ) -> dict[str, plt.Axes]:
     """
     Create a panel figure comparing DEM and altimetry elevations.
@@ -533,10 +536,16 @@ def compare_dems(
         bands=["map"],
         aoi=gf_search,
     ).compute()
+    da_hillshade_full = gdaldem(dem_list[1], subcommand="hillshade").compute()
+
     if first_dem.rio.crs.is_projected:
         # NOTE: reproject_match not necessary since just for visualization
         # For analysis we'd want the same grid resolution
-        ds_wc = ds_wc.rio.reproject(first_dem.rio.crs)
+        ds_wc = ds_wc.rio.reproject_match(first_dem, resampling='bilinear')
+    if remove_builtup:
+        # Mask out built-up areas from reference DEM for cleaner visualization of natural landcover
+        builtup_mask = ds_wc["map"] == 50
+        first_dem = first_dem.where(~builtup_mask)
 
     # We'll reuse the lidar hillshade for altimeter plots
     if add_hillshade:
@@ -553,6 +562,31 @@ def compare_dems(
     elevation_mappable = cm.ScalarMappable(norm=elevation_norm, cmap=elevation_cmap)
     diff_norm = matplotlib.colors.Normalize(vmin=diff_clim[0], vmax=diff_clim[1])
     diff_mappable = cm.ScalarMappable(norm=diff_norm, cmap=diff_cmap)
+
+    
+    # PRE-COMPUTE altimetry elevation differences (sample raster once)
+    # ================================================================
+    ### coded with help of chatGSFC
+    if gdf_dict:
+        for key, (gdf, column) in gdf_dict.items():
+            if key != "GEDI":
+                sampling_method = 'bilinear'
+                percentile = None
+            else:
+                if column == "elevation_lm":
+                    sampling_method = 'median'
+                    percentile = None
+                elif gedi_surface_percentile is not None:
+                    sampling_method = 'percentile'
+                    percentile = 100
+                else:
+                    sampling_method = 'max'
+                    percentile = None
+            gdf["elev_diff"] = utils.sample_dem_at_points(
+                first_dem, gdf, diff_col=column,
+                sampling_method=sampling_method, percentile=percentile,
+            )["elev_diff"]
+    # ================================================================
 
     # TOP ROW: Elevation maps
     # ---------------------------
@@ -634,7 +668,10 @@ def compare_dems(
     # raster diffs
     if len(dem_list) > 1:
         for i, dem in enumerate(dem_list[1:], start=1):
+
             diff = dem - first_dem
+            if dem.name == "DTM":
+                diff = -1 * diff  # this is CHM now
             axi = axd[f"diff_{i}"]
             diff.squeeze().plot.imshow(
                 ax=axi,
@@ -648,22 +685,36 @@ def compare_dems(
             # NOTE: no titles seems cleaner for residuals
             # axi.set_title(f"{dem_names[i]} minus {dem_names[0]}")
 
+    #if gdf_dict:
+     #   for key, (gdf, column) in gdf_dict.items():
+      #      axi = axd[f"diff_{key}"]
+       #     # elev_diff already computed in pre-processing block
+        #    altimetry_basemap = 'hillshade'
+         #   plot_altimeter_points(
+         #       gf=gdf,
+          #      column="elev_diff",
+           #     ax=axi,
+            #    da_hillshade=da_hillshade_full if altimetry_basemap == "hillshade" else None,
+             #   facecolor="black",
+              #  basemap_attribution=False,
+               # cmap=diff_cmap,
+                #scatter_kwds={
+                 #   "vmin": diff_clim[0],
+                  #  "vmax": diff_clim[1],
+                   # "s": altimetry_pointsize,
+                #},
+           # )
+
     if gdf_dict:
-        for _, (key, (gdf, column)) in enumerate(gdf_dict.items() if gdf_dict else []):
+        for key, (gdf, column) in gdf_dict.items():
             axi = axd[f"diff_{key}"]
-
-            gdf["elev_diff"] = utils.sample_dem_at_points(
-                first_dem, gdf, diff_col=column
-            )["elev_diff"]
-
+            # elev_diff already computed in pre-processing block
             plot_altimeter_points(
                 gf=gdf,
                 column="elev_diff",
                 ax=axi,
-                da_hillshade=da_hillshade if altimetry_basemap == "hillshade" else None,
-                # title=f"{column} minus {dem_names[0]}",
-                facecolor="black",
-                basemap=altimetry_basemap,
+                da_hillshade=None,
+                facecolor="0.76",
                 basemap_attribution=False,
                 cmap=diff_cmap,
                 scatter_kwds={
@@ -700,19 +751,20 @@ def compare_dems(
             )
             axi.set_xlabel("Elevation Difference (m)")
             stats = utils.calc_stats(diff)
-            stats_title = rf"$\mu$={stats['Mean']:.2f}, $\sigma$={stats['Std']:.2f}, $n$={stats['Count']:.1e}".replace(
-                "e+0", "e"
-            )
+            #stats_title = rf"$\mu$={stats['Mean']:.2f}, $\sigma$={stats['Std']:.2f}, $n$={stats['Count']:.1e}".replace(
+            #    "e+0", "e")
+            stats_title = rf"Med={stats['Median']:.2f}, NMAD={stats['NMAD']:.2f}, $n$={stats['Count']:.1e}".replace(
+                "e+0", "e")
+            
             axi.set_title(stats_title, fontsize=8)
 
     # gdf hists
+    # gdf hists
     if gdf_dict:
-        for _, (key, (gdf, column)) in enumerate(gdf_dict.items() if gdf_dict else []):
+        for key, (gdf, column) in gdf_dict.items():
             axi = axd[f"hist_{key}"]
-
-            diff = utils.sample_dem_at_points(first_dem, gdf, diff_col=column)[
-                "elev_diff"
-            ]
+            # Reuse elev_diff computed in pre-processing block
+            diff = gdf["elev_diff"]
             plot_diff_hist(
                 diff,
                 ax=axi,
@@ -720,15 +772,17 @@ def compare_dems(
                 add_stats=False,
             )
             stats = utils.calc_stats(diff)
-            stats_title = rf"$\mu$={stats['Mean']:.2f}, $\sigma$={stats['Std']:.2f}, $n$={stats['Count']:.1e}".replace(
-                "e+0", "e"
-            )
+            stats_title = rf"Med={stats['Median']:.2f}, NMAD={stats['NMAD']:.2f}, $n$={stats['Count']:.1e}".replace(
+                "e+0", "e")
             axi.set_title(stats_title, fontsize=8)
 
     if suptitle:
         plt.suptitle(suptitle, y=1.03, fontsize=14)
-
+    if out_fn:
+        fig.savefig(out_fn, dpi=300, bbox_inches='tight',pad_inches=0.1)
     return axd  # type: ignore[no-any-return]
+
+
 
 
 def boxplot_terrain_diff(
@@ -1296,3 +1350,5 @@ def hist_esa(
         )
 
     return axes
+
+

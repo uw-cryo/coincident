@@ -11,6 +11,8 @@ import pandas as pd
 import xarray as xr
 import xyzservices
 from scipy import stats
+from rasterstats import zonal_stats
+from affine import Affine
 
 
 def get_tiles(name: str) -> xyzservices.TileProvider:
@@ -73,40 +75,123 @@ def get_scale(ax: plt.Axes) -> float:
     return get_haversine_distance(xmin, midlat, xmin + 1, midlat)
 
 
-def sample_dem_at_points(
-    da_dem: xr.DataArray,
-    gdf_points: gpd.GeoDataFrame,
-    diff_col: str | None = None,
-) -> pd.DataFrame:
+def da_to_rasterstats_inputs(da):
     """
-    Sample DEM at point locations from GeoDataFrame using Xarray Advanced Interpolation (bilinear interpolation)
-    If the GeoDataFrame column name is provided (e.g. h_li for IS2 ATL06), also calculate
-    difference by subtracting the sampled raster elevation.
+    Extract numpy array, affine transform, and nodata
+    from an xarray DataArray for use with rasterstats.
 
     Parameters
     ----------
-    da_dem: xr.DataArray
-        DEM as xarray DataArray with only 'x' and 'y' spatial dimensions
-    gdf_points: gpd.GeoDataFrame
-        GeoDataFrame with point geometries to sample DEM at
-    diff_col: Optional[str]
-        Column in GeoDataFrame to difference [gdf_points[diff_col] - DEM]
+    da : xarray.DataArray
+        2D array with dimensions (y, x).
 
     Returns
     -------
-    gpd.pd.GeoDataFrame
-        GeoDataFrame with sampled DEM elevations and optional 'elev_diff' column
+    data : np.ndarray
+    affine : Affine
+    nodata : float or None
+    """
+    data = da.values
+
+    x = da.x.values
+    y = da.y.values
+    res_x = float(x[1] - x[0])
+    res_y = float(y[1] - y[0])  # typically negative for top-down rasters
+
+    # Affine: upper-left corner of the upper-left pixel
+    affine = Affine(res_x, 0, x[0] - res_x / 2,
+                    0, res_y, y[0] - res_y / 2)
+
+    nodata = None
+    if hasattr(da, "rio") and da.rio.nodata is not None:
+        nodata = da.rio.nodata
+    elif "_FillValue" in da.attrs:
+        nodata = da.attrs["_FillValue"]
+    elif "_FillValue" in da.encoding:
+        nodata = da.encoding["_FillValue"]
+
+    return data, affine, nodata
+
+
+
+def sample_windowed_stats(da, gdf, window_radius=12.5,
+                          stats=["mean", "median", "std", "min", "max", "count"],
+                          percentiles=None):
+    """
+    ...
+    percentiles : list of int, optional
+        Percentile values to compute (e.g., [2, 98]).
+    """
+    data, affine, nodata = da_to_rasterstats_inputs(da)
+
+    # Build percentile stat keys for rasterstats
+    pct_keys = []
+    if percentiles:
+        pct_keys = [f"percentile_{p}" for p in percentiles]
+
+    all_stats = list(stats) + pct_keys
+
+    gdf_buf = gdf.copy()
+    gdf_buf["geometry"] = gdf_buf.geometry.buffer(window_radius)
+
+    zs = zonal_stats(
+        gdf_buf,
+        data,
+        affine=affine,
+        nodata=np.nan if nodata is None else nodata,
+        stats=all_stats,
+    )
+
+    return {s: np.array([z[s] for z in zs], dtype=float) for s in all_stats}
+
+def sample_dem_at_points(
+    da_dem: xr.DataArray,
+    gdf_points: gpd.GeoDataFrame,
+    sampling_method: str = 'bilinear',
+    diff_col: str | None = None,
+    percentile: int | None = None,
+) -> pd.DataFrame:
+    """
+    ...
+    percentile : int, optional
+        Percentile to compute within footprint (e.g., 98). Only used when
+        sampling_method='percentile'.
     """
     assert isinstance(da_dem, xr.DataArray), "da_dem must be an xarray.DataArray"
     da_points = gdf_points.get_coordinates().to_xarray()
     # Ensure we don't return a multi-index
     da_dem = da_dem.squeeze()
-    samples = (
-        da_dem.drop_vars(["band", "spatial_ref"])
-        .interp(da_points)
-        .to_dataframe(name="dem_elevation")
-    )
+    if sampling_method == 'bilinear':
+        samples = (
+            da_dem.drop_vars(["band", "spatial_ref"])
+            .interp(da_points)
+            .to_dataframe(name="dem_elevation")
+        )
+    elif sampling_method == 'percentile':
+        if percentile is None:
+            raise ValueError("Must specify `percentile` when sampling_method='percentile'")
+        pct_key = f"percentile_{percentile}"
+        results = sample_windowed_stats(
+            da_dem, gdf_points, window_radius=12.5,
+            stats=['count'], percentiles=[percentile],
+        )
+        count = results['count']
+        output = results[pct_key]
+        output[count < 30] = np.nan
 
+        samples = gdf_points.get_coordinates()
+        samples['dem_elevation'] = output
+    else:
+        results = sample_windowed_stats(
+            da_dem, gdf_points, window_radius=12.5,
+            stats=['count', sampling_method],
+        )
+        count = results['count']
+        output = results[sampling_method]
+        output[count < 30] = np.nan
+
+        samples = gdf_points.get_coordinates()
+        samples['dem_elevation'] = output
     if diff_col is not None:
         samples[diff_col] = gdf_points[diff_col].to_numpy()
         samples["elev_diff"] = (
@@ -114,7 +199,6 @@ def sample_dem_at_points(
         )
 
     return samples
-
 
 def calc_stats(s: gpd.pd.Series) -> dict[str, float]:
     """Calculate basic statistics for a GeoPandas Series"""
