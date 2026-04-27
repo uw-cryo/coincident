@@ -3,7 +3,9 @@ Common plots for each PCD site
 """
 
 from __future__ import annotations
-
+#import pyproj
+#pyproj_dir = '/home/sbhusha1/.conda/envs/coincident/lib/python3.13/site-packages/pyproj/proj_dir/share/proj'
+#pyproj.datadir.set_data_dir(pyproj_dir)
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import contextily as ctx
