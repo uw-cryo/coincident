@@ -4,10 +4,9 @@
 [![Documentation Status][rtd-badge]][rtd-link]
 [![Available on pypi][pypi-version]][pypi-link]
 
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18676195.svg)](https://doi.org/10.5281/zenodo.14327521)
+[![DOI][zenodo-badge]][zenodo-link]
 
-
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/uw-cryo/coincident)
+[![Open in GitHub Codespaces][github-codespaces-badge]][github-codepsaces-link]
 
 <!-- SPHINX-START -->
 
@@ -23,6 +22,10 @@
 [pypi-version]:             https://img.shields.io/pypi/v/coincident
 [rtd-badge]:                https://readthedocs.org/projects/coincident/badge/?version=latest
 [rtd-link]:                 https://coincident.readthedocs.io/en/latest/?badge=latest
+[zenodo-badge]:             https://zenodo.org/badge/DOI/10.5281/zenodo.18676195.svg
+[zenodo-link]:              https://doi.org/10.5281/zenodo.18676195
+[github-codespaces-badge]:  https://github.com/codespaces/badge.svg
+[github-codepsaces-link]:   https://codespaces.new/uw-cryo/coincident
 
 <!-- prettier-ignore-end -->
 
