@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+title: "coincident"
+repository-code: "https://github.com/uw-cryo/coincident"
+version: 0.5
+date-released: "2026-02-17"
+license: "MIT"
+type: software
+abstract: "3D satellite and airborne data archive search and analysis tools for NASA Surface Topography & Vegetation (STV) Precursor Coincident Datasets."
+authors:
+  - given-names: Scott
+    family-names: Henderson
+    affiliation: University of Washington
+    orcid: "https://orcid.org/0000-0003-0624-4965"
+  - given-names: David
+    family-names: Shean
+    affiliation: University of Washington
+    orcid: "https://orcid.org/0000-0003-3840-3860"
+  - given-names: Shashank
+    family-names: Bhushan
+    affiliation: University of Washington
+    orcid: "https://orcid.org/0000-0003-3712-996X"
+  - given-names: Jack
+    family-names: Hayes
+    affiliation: University of Washington
+keywords:
+  - elevation
+  - geodesy
+  - geospatial
+identifiers:
+  - description: "Zenodo DOI for latest release"
+    type: doi
+    value: 10.5281/zenodo.18676195
