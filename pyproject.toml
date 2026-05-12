@@ -26,7 +26,6 @@ readme = "README.md"
 requires-python = ">=3.11"
 
 dependencies = [
-  "aiobotocore[boto3]>=2.26.0,<3",
   "arro3-core",
   "contextily",
   "cql2",
@@ -35,16 +34,17 @@ dependencies = [
   "ipywidgets",
   "matplotlib",
   "matplotlib-scalebar",
-  "maxar-platform>=1.0.7,<2",
+  "maxar-platform",
+  "obstore",
   "pyarrow",
   "pystac-client",
   "odc-stac",
   "requests",
   "rioxarray",
-  "s3fs>=2025.12.0,<2026",
+  "s3fs",
   "scipy",
   "sliderule",
-  "stac-asset>=0.4.7,<0.5",
+  "stac-asset",
   "rustac",
   "tqdm"]
 
@@ -232,6 +232,8 @@ tqdm = ">=4.67.3,<5"
 contextily = ">=1.7.0,<2"
 matplotlib-scalebar = ">=0.9.0,<0.10"
 cartopy = ">=0.25.0,<0.26"
+obstore = ">=0.9.4,<0.10"
+s3fs = ">=2026.4.0,<2027"
 
 [tool.pixi.feature.dev.dependencies]
 mypy = ">=1.20.2,<2"
@@ -249,13 +251,10 @@ sphinx-autodoc-typehints = ">=3.10.2,<4"
 sphinx-copybutton = ">=0.5.2,<0.6"
 sphinx-design = ">=0.7.0,<0.8"
 nbconvert = ">=7.17.1,<8"
+types-requests = ">=2.33.0.20260408, <3"
 
 [tool.pixi.pypi-dependencies]
-# Stuff not on conda-forge
 coincident = {path = ".", editable = true}
-types-requests = ">=2.33.0.20260408, <3"
-#stac-asset = { version = ">=0.4.5"}
-#cloudpathlib = { version = "0.20.0,<0.21", extras = ["s3"]}
 
 [tool.pixi.feature.dev.tasks]
 precommit = "pre-commit run --all-files"

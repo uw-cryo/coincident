@@ -9,7 +9,6 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any
 
-import boto3
 import geopandas as gpd
 import numpy as np
 import odc.stac
@@ -19,8 +18,7 @@ import rasterio
 # NOTE: must import for odc.stac outputs to have .rio accessor
 import rioxarray
 import xarray as xr
-from botocore import UNSIGNED
-from botocore.client import Config
+from obstore.store import S3Store
 from shapely.geometry import MultiPolygon, Polygon, box
 
 import coincident.io.gdal
@@ -535,16 +533,16 @@ def load_ncalm_dem(
     # S3 setup
     bucket = "raster"
     endpoint_url = "https://opentopography.s3.sdsc.edu"
-    s3 = boto3.client(
-        "s3",
-        config=Config(signature_version=UNSIGNED),
-        endpoint_url=endpoint_url,
+    store = S3Store(
+        bucket,
+        endpoint=endpoint_url,
+        skip_signature=True,
     )
 
     # List DEM tiles
     prefix = f"{dataset_id}/{dataset_id}{folder_suffix}/"
-    resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
-    if "Contents" not in resp:
+    objects = store.list(prefix).collect()
+    if not objects:
         msg_no_contents = f"No objects found for prefix {prefix} in bucket {bucket}."
         raise ValueError(msg_no_contents)
 
@@ -556,9 +554,7 @@ def load_ncalm_dem(
     pattern = ".tif"
     # file_ext = ".tif"
     # pattern = f"_{file_code}_1M{file_ext}"
-    key = next(
-        (obj["Key"] for obj in resp["Contents"] if obj["Key"].endswith(pattern)), None
-    )
+    key = next((obj["path"] for obj in objects if obj["path"].endswith(pattern)), None)
     if not key:
         msg_no_overlay = f"No DEM files ({pattern}) found for dataset {dataset_id}"
         raise ValueError(msg_no_overlay)

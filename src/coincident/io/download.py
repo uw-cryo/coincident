@@ -14,13 +14,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-import boto3
 import geopandas as gpd
 import requests  # type: ignore[import-untyped]
 import rioxarray as rxr
 import stac_asset
-from botocore import UNSIGNED
-from botocore.client import Config
+from obstore.store import S3Store
 from pyproj import CRS
 from pystac import Item
 from shapely.geometry import box
@@ -1017,18 +1015,18 @@ def download_ncalm_dem(
     # Ensure the output directory exists
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
-    # S3 client for unsigned access
+    # S3 store for unsigned access
     endpoint_url = "https://opentopography.s3.sdsc.edu"
-    s3 = boto3.client(
-        "s3",
-        config=Config(signature_version=UNSIGNED),
-        endpoint_url=endpoint_url,
+    store = S3Store(
+        bucket,
+        endpoint=endpoint_url,
+        skip_signature=True,
     )
 
     # List objects under the dataset prefix + return folder
     prefix = f"{dataset_id}/{dataset_id}{folder_suffix}/"
-    response = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
-    if "Contents" not in response:
+    objects = store.list(prefix).collect()
+    if not objects:
         msg_empty_project = f"No objects found for prefix {prefix} in bucket {bucket}."
         raise ValueError(msg_empty_project)
 
@@ -1037,9 +1035,7 @@ def download_ncalm_dem(
     aoi_utm = aoi.to_crs(aoi_crs)
 
     # Filter keys by suffix
-    dem_keys = [
-        obj["Key"] for obj in response["Contents"] if obj["Key"].endswith(file_ext)
-    ]
+    dem_keys = [obj["path"] for obj in objects if obj["path"].endswith(file_ext)]
 
     for dem_key in dem_keys:
         dem_url = f"{endpoint_url}/{bucket}/{dem_key}"
@@ -1095,22 +1091,22 @@ def _fetch_ncalm_lpc_tiles(
     # 2. List all .laz keys in pc-bulk
     bucket = "pc-bulk"
     endpoint_url = "https://opentopography.s3.sdsc.edu"
-    s3 = boto3.client(
-        "s3",
-        config=Config(signature_version=UNSIGNED),
-        endpoint_url=endpoint_url,
+    store = S3Store(
+        bucket,
+        endpoint=endpoint_url,
+        skip_signature=True,
     )
     prefix = f"{dataset_name}/"
-    resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix)
-    if "Contents" not in resp:
+    objects = store.list(prefix).collect()
+    if not objects:
         msg_empty_contents = f"No objects found for prefix {prefix} in bucket {bucket}."
         raise ValueError(msg_empty_contents)
 
     # 3. Filter client-side by 1 km tile intersection
     pattern = re.compile(r"(\d+)\_(\d+)\.laz$")
     records = []
-    for obj in resp["Contents"]:
-        key = obj["Key"]
+    for obj in objects:
+        key = obj["path"]
         if not key.endswith(".laz"):
             continue
         m = pattern.search(Path(key).name)
@@ -1137,7 +1133,7 @@ def _fetch_ncalm_lpc_tiles(
         # Path(output_dir).mkdir(parents=True, exist_ok=True)
         for key in gdf["key"]:
             local_path = Path(output_dir) / Path(key).name
-            s3.download_file(bucket, key, str(local_path))
+            local_path.write_bytes(bytes(store.get(key).bytes()))
 
     # 6. Optionally save GeoJSON
     if output_dir:
