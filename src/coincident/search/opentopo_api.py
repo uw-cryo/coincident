@@ -10,13 +10,19 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-import boto3
-import botocore
 import geopandas as gpd
 import pandas as pd
 import requests  # type: ignore[import-untyped]
+from obstore.store import S3Store
 from pandas import Timestamp
 from shapely.geometry import shape
+
+
+def _list_subdirs(store: S3Store, prefix: str) -> list[str]:
+    """Return immediate subdirectory prefixes under `prefix`, each with a trailing slash."""
+    p = prefix if prefix.endswith("/") else prefix + "/"
+    result = store.list_with_delimiter(p)
+    return [cp.rstrip("/") + "/" for cp in result["common_prefixes"]]
 
 
 def _find_noaa_dem_files(
@@ -46,34 +52,26 @@ def _find_noaa_dem_files(
     ValueError
         If no directory is found for dataset_id, or if no matching files are found.
     """
-    # Initialize unsigned S3 client
-    s3 = boto3.client("s3", region_name="us-east-1")
-    s3.meta.events.register("choose-signer.s3.*", botocore.handlers.disable_signing)
+    # Initialize unsigned S3 store
     bucket = "noaa-nos-coastal-lidar-pds"
+    store = S3Store(bucket, region="us-east-1", skip_signature=True)
     dataset_str = str(dataset_id)
 
     # 1) If prefix is 'laz/', we must search one level deeper for geoid subfolders
-    search_prefixes = [prefix]
-    if prefix.rstrip("/").endswith("laz"):
-        # list possible geoid*/ top level under 'laz/'
-        resp = s3.list_objects_v2(Bucket=bucket, Prefix=prefix, Delimiter="/")
-        geoids = [cp["Prefix"] for cp in resp.get("CommonPrefixes", [])]
-        search_prefixes = geoids
+    search_prefixes = (
+        _list_subdirs(store, prefix)
+        if prefix.rstrip("/").endswith("laz")
+        else [prefix if prefix.endswith("/") else prefix + "/"]
+    )
 
     # 2) Find the exact dataset directory under one of the search_prefixes
+    # dem/ folders embed the ID as a suffix (e.g. "NGS_South_TampBay_2021_8869/")
+    # laz/ folders use the ID directly (e.g. "10149/")
     dataset_dir = None
     for p in search_prefixes:
-        pages = s3.get_paginator("list_objects_v2").paginate(
-            Bucket=bucket,
-            Prefix=p,
-            Delimiter="/",
-        )
-        for page in pages:
-            for cp in page.get("CommonPrefixes", []):
-                if dataset_str + "/" in cp["Prefix"]:
-                    dataset_dir = cp["Prefix"]
-                    break
-            if dataset_dir:
+        for cp in _list_subdirs(store, p):
+            if dataset_str in cp.rstrip("/").split("/")[-1]:
+                dataset_dir = cp
                 break
         if dataset_dir:
             break
@@ -85,20 +83,16 @@ def _find_noaa_dem_files(
     # 3) List all objects under dataset_dir and filter by extension
     f_ext = ".laz" if prefix.rstrip("/").endswith("laz") else ".tif"
     files: list[dict[str, str]] = []
-    pages = s3.get_paginator("list_objects_v2").paginate(
-        Bucket=bucket,
-        Prefix=dataset_dir,
-    )
-    for page in pages:
-        for obj in page.get("Contents", []):
-            key = obj["Key"]
-            if key.lower().endswith(f_ext):
-                files.append(
-                    {
-                        "url": f"https://{bucket}.s3.amazonaws.com/{key}",
-                        "name": Path(key).name,
-                    }
-                )
+    objects = store.list(dataset_dir).collect()
+    for obj in objects:
+        key = obj["path"]
+        if key.lower().endswith(f_ext):
+            files.append(
+                {
+                    "url": f"https://{bucket}.s3.amazonaws.com/{key}",
+                    "name": Path(key).name,
+                }
+            )
 
     if not files:
         msg_no_files = f"No '{f_ext}' files found for dataset ID {dataset_id}"
