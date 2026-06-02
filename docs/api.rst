@@ -49,6 +49,7 @@ IO
    sliderule.subset_gedi02a
    sliderule.subset_atl06
    sliderule.process_atl06sr
+   sliderule.subset_atl08
    sliderule.sample_raster
    xarray.to_dataset
    xarray.open_vantor_browse

@@ -81,6 +81,37 @@ def expected_atl06SR_columns():
 
 
 @pytest.fixture(scope="class")
+def expected_atl08_columns():
+    return {
+        "canopy_h_metrics",
+        "canopy_openness",
+        "cycle",
+        "geometry",
+        "gt",
+        "h_canopy",
+        "h_canopy_uncertainty",
+        "h_max_canopy",
+        "h_mean_canopy",
+        "h_min_canopy",
+        "h_te_median",
+        "h_te_uncertainty",
+        "n_ca_photons",
+        "n_seg_ph",
+        "n_te_photons",
+        "region",
+        "rgt",
+        "segment_cover",
+        "segment_id_beg",
+        "segment_landcover",
+        "segment_snowcover",
+        "solar_elevation",
+        "spot",
+        "srcid",
+        "terrain_slope",
+    }
+
+
+@pytest.fixture(scope="class")
 def expected_atl06_columns():
     return {
         "atl06_quality_summary",
@@ -189,6 +220,18 @@ class TestSlideRule:
         # TODO: investigate Alert <-7>: Failure on resource ATL06_20220131125843_06151402_007_01.h5 beam gt3l: H5Coro::Future read failure on /gt3l/land_ice_segments/latitude
         # assert data.shape == (413, 23)
         assert int(data.h_li.max()) == 3569
+
+    def test_subset_atl08(self, tinyaoi, expected_atl08_columns):
+        gf_is2 = coincident.search.search(
+            dataset="icesat-2", intersects=tinyaoi, datetime="2022"
+        )
+        data = coincident.io.sliderule.subset_atl08(gf_is2, aoi=tinyaoi)
+
+        assert isinstance(data, gpd.GeoDataFrame)
+        assert data.crs == "EPSG:9989"
+        assert len(data.attrs["meta"]["request"]["resources"]) == 6
+        assert {1034, 615} == set(data.rgt)
+        assert set(data.columns) == expected_atl08_columns
 
     def test_process_atl06sr(self, tinyaoi, expected_atl06SR_columns):
         gf_is2 = coincident.search.search(
