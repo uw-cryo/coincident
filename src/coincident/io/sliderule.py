@@ -63,6 +63,9 @@ def _decode_worldcover(gf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return gf.replace({"worldcover.value": mapping})
 
 
+_EMPTY_GDF_MSG = "SlideRule returned an empty GeoDataFrame. Check spatial/temporal overlap and filter parameters."
+
+
 @typing.no_type_check
 def _add_raster_samples(
     include_worldcover: bool, include_3dep: bool
@@ -79,6 +82,22 @@ def _add_raster_samples(
         # https://github.com/SlideRuleEarth/sliderule/issues/444
         samples.update({"3dep": {"asset": "usgs3dep-1meter-dem", "use_poi_time": True}})
     return samples
+
+
+def _build_sliderule_params(
+    gf: gpd.GeoDataFrame,
+    aoi: gpd.GeoDataFrame | None,
+    include_worldcover: bool,
+    include_3dep: bool,
+    sliderule_params: dict[str, Any] | None,
+) -> dict[str, Any]:
+    params = _gdf_to_sliderule_params(gf)
+    if aoi is not None:
+        params["poly"] = _gdf_to_sliderule_polygon(aoi)
+    params["samples"] = _add_raster_samples(include_worldcover, include_3dep)
+    if sliderule_params is not None:
+        params.update(sliderule_params)
+    return params
 
 
 @depends_on_optional("sliderule")
@@ -113,33 +132,20 @@ def subset_gedi02a(
     -----
     The function sets `degrade_filter=True` and `l2_quality_filter=True` by default.
     """
-    params = _gdf_to_sliderule_params(gf)
-
     granule_names = gf.assets.apply(_granule_from_assets).to_list()
 
-    if aoi is not None:
-        params["poly"] = _gdf_to_sliderule_polygon(aoi)
-
-    params.update(
-        {
-            "degrade_filter": True,
-            "l2_quality_filter": True,
-        }
-    )
-
-    params["samples"] = _add_raster_samples(include_worldcover, include_3dep)
-
+    gedi_defaults: dict[str, Any] = {"degrade_filter": True, "l2_quality_filter": True}
     if sliderule_params is not None:
-        params.update(sliderule_params)
+        gedi_defaults.update(sliderule_params)
+
+    params = _build_sliderule_params(
+        gf, aoi, include_worldcover, include_3dep, gedi_defaults
+    )
 
     gfsr = sliderule.run("gedi02ax", params, resources=granule_names)
 
     if gfsr.empty:
-        message = "SlideRule returned an empty GeoDataFrame. Check spatial/temporal overlap and filter parameters."
-        warnings.warn(
-            message,
-            stacklevel=2,
-        )
+        warnings.warn(_EMPTY_GDF_MSG, stacklevel=2)
 
     if include_worldcover:
         gfsr = _decode_worldcover(gfsr)
@@ -178,28 +184,18 @@ def subset_atl06(
     -------
         GeoDataFrame with ATL06 standard product measurements.
     """
-    params = _gdf_to_sliderule_params(gf)
-
-    # Note necessary but avoids another CMR search
+    # Not necessary but avoids another CMR search
     granule_names = gf.assets.apply(_granule_from_assets).to_list()
     granule_names = [x.replace("ATL03", "ATL06") for x in granule_names]
 
-    if aoi is not None:
-        params["poly"] = _gdf_to_sliderule_polygon(aoi)
-
-    params["samples"] = _add_raster_samples(include_worldcover, include_3dep)
-
-    # User-provided parameters take precedence
-    if sliderule_params is not None:
-        params.update(sliderule_params)
+    params = _build_sliderule_params(
+        gf, aoi, include_worldcover, include_3dep, sliderule_params
+    )
 
     gfsr = sliderule.run("atl06x", params, resources=granule_names)
 
     if gfsr.empty:
-        message = "SlideRule returned an empty GeoDataFrame. Check spatial/temporal overlap and filter parameters."
-        raise ValueError(
-            message,
-        )
+        raise ValueError(_EMPTY_GDF_MSG)
 
     # Drop poor-quality data
     # https://github.com/orgs/SlideRuleEarth/discussions/441
@@ -208,6 +204,66 @@ def subset_atl06(
     # NOTE: add server-side filtering for NaNs in sliderule.atl06sp?
     if dropna:
         gfsr = gfsr.dropna(subset=["h_li"])
+
+    if include_worldcover:
+        gfsr = _decode_worldcover(gfsr)
+
+    if gfsr.empty:
+        warnings.warn(
+            "Only poor-quality data found after filtering. Resulting GeoDataFrame is empty.",
+            stacklevel=2,
+        )
+
+    return gfsr
+
+
+@depends_on_optional("sliderule")
+def subset_atl08(
+    gf: gpd.GeoDataFrame,
+    aoi: gpd.GeoDataFrame = None,
+    dropna: bool = True,
+    include_worldcover: bool = False,
+    include_3dep: bool = False,
+    sliderule_params: dict[str, Any] | None = None,
+) -> gpd.GeoDataFrame:
+    """
+    Subset ATL08 data using provided GeoDataFrame and optional parameters.
+
+    Parameters
+    ----------
+    gf
+        GeoDataFrame containing the input data from coincident.search.search(dataset='icesat-2').
+    aoi
+        A GeoDataFrame with a POLYGON to subset. The *envelope* of geometries is used to search.
+    dropna
+        Whether to drop rows with NaN values in the 'h_te_median' column.
+    include_worldcover
+        Whether to include WorldCover data in the processing.
+    include_3dep
+        Whether to include 3DEP data in the processing.
+    sliderule_params
+        Additional parameters to pass to the SlideRule atl08x API. Use ``te_quality_score``
+        and ``can_quality_score`` to apply server-side terrain and canopy quality thresholds.
+
+    Returns
+    -------
+        GeoDataFrame with ATL08 standard product measurements.
+    """
+    # Not necessary but avoids another CMR search
+    granule_names = gf.assets.apply(_granule_from_assets).to_list()
+    granule_names = [x.replace("ATL03", "ATL08") for x in granule_names]
+
+    params = _build_sliderule_params(
+        gf, aoi, include_worldcover, include_3dep, sliderule_params
+    )
+
+    gfsr = sliderule.run("atl08x", params, resources=granule_names)
+
+    if gfsr.empty:
+        raise ValueError(_EMPTY_GDF_MSG)
+
+    if dropna:
+        gfsr = gfsr.dropna(subset=["h_te_median"])
 
     if include_worldcover:
         gfsr = _decode_worldcover(gfsr)
