@@ -66,11 +66,12 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             "3dep": {"workunit": "CA_SanFrancisco_1_B23"},
             "vantor": {"stereo_ids": ["10200100DE097E00", "10200100DC70E900"]},
             "icesat-2": {
+                # NOTE: version and revision numbers may change going forward (006_02 -> 007_01, etc.)
                 "granule_ids": [
-                    "ATL03_20230117092727_04251806_007_02.h5",
-                    "ATL03_20230418050714_04251906_007_02.h5",
-                    "ATL03_20230522151905_09511902_007_02.h5",
-                    "ATL03_20230718004632_04252006_007_02.h5",
+                    "ATL03_20230117092727_04251806_007_01.h5",
+                    "ATL03_20230418050714_04251906_007_01.h5",
+                    "ATL03_20230522151905_09511902_007_01.h5",
+                    "ATL03_20230718004632_04252006_007_01.h5",
                 ]
             },
             "gedi": {
@@ -171,7 +172,8 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-84.12671569644924 31.01941095632088, -84.13329816636715 31.568656984115982, -84.11305907559789 31.746612946981553, -84.05059072866084 31.69169387974824, -84.0310090441035 31.606427307310568, -84.02359554302821 31.222141221316225, -84.0384748132213 31.02889768223571, -84.12671569644924 31.01941095632088))",
         "filters": {
             "3dep": {"workunit": "GA_Central_3_2019"},
-            "vantor": {"stereo_ids": ["10300100A26FD700", "10300100A132F900"]},
+            # https://github.com/uw-cryo/coincident/issues/143
+            # "vantor": {"stereo_ids": ["10300100A26FD700", "10300100A132F900"]},
             "icesat-2": {
                 "granule_ids": [
                     "ATL03_20200203102127_05910606_007_01.h5",
@@ -385,66 +387,6 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         },
     },
 }
-
-
-# def load_pcd_geometries() -> gpd.GeoDataFrame:
-#     """
-#     Loads PCD site geometries by downloading them from the latest GitHub release.
-
-#     This function finds the 'pcd_overlap_geometries_2025.parquet' asset from
-#     the latest release, downloads it into memory, and loads it into a GeoDataFrame.
-
-#     Returns:
-#         gpd.GeoDataFrame: A GeoDataFrame with 'pcd_id' and 'geometry' columns.
-
-#     Raises:
-#         FileNotFoundError: If the geometry asset is not found in the latest release.
-#     """
-#     OWNER = "uw-cryo"
-#     REPO = "coincident"
-#     GEOMETRY_FILENAME = "pcd_overlap_geometries_2025.parquet"
-
-#     logging.info("Fetching latest release to find geometry file...")
-#     api_url = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest"
-
-#     try:
-#         response = requests.get(api_url)
-#         response.raise_for_status()
-#         assets = response.json().get("assets", [])
-#     except requests.exceptions.RequestException as e:
-#         msg_git_release = f"Failed to fetch GitHub release info: {e}"
-#         logging.error(msg_git_release)
-#         raise
-
-#     asset_url = next(
-#         (
-#             asset["browser_download_url"]
-#             for asset in assets
-#             if asset["name"] == GEOMETRY_FILENAME
-#         ),
-#         None,
-#     )
-
-#     if not asset_url:
-#         msg_no_asset = (
-#             f"Asset '{GEOMETRY_FILENAME}' not found in the latest GitHub release."
-#         )
-#         raise FileNotFoundError(msg_no_asset)
-
-#     # logging.info(f"Downloading geometry file: {GEOMETRY_FILENAME}")
-
-#     try:
-#         response = requests.get(asset_url)
-#         response.raise_for_status()
-
-#         # read downloaded content directly from an in-memory buffer
-#         buffer = io.BytesIO(response.content)
-#         return gpd.read_parquet(buffer)
-
-#     except requests.exceptions.RequestException as e:
-#         msg_no_download = f"Failed to download geometry file: {e}"
-#         logging.error(msg_no_download)
-#         raise
 
 
 # NOTE: could adjust the below to do a cascading_search but this works easier with how
