@@ -221,7 +221,7 @@ def _validate_spatial_bounds(
     """
     if not isinstance(intersects, gpd.GeoDataFrame | gpd.GeoSeries):
         message = f"intersects value must be a GeoDataFrame or GeoSeries, not {type(intersects)}"
-        raise ValueError(message)
+        raise ValueError(message)  # noqa: TRY004 (keep public exception type)
     if len(intersects) > 1:
         message = "GeoDataFrame contains multiple geometries, search requires a single geometry"
         raise ValueError(message)
