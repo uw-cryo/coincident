@@ -31,8 +31,16 @@ jobs:
           pixi run lint
 
       - name: Run Pytest
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          pixi run test
+
+      # Network tests only run on demand
+      - name: Run Pytest (network)
+        if: github.event_name == 'workflow_dispatch'
         env:
           VANTOR_API_KEY: ${{ secrets.VANTOR_API_KEY}}
           EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN}}
+          NEON_API_TOKEN: ${{ secrets.NEON_API_TOKEN}}
         run: |
           pixi run networktest

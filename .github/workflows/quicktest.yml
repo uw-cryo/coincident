@@ -26,5 +26,6 @@ jobs:
         env:
           VANTOR_API_KEY: ${{ secrets.VANTOR_API_KEY}}
           EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN}}
+          NEON_API_TOKEN: ${{ secrets.NEON_API_TOKEN}}
         run: |
           pixi run networktest -k ${{ github.event.inputs.test-name }}

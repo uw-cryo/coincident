@@ -293,6 +293,7 @@ def test_tdx_search(aoi):
         "sar:observation_direction",
         "airbus:product_type_detail",
         "airbus:radiometric_correction",
+        "csda:eula",
         "bbox",
         "geometry",
         "dayofyear",

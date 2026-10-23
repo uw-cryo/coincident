@@ -90,7 +90,7 @@ def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
     )
     duration = gf.end_datetime - gf.start_datetime
     gf["datetime"] = gf.start_datetime + duration / 2
-    gf["dayofyear"] = gf.datetime.dt.dayofyear
+    gf["dayofyear"] = gf.datetime.dt.day_of_year
     gf["duration"] = duration.dt.days
 
     return gf

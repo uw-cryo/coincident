@@ -93,6 +93,7 @@ filterwarnings = [
   "ignore:Unable to authenticate with Vantor API:UserWarning",
   "ignore:.* not found:UserWarning", # NOTE: should be able to remove with geopandas 1.1
   "ignore:.*shapely.geos.*:DeprecationWarning:geopandas", # NOTE: only occurring in CI Python 3.10?!
+  "ignore:The 'shapely.ops.transform:DeprecationWarning:odc.geo", # NOTE: shapely>=2.2, odc-geo<=0.5.3
   "ignore:.*unclosed transport.*:ResourceWarning:asyncio",
   "ignore:SLIDERULE_GITHUB_TOKEN is set:UserWarning", # from test_sliderule.py
   "ignore:.*EARTHDATA_TOKEN.* is not set:UserWarning", # from io.__init__.py
@@ -211,62 +212,61 @@ docs = {features = ["docs"], solve-group = "default"}
 # If a package is listed in project.dependencies but not repeated here, it is installed from pypi
 [tool.pixi.dependencies]
 python = "*"
-arro3-core = ">=0.8.0,<0.9"
-cql2 = ">=0.5.5, <0.6"
-gdal = ">=3.12.3,<4"
-geopandas = ">=1.1.3,<2"
-ipykernel = ">=7.2.0,<8"
-ipywidgets = ">=8.1.8,<9"
+arro3-core = ">=0.9.1,<0.10"
+cql2 = ">=0.6.0,<0.7"
+gdal = ">=3.13.3,<4"
+geopandas = ">=1.2.0,<2"
+ipykernel = ">=7.4.0,<8"
+ipywidgets = ">=8.1.9,<9"
 jsonschema = ">=4.26.0,<5"
-libgdal-arrow-parquet = ">=3.12.3,<4"
-matplotlib-base = ">=3.10.8,<4"
-odc-stac = ">=0.5.2,<0.6"
-pyarrow = ">=23.0.1,<24"
-pystac-client = ">=0.9.0,<0.10"
-requests = ">=2.33.1,<3"
-rioxarray = ">=0.22.0,<0.23"
-scipy = ">=1.17.1,<2"
-sliderule = ">=5.3.2,<6"
-rustac = ">=0.9.9,<0.10"
-tqdm = ">=4.67.3,<5"
-contextily = ">=1.7.0,<2"
+libgdal-arrow-parquet = ">=3.13.3,<4"
+matplotlib-base = ">=3.11.2,<4"
+odc-stac = ">=0.5.3,<0.6"
+pyarrow = ">=25.0.0,<26"
+pystac-client = ">=0.9.1,<0.10"
+requests = ">=2.34.2,<3"
+rioxarray = ">=0.23.0,<0.24"
+scipy = ">=1.18.1,<2"
+sliderule = ">=5.7.0,<6"
+rustac = ">=0.9.17,<0.10"
+tqdm = ">=4.70.1,<5"
+contextily = ">=1.7.1,<2"
 matplotlib-scalebar = ">=0.9.0,<0.10"
-cartopy = ">=0.25.0,<0.26"
-obstore = ">=0.9.4,<0.10"
-s3fs = ">=2026.4.0,<2027"
+cartopy = ">=0.26.0,<0.27"
+obstore = ">=0.11.1,<0.12"
+s3fs = ">=2026.9.0,<2027"
 
 [tool.pixi.feature.dev.dependencies]
-mypy = ">=1.20.2,<2"
-pre-commit = ">=4.6.0,<5"
-pylint = ">=4.0.5,<5"
-pytest = ">=9.0.3,<10"
+mypy = ">=2.4.0,<3"
+pre-commit = ">=4.7.0,<5"
+pylint = ">=4.1.3,<5"
+pytest = ">=9.1.1,<10"
 
 [tool.pixi.feature.docs.dependencies]
-mapclassify = ">=2.10.0,<3"
+mapclassify = ">=2.11.0,<3"
 myst-nb = ">=1.4.0,<2"
-myst-parser = ">=5.0.0,<6"
+myst-parser = ">=5.1.0,<6"
 pydata-sphinx-theme = ">=0.17.1,<0.18"
-sphinx = ">=9.1.0,<10"
-sphinx-autodoc-typehints = ">=3.10.2,<4"
+sphinx = ">=9.2.0,<10"
+sphinx-autodoc-typehints = ">=3.17.2,<4"
 sphinx-copybutton = ">=0.5.2,<0.6"
 sphinx-design = ">=0.7.0,<0.8"
-nbconvert = ">=7.17.1,<8"
-types-requests = ">=2.33.0.20260408, <3"
+nbconvert = ">=7.17.2,<8"
+types-requests = ">=2.33.0.20261006,<3"
 
 [tool.pixi.pypi-dependencies]
 coincident = {path = ".", editable = true}
 
 [tool.pixi.feature.dev.tasks]
-precommit = "pre-commit run --all-files"
+precommit = { cmd = "pre-commit run --all-files", description = "Run all pre-commit hooks on all files" }
 # NOTE: consider --output-format=github for github actions
-lint = "pylint src"
-networktest = "pytest --cov --cov-report=xml --cov-report=term --durations=0"
-test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
+lint = { cmd = "pylint src", description = "Lint source code with pylint" }
+networktest = { cmd = "pytest --cov --cov-report=xml --cov-report=term --durations=0", description = "Run all tests, including those requiring network access and credentials" }
+test = { cmd = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term", description = "Run tests that don't require network access" }
 
 [tool.pixi.feature.docs.tasks]
 # NOTE: || true to always update readthedocs even if there are errors
-monitor_docs = "./monitor-docs.sh &"
 # NOTE: gtime on macos via `brew install gnu-time` or simply `time` on linux
-check_notebook_resource_usage = "gtime -v jupyter nbconvert --to notebook --output /tmp/nbconverted.ipynb --execute" # docs/examples/quickstart.ipynb
-docs = "python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true"
-rebuild_docs = "rm -rf docs/_build ; python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true"
+check_notebook_resource_usage = { cmd = "gtime -v jupyter nbconvert --to notebook --output /tmp/nbconverted.ipynb --execute", description = "Execute a notebook and report time and memory usage" } # docs/examples/quickstart.ipynb
+docs = { cmd = "python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true", description = "Build HTML documentation" }
+rebuild_docs = { cmd = "rm -rf docs/_build ; python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true", description = "Remove previous build and rebuild HTML documentation" }
