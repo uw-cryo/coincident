@@ -48,13 +48,20 @@ def construct_custom_utm_crs(
     else:
         crs_ellipsoid = pyproj.CRS("EPSG:6318")  # specific NAD83(2011) ellipsoid
 
+    utm_zone = crs_default.utm_zone
+    if utm_zone is None:
+        message = f"epsg must be a UTM CRS, but {epsg} has no UTM zone."
+        raise ValueError(message)
+
     proj_crs = ProjectedCRS(
-        name=f"{crs_ellipsoid.name} / UTM zone {crs_default.utm_zone}",
+        name=f"{crs_ellipsoid.name} / UTM zone {utm_zone}",
         geodetic_crs=crs_ellipsoid,
-        conversion=UTMConversion(crs_default.utm_zone.strip("N")),
+        conversion=UTMConversion(utm_zone.strip("N")),
     )
 
     # (EPSG:5703)
+    vert_crs: pyproj.CRS
+    tmp_crs: pyproj.CRS
     if geoid:
         if geoid.startswith("GEOID"):
             vert_crs = VerticalCRS(
@@ -71,7 +78,7 @@ def construct_custom_utm_crs(
             raise ValueError(message)
 
         tmp_crs = CompoundCRS(
-            name=f"{crs_ellipsoid.name} / UTM zone {crs_default.utm_zone} + {vert_crs.name}",
+            name=f"{crs_ellipsoid.name} / UTM zone {utm_zone} + {vert_crs.name}",
             components=[proj_crs, vert_crs],
         )
     else:

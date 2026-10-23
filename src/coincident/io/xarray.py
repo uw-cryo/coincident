@@ -39,6 +39,21 @@ nasadem_to_7912 = "https://raw.githubusercontent.com/uw-cryo/3D_CRS_Transformati
 threedep_to_7912 = "https://raw.githubusercontent.com/uw-cryo/3D_CRS_Transformation_Resources/refs/heads/main/3dep/USGS_Seamless_DEM_13_7912.vrt"
 
 
+def _open_rasterio_dataarray(path: str, **kwargs: Any) -> xr.DataArray:
+    """rioxarray.open_rasterio for a single raster, narrowed to a DataArray"""
+    da = rioxarray.open_rasterio(path, **kwargs)
+    if not isinstance(da, xr.DataArray):
+        msg = f"Expected a single raster DataArray from {path}, got {type(da).__name__}"
+        raise TypeError(msg)
+    return da
+
+
+def _coarsen_mean(da: xr.DataArray, factor: int) -> xr.DataArray:
+    """Coarsen x and y by an integer factor using the mean"""
+    # coarsen reductions are added dynamically, so mypy doesn't see .mean()
+    return da.coarsen(x=factor, y=factor, boundary="trim").mean()  # type: ignore[attr-defined,no-any-return]
+
+
 def load_dem_7912(dataset: str, aoi: gpd.GeoDataFrame) -> xr.DataArray:
     """
     Load a Digital Elevation Model (DEM) dataset and clip it to the area of interest (AOI).
@@ -75,12 +90,13 @@ def load_dem_7912(dataset: str, aoi: gpd.GeoDataFrame) -> xr.DataArray:
 
     # Pull all data into memory
     with ENV:
-        return (
+        da: xr.DataArray = (
             xr.open_dataarray(uri, engine="rasterio")
             .rio.clip_box(**aoi.bounds)
             .squeeze()
             .load()
         )
+        return da
 
 
 # def load_dem(
@@ -114,7 +130,7 @@ def to_dataset(
     aoi: gpd.GeoDataFrame | None = None,
     mask: bool = False,
     **kwargs: Any,
-) -> xr.DataArray:
+) -> xr.Dataset:
     """
     Convert a GeoDataFrame to an xarray DataArray using odc.stac
 
@@ -385,7 +401,7 @@ def load_usgs_dem(
         )
 
     if res > 1:
-        merged_dem = merged_dem.coarsen(x=res, y=res, boundary="trim").mean()
+        merged_dem = _coarsen_mean(merged_dem, res)
 
     return merged_dem
 
@@ -463,9 +479,9 @@ def load_neon_dem(
     dem_dataarrays = []
     for f in filtered_files:
         try:
-            da = rioxarray.open_rasterio(f["url"], masked=True, chunks="auto")
+            da = _open_rasterio_dataarray(f["url"], masked=True, chunks="auto")
             if res > 1:
-                da = da.coarsen(x=res, y=res, boundary="trim").mean()
+                da = _coarsen_mean(da, res)
             dem_dataarrays.append(da)
         except Exception as error:
             msg_neon_open = f"Unable to open file {f['name']}. Error: {error}"
@@ -559,7 +575,7 @@ def load_ncalm_dem(
         msg_no_overlay = f"No DEM files ({pattern}) found for dataset {dataset_id}"
         raise ValueError(msg_no_overlay)
     url = f"{endpoint_url}/{bucket}/{key}"
-    da = rioxarray.open_rasterio(url, masked=True)
+    da = _open_rasterio_dataarray(url, masked=True)
     # select band1
     da = da.sel(band=1).drop_vars("band")
 
@@ -569,7 +585,7 @@ def load_ncalm_dem(
 
     # coarsen if requested
     if res > 1:
-        da = da.coarsen(x=res, y=res, boundary="trim").mean()
+        da = _coarsen_mean(da, res)
 
     # clip if requested
     if clip:
@@ -669,10 +685,10 @@ def load_noaa_dem(
     for _, row in selected_tiles.iterrows():
         try:
             # Open the remote raster using rioxarray without loading full data (only metadata and chunks)
-            da = rioxarray.open_rasterio(row["url"], masked=True, chunks="auto")
+            da = _open_rasterio_dataarray(row["url"], masked=True, chunks="auto")
             # Coarsen the resolution if a factor greater than 1 is provided.
             if res > 1:
-                da = da.coarsen(x=res, y=res, boundary="trim").mean()
+                da = _coarsen_mean(da, res)
             dem_dataarrays.append(da)
         except Exception as error:
             msg = f"Unable to open file from URL {row['url']}. Error: {error}"
@@ -760,7 +776,7 @@ def load_gliht(
         GDAL_HTTP_COOKIEFILE="/tmp/cookies.txt",
         GDAL_HTTP_COOKIEJAR="/tmp/cookies.txt",
     ):
-        da = rioxarray.open_rasterio(
+        da = _open_rasterio_dataarray(
             data_assets[asset_keys_to_load[0]]["href"],
             masked=mask,
             **kwargs,

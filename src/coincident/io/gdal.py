@@ -75,7 +75,7 @@ def create_vrt(
     a_srs: str | None = None,  # override SRS
     prepend_vsicurl: bool = True,
     ignore_overviews: bool = True,
-) -> xr.DataArray:
+) -> str:
     """
     Create a VRT (Virtual Raster) from a list of URLs using GDAL.
     https://gdal.org/en/stable/api/python/utilities.html#osgeo.gdal.BuildVRT
@@ -189,7 +189,7 @@ def warp_with_pipeline(
     dstSRS: str,
     pipeline: str,
     resampling: str = "bilinear",
-) -> xr.DataArray:
+) -> str:
     """
     Use a PROJ pipeline to ensure 3D reprojection happens
 
@@ -209,8 +209,8 @@ def warp_with_pipeline(
 
     Returns
     -------
-    xr.DataArray
-        DataArray containing the warped raster
+    str
+        Path to the VRT file containing the warped raster
 
 
     Examples
