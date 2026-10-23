@@ -4,12 +4,14 @@ Common functions for matplotlib visualizations
 
 from __future__ import annotations
 
+from typing import Literal
+
 import geopandas as gpd
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
 import xyzservices
+from matplotlib.axes import Axes
 from scipy import stats
 
 
@@ -18,7 +20,7 @@ def get_tiles(name: str) -> xyzservices.TileProvider:
     return xyzservices.providers.flatten()[name]
 
 
-def get_aspect(data: xr.DataArray | gpd.GeoDataFrame) -> float | None:
+def get_aspect(data: xr.DataArray | gpd.GeoDataFrame) -> float | Literal["auto"]:
     """Determine best plot aspect ratio based on latitude and CRS for a xr.DataArray or gpd.GeoDataFrame"""
     if isinstance(data, gpd.GeoDataFrame):
         bounds = data.total_bounds
@@ -38,7 +40,7 @@ def get_aspect(data: xr.DataArray | gpd.GeoDataFrame) -> float | None:
     elif crs.is_projected:
         aspect = 1.0
     else:
-        aspect = None  # Not sure how matplotlib does default aspect...
+        return "auto"  # matplotlib default
 
     return aspect
 
@@ -63,7 +65,7 @@ def get_haversine_distance(lon1: float, lat1: float, lon2: float, lat2: float) -
     return float(R * c)
 
 
-def get_scale(ax: plt.Axes) -> float:
+def get_scale(ax: Axes) -> float:
     """distance in meters of two points for a given latitude (Y coordinate) which are one full degree of longitude (X) apart
     ax: matplotlib axis object with lon, lat coordinates
     """
