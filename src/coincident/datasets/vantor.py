@@ -8,18 +8,8 @@ https://www.vantor.com
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
 
 from coincident.datasets.general import Dataset
-
-
-class Collection(str, Enum):
-    """wv01,wv02,wv03-vnir,ge01"""
-
-    wv01 = "wv01"
-    wv02 = "wv02"
-    wv03_vnir = "wv03-vnir"
-    ge01 = "ge01"
 
 
 @dataclass

@@ -178,7 +178,7 @@ def _get_neon_flight_geometry(url: str, fallback_geometry: Any) -> Any:
     """
     try:
         response = requests.get(url, headers=_neon_headers(), timeout=30)
-    except Exception:
+    except requests.RequestException:
         return fallback_geometry
 
     if response.status_code != 200:
