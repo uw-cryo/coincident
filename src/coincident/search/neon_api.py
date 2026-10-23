@@ -33,7 +33,7 @@ from typing import Any
 
 import geopandas as gpd
 import pandas as pd
-import requests  # type: ignore[import-untyped]
+import requests
 from pandas import Timestamp
 from shapely.geometry import Point, Polygon, box
 from shapely.ops import unary_union

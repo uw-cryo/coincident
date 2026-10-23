@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 import geopandas as gpd
-import requests  # type: ignore[import-untyped]
+import requests
 
 OWNER = "uw-cryo"
 REPO = "coincident"

@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import geopandas as gpd
-import requests  # type: ignore[import-untyped]
+import requests
 import rioxarray as rxr
 import stac_asset
 from obstore.store import S3Store
