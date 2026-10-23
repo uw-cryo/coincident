@@ -59,7 +59,7 @@ def _set_config(
             exclude=exclude_keys,
         )
     else:
-        config = stac_asset.Config(**config)
+        config = stac_asset.Config(**(config or {}))
 
     return config
 
