@@ -265,7 +265,6 @@ test = { cmd = "pytest -o markers=network -m 'not network' --cov --cov-report=xm
 
 [tool.pixi.feature.docs.tasks]
 # NOTE: || true to always update readthedocs even if there are errors
-monitor_docs = { cmd = "./monitor-docs.sh &", description = "Monitor docs build in the background" }
 # NOTE: gtime on macos via `brew install gnu-time` or simply `time` on linux
 check_notebook_resource_usage = { cmd = "gtime -v jupyter nbconvert --to notebook --output /tmp/nbconverted.ipynb --execute", description = "Execute a notebook and report time and memory usage" } # docs/examples/quickstart.ipynb
 docs = { cmd = "python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true", description = "Build HTML documentation" }
