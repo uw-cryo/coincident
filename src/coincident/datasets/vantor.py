@@ -28,9 +28,9 @@ class Stereo(Dataset):
 
     alias: str = "vantor"
     has_stac_api: bool = True
-    collections: list[Collection] = field(
+    collections: list[str] = field(
         default_factory=lambda: ["wv01", "wv02", "wv03-vnir", "ge01"]
-    )  # type: ignore[assignment]
+    )
     search: str = "https://api.maxar.com/discovery/v1/search"
     start: str = "2007-01-01"
     end: str | None = None
