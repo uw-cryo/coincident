@@ -28,7 +28,7 @@ metadata describing the spatial and temporal footprints for each data source at
 each site.
 
 - **Airborne Lidar**: **USGS 3DEP**, **NEON**, and **NCALM** acquisitions.
-- **Satellite Lidar**: **ICESat-2** (ATL06) and **GEDI** (L2A).
+- **Satellite Lidar**: **ICESat-2** (ATL03) and **GEDI** (L2A).
 - **Stereo Imagery**: **Vantor** in-track stereo images.
 
 The output from the download script includes GeoJSONs for each data provider and
@@ -72,6 +72,13 @@ The final sites include:
 
 ```{note}
 The NCALM site's "ground truth" is not aerial lidar, but rather dense aerial SfM from a drone
+```
+
+```{note}
+The Vantor stereo imagery for `GA_Central_3_2019` is no longer available
+([#143](https://github.com/uw-cryo/coincident/issues/143)), so this site no
+longer has four-way overlap and `read_pcd_site()` returns no stereo images for
+it.
 ```
 
 While this initial dataset focuses on four-way overlap, it excludes some regions
