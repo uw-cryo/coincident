@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 from importlib import resources
+from types import TracebackType
 from typing import Any
 
 # import rustac
@@ -44,7 +45,7 @@ class TemporaryEnvVars:
         self,
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
-        traceback: Any,
+        traceback: TracebackType | None,
     ) -> None:
         # Restore original values
         for key, value in self.old_values.items():

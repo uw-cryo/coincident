@@ -41,7 +41,7 @@ def test_unknown_dataset_specified():
 
 def test_polygon_invalid_type():
     with pytest.raises(
-        ValueError, match="intersects value must be a GeoDataFrame or GeoSeries"
+        TypeError, match="intersects value must be a GeoDataFrame or GeoSeries"
     ):
         coincident.search.search(dataset="3dep", intersects="-120, 40, -121, 41")
 
