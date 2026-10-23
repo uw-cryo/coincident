@@ -420,6 +420,16 @@ def test_wesm_load_by_fid():
 
 
 @network
+def test_3dep_1m_search_datetime():
+    aoi = gpd.GeoDataFrame(geometry=[box(-105.3, 39.9, -105.1, 40.1)], crs="EPSG:4326")
+    gf = coincident.search.search(
+        dataset="3dep-1m", intersects=aoi, datetime=["2020-01-01", "2024-12-31"]
+    )
+    assert len(gf) > 0
+    assert (gf["start_datetime"].dt.year >= 2020).all()
+
+
+@network
 def test_wesm_search(aoi):
     gf = coincident.search.search(
         dataset="3dep",
