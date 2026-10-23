@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from matplotlib.axes import Axes
 from matplotlib.collections import QuadMesh
 
 import coincident.io.xarray
@@ -76,7 +77,7 @@ def test_plot_dem_no_hillshade(dem_tiny):
     ax = coincident.plot.plot_dem(dem_tiny.elevation.squeeze(), ax, title="Test DEM")
     # Check basic plot properties
     assert ax.get_title() == "Test DEM", "Plot title does not match expected value"
-    assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
+    assert isinstance(ax, Axes), "Return value should be a matplotlib Axes object"
 
 
 @gdal_python_bindings_available
@@ -91,7 +92,7 @@ def test_plot_dem_with_hillshade(dem_tiny):
         alpha=0.5,
     )
     # Check that both hillshade and DEM layers are present
-    assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
+    assert isinstance(ax, Axes), "Return value should be a matplotlib Axes object"
     assert len(ax.images) == 2, "Plot should contain exactly 2 image layers"
     assert ax.images[0].get_alpha() == 1.0, "Hillshade layer alpha should be 1.0"
     assert ax.images[1].get_alpha() == 0.5, "DEM layer alpha should be 0.5"
@@ -104,7 +105,7 @@ def test_plot_altimeter_points_no_hillshade(points_tiny):
         points_tiny, "h_li", ax=ax, title="Test Points"
     )
 
-    assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
+    assert isinstance(ax, Axes), "Return value should be a matplotlib Axes object"
     assert ax.get_title() == "Test Points", "Plot title does not match expected value"
 
 
@@ -120,7 +121,7 @@ def test_plot_altimeter_points_with_hillshade(dem_tiny, points_tiny):
         ax=ax,
         da_hillshade=dem_tiny.hillshade,
     )
-    assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
+    assert isinstance(ax, Axes), "Return value should be a matplotlib Axes object"
     assert len(ax.images) == 1, "Plot should contain exactly 1 hillshade layer"
     assert len(ax.collections) == 1, "Plot should contain exactly 1 point collection"
     assert ax.images[0].get_alpha() == 1.0, "Hillshade layer alpha should be 1.0"
@@ -149,7 +150,7 @@ def test_plot_diff_hist_point(points_tiny, dem_tiny):
     )
     _f, ax = plt.subplots()
     ax = coincident.plot.plot_diff_hist(gf_diff.elev_diff, ax=ax)
-    assert isinstance(ax, plt.Axes), "Return value should be a matplotlib Axes object"
+    assert isinstance(ax, Axes), "Return value should be a matplotlib Axes object"
     assert len(ax.get_children()) > 0, "Figure should exist"
     assert ax.get_legend() is not None, "Legend should exist"
 
@@ -307,7 +308,7 @@ def test_esa_hist(dem_tiny_utm, points_tiny_utm):
     axd = coincident.plot.hist_esa(
         [dem_tiny_utm, dem_tiny_utm_2],
     )[0]  # since hist_esa returns a numpy array
-    assert isinstance(axd, plt.Axes), (
+    assert isinstance(axd, Axes), (
         "Return value should be a matplotlib Axes object (raster test)"
     )
     assert len(axd.get_children()) > 0, "Figure should exist (raster test)"
@@ -330,7 +331,7 @@ def test_esa_hist(dem_tiny_utm, points_tiny_utm):
         [dem_tiny_utm, points_tiny_utm],
         elev_col="h_li",
     )[0]  # since hist_esa returns a numpy array
-    assert isinstance(axd, plt.Axes), (
+    assert isinstance(axd, Axes), (
         "Return value should be a matplotlib Axes object (gdf test)"
     )
     assert len(axd.get_children()) > 0, "Figure should exist (gdf test)"

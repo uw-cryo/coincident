@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 import geopandas as gpd
 import rustac
@@ -14,6 +14,15 @@ from coincident.overlaps import subset_by_minimum_area
 from coincident.search import neon_api, opentopo_api, stac, wesm
 
 _pystac_client = _ItemSearch("no_url")
+
+
+def _format_datetime_range(datetime: str | list[str]) -> str:
+    """Use pystac_client to parse all supported datetime inputs into 'start/end' ('..' if open)"""
+    formatted = _pystac_client._format_datetime(cast("str | list[Any]", datetime))
+    if formatted is None:
+        msg = f"Unable to parse datetime: {datetime}"
+        raise ValueError(msg)
+    return formatted
 
 
 def search(
@@ -61,7 +70,7 @@ def search(
     # Validate Datetimes
     _validate_temporal_bounds(dataset, datetime)
     if datetime is not None:
-        start, end = _pystac_client._format_datetime(datetime).split("/")
+        start, end = _format_datetime_range(datetime).split("/")
         search_start = (
             gpd.pd.to_datetime(start).tz_localize(None) if start != ".." else None
         )
@@ -121,10 +130,9 @@ def search(
         # Configure duckdb for searching STAC GeoParquet
         duck_client = rustac.DuckdbClient()
         table = duck_client.search_to_arrow(
-            href=dataset.search,
+            href=cast("str", dataset.search),
             intersects=aoi,
-            start_datetime=search_start,
-            end_datetime=search_end,
+            datetime=_format_datetime_range(datetime) if datetime is not None else None,
             **kwargs,
         )
         gf = stac.to_geopandas(table)
@@ -186,7 +194,7 @@ def _validate_temporal_bounds(
     """
     if datetime is not None:
         # Use pystac_client to parse all supported datetime inputs
-        start, end = _pystac_client._format_datetime(datetime).split("/")
+        start, end = _format_datetime_range(datetime).split("/")
 
         if start != ".." and dataset.end is not None:
             search_start = gpd.pd.to_datetime(start)

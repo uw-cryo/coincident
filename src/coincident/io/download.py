@@ -16,7 +16,6 @@ from typing import Any
 
 import geopandas as gpd
 import requests
-import rioxarray as rxr
 import stac_asset
 from obstore.store import S3Store
 from pyproj import CRS
@@ -26,8 +25,10 @@ from tqdm.autonotebook import tqdm
 
 from coincident.io.xarray import (
     _aoi_to_polygon_string,
+    _coarsen_mean,
     _fetch_noaa_tile_geometry,
     _filter_items_by_project,
+    _open_rasterio_dataarray,
 )
 from coincident.search.neon_api import (
     _get_tile_bbox,
@@ -45,30 +46,27 @@ def _set_config(
 ) -> stac_asset.Config:
     """Set stac_asset config. Automatically add Vantor API key if needed"""
     if item.properties.get("constellation") == "vantor" and config is None:
-        config = stac_asset.Config(
-            http_headers={"VANTOR-API-KEY": os.environ.get("VANTOR_API_KEY")}
+        return stac_asset.Config(
+            http_headers={"VANTOR-API-KEY": os.environ.get("VANTOR_API_KEY", "")}
         )
-    elif "nasa.gov" in item.get_self_href() and config is None:
+    if "nasa.gov" in (item.get_self_href() or "") and config is None:
         exclude_keys = []
         for key in item.assets:
             # thumbnail & browse repeated in some cases
             if key.startswith(("s3", "thumbnail")):
                 exclude_keys.append(key)
-        config = stac_asset.Config(
+        return stac_asset.Config(
             earthdata_token=os.environ.get("EARTHDATA_TOKEN"),
             exclude=exclude_keys,
         )
-    else:
-        config = stac_asset.Config(**(config or {}))
-
-    return config
+    return stac_asset.Config(**(config or {}))
 
 
 async def read_href(
     item: Item,
     asset: str,
     config: dict[str, Any] | None = None,
-) -> Item:
+) -> bytes:
     """
     Open and read a STAC asset href into local memory
 
@@ -95,11 +93,11 @@ async def read_href(
             bytes = asyncio.run(read_href(item, "cloud-cover"))
             gf_clouds = gpd.read_file(bytes)
     """
-    href = item.assets.get(asset).href
+    href = item.assets[asset].href
 
-    config = _set_config(item, config)
+    stac_config = _set_config(item, config)
 
-    return await stac_asset.read_href(href, config=config)
+    return await stac_asset.read_href(href, config=stac_config)
 
 
 async def download_item(
@@ -135,10 +133,10 @@ async def download_item(
     """
     posixpath = Path(path)
 
-    config = _set_config(item, config)
+    stac_config = _set_config(item, config)
 
     # NOTE: prevent in-place modification of remote hrefs with item.clone()
-    return await stac_asset.download_item(item.clone(), posixpath, config=config)
+    return await stac_asset.download_item(item.clone(), posixpath, config=stac_config)
 
 
 def download_files(
@@ -768,10 +766,10 @@ def download_noaa_dem(
 
         try:
             # Open the remote DEM using rioxarray (reads only metadata/chunks, not full data into memory).
-            dem = rxr.open_rasterio(tile_url, masked=True, chunks="auto")
+            dem = _open_rasterio_dataarray(tile_url, masked=True, chunks="auto")
             # Optionally coarsen the DEM if a resolution factor greater than 1 is provided.
             if res > 1:
-                dem = dem.coarsen(x=res, y=res, boundary="trim").mean()
+                dem = _coarsen_mean(dem, res)
             # If clipping is enabled, reproject the AOI to the DEM's CRS and clip.
             if clip:
                 dem_crs = dem.rio.crs
@@ -1039,7 +1037,7 @@ def download_ncalm_dem(
 
     for dem_key in dem_keys:
         dem_url = f"{endpoint_url}/{bucket}/{dem_key}"
-        dem = rxr.open_rasterio(dem_url, masked=True)
+        dem = _open_rasterio_dataarray(dem_url, masked=True)
 
         # Reproject if needed
         if dem.rio.crs != aoi_crs:

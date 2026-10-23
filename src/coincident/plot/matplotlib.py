@@ -4,17 +4,22 @@ Selection of visualizations using matplotlib.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal, cast
 
 import contextily as ctx
 import geopandas as gpd
 import matplotlib.colors
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import pystac
 import xarray as xr
 from matplotlib import cm
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
 from matplotlib.ticker import FuncFormatter
+from matplotlib.typing import HashableList
 from matplotlib_scalebar.scalebar import ScaleBar
 from shapely.geometry import box
 
@@ -27,11 +32,11 @@ from coincident.search import search
 
 def plot_esa_worldcover(
     da: xr.DataArray,
-    ax: plt.Axes | None = None,
-    cax: plt.Axes | None = None,
+    ax: Axes | None = None,
+    cax: Axes | None = None,
     add_colorbar: bool = True,
     add_labels: bool = True,
-) -> plt.Axes:
+) -> Axes:
     """
     Map view of ESA WorldCover data.
 
@@ -81,13 +86,17 @@ def plot_esa_worldcover(
 
     da = da.squeeze()
 
+    fig: Figure | None
     if ax is None:
         fig, ax = plt.subplots()
         ax.set_aspect(aspect=utils.get_aspect(da))
     else:
-        fig = ax.get_figure()
+        fig = ax.get_figure(root=True)
+        if fig is None:
+            msg = "ax must belong to a matplotlib Figure"
+            raise ValueError(msg)
 
-    da.plot(
+    da.plot(  # type: ignore[call-arg]  # xarray plot accessor typing
         ax=ax, cmap=cmap, norm=normalizer, add_labels=add_labels, add_colorbar=False
     )
     year = str(da.time.dt.year.to_numpy())
@@ -120,8 +129,8 @@ def plot_esa_worldcover(
 
 
 def plot_vantor_browse(
-    item: pystac.Item, ax: plt.Axes | None = None, overview_level: int = 0
-) -> plt.Axes:
+    item: pystac.Item, ax: Axes | None = None, overview_level: int = 0
+) -> Axes:
     """
     Map view of Vantor browse image from a STAC item using Matplotlib.
 
@@ -163,18 +172,18 @@ def _coarsen_array(da: xr.DataArray, factor: int) -> xr.DataArray:
     """Helper function to coarsen an xarray DataArray by a given factor before plotting"""
     # dims can either be 'x' and 'y' or 'longitude' and 'latitude' etc
     coarsen_dict = dict.fromkeys(set(da.squeeze().dims), factor)
-    return da.coarsen(coarsen_dict, boundary="trim").mean()
+    return da.coarsen(coarsen_dict, boundary="trim").mean()  # type: ignore[attr-defined,no-any-return]
 
 
 def plot_dem(
     da: xr.DataArray,
-    ax: plt.Axes | None = None,
+    ax: Axes | None = None,
     cmap: str = "inferno",
     title: str = "",
     add_hillshade: bool = False,
     downsample_factor: int | None = None,
     **kwargs: Any,
-) -> plt.Axes:
+) -> Axes:
     """
     Map view of DEM with an option to plot a hillshade underneath
 
@@ -237,7 +246,7 @@ def plot_dem(
 def plot_altimeter_points(
     gf: gpd.GeoDataFrame,
     column: str,
-    ax: plt.Axes | None = None,
+    ax: Axes | None = None,
     cmap: str = "inferno",
     title: str = "",
     facecolor: str = "black",
@@ -245,7 +254,7 @@ def plot_altimeter_points(
     basemap_attribution: bool | str | None = None,
     da_hillshade: xr.DataArray | None = None,
     scatter_kwds: dict[str, Any] | None = None,
-) -> plt.Axes:
+) -> Axes:
     """
     Map view of laser altimeter point data with an optional hillshade background.
 
@@ -322,11 +331,11 @@ def plot_altimeter_points(
 
 def plot_diff_hist(
     differences: np.ndarray,
-    ax: plt.Axes | None = None,
+    ax: Axes | None = None,
     range: tuple[float, float] | None = None,
     add_stats: bool = True,
     **kwargs: Any,
-) -> plt.Axes:
+) -> Axes:
     """
     Histogram of elevation differences with median and mean lines.
 
@@ -380,10 +389,10 @@ def plot_diff_hist(
 
 
 def _style_ax(
-    ax: plt.Axes,
+    ax: Axes,
     clear_labels: bool = True,
     facecolor: str | None = None,
-    aspect: float | None = None,
+    aspect: float | Literal["auto"] | None = None,
     altimetry_basemap: str | None = None,
     basemap_attribution: bool | str | None = False,
     crs: str | None = None,
@@ -437,7 +446,7 @@ def compare_dems(
     altimetry_pointsize: float = 1.0,
     figsize: tuple[float, float] | None = None,
     suptitle: str | None = None,
-) -> dict[str, plt.Axes]:
+) -> dict[str, Axes]:
     """
     Create a panel figure comparing DEM and altimetry elevations.
 
@@ -532,7 +541,10 @@ def compare_dems(
     # All columns get same width, but first two rows have 2x height
     gs_kw = {"width_ratios": [1] * len(mosaic[0]), "height_ratios": [2, 2, 1]}
     fig, axd = plt.subplot_mosaic(
-        mosaic, gridspec_kw=gs_kw, figsize=figsize, layout="constrained"
+        cast(list[HashableList[str]], mosaic),
+        gridspec_kw=gs_kw,
+        figsize=figsize,
+        layout="constrained",
     )
 
     # Determine aspect ratio
@@ -629,9 +641,9 @@ def compare_dems(
 
     # Add colorbar to last plot in top row
     # https://matplotlib.org/stable/users/explain/axes/colorbar_placement.html#colorbars-attached-to-fixed-aspect-ratio-axes
-    cax = axi.inset_axes([1.04, 0.1, 0.1, 0.8])  # [x0, y0, width, height]
+    cax = axi.inset_axes((1.04, 0.1, 0.1, 0.8))  # (x0, y0, width, height)
     cbar = fig.colorbar(elevation_mappable, cax=cax, label="Elevation (m)")
-    if add_hillshade:
+    if add_hillshade and cbar.solids is not None:
         cbar.solids.set(alpha=0.5)
 
     # MIDDLE ROW: Differences
@@ -695,13 +707,13 @@ def compare_dems(
             # fmt: on
 
     # Add colorbar to last plot in middle row
-    cax = axi.inset_axes([1.04, 0.1, 0.1, 0.8])  # [x0, y0, width, height]
+    cax = axi.inset_axes((1.04, 0.1, 0.1, 0.8))  # (x0, y0, width, height)
     cbar = fig.colorbar(
         diff_mappable,
         cax=cax,
         label="Elevation Difference (m)",
     )
-    if altimetry_basemap == "hillshade":
+    if altimetry_basemap == "hillshade" and cbar.solids is not None:
         cbar.solids.set(alpha=0.5)
 
     # BOTTOM ROW: Histograms
@@ -712,15 +724,15 @@ def compare_dems(
     if len(dem_list) > 1:
         for i, dem in enumerate(dem_list[1:], start=1):
             axi = axd[f"hist_{i}"]
-            diff = (dem - first_dem).to_numpy().flatten()
+            diff_values = (dem - first_dem).to_numpy().flatten()
             plot_diff_hist(
-                diff,
+                diff_values,
                 ax=axi,
                 range=(diff_clim[0], diff_clim[1]),
                 add_stats=False,
             )
             axi.set_xlabel("Elevation Difference (m)")
-            stats = utils.calc_stats(diff)
+            stats = utils.calc_stats(diff_values)
             stats_title = rf"$\mu$={stats['Mean']:.2f}, $\sigma$={stats['Std']:.2f}, $n$={stats['Count']:.1e}".replace(
                 "e+0", "e"
             )
@@ -749,19 +761,19 @@ def compare_dems(
     if suptitle:
         plt.suptitle(suptitle, y=1.03, fontsize=14)
 
-    return axd  # type: ignore[no-any-return]
+    return axd
 
 
 def boxplot_terrain_diff(
     dem_list: list[xr.Dataset | gpd.GeoDataFrame],
-    ax: plt.Axes | None = None,
+    ax: Axes | None = None,
     terrain_v: str = "slope",
     terrain_groups: np.ndarray | None = None,
     ylims: list[float] | None = None,
     title: str = "Elevation Differences (m) by Terrain",
     ylabel: str = "Elevation Difference (m)",
     elev_col: str | None = None,
-) -> plt.Axes:
+) -> Axes:
     """
     Box plots of elevation differences by terrain group for two input elevation datasets.
     (e.g. elevation differences over varying slopes for two DEMs)
@@ -911,7 +923,7 @@ def boxplot_terrain_diff(
         yticks = np.arange(ymin, ymax + spacing, spacing)
         ylims = [ymin, ymax]
         ax.set_yticks(yticks)
-    ax.set_ylim(ylims)
+    ax.set_ylim(ylims[0], ylims[1])
     ax.set_xticks(np.arange(len(box_labels)))
     ax.set_xticklabels(box_labels, rotation=45, fontsize=10)
     ax.set_ylabel(ylabel, fontsize=12)
@@ -927,13 +939,13 @@ def boxplot_terrain_diff(
 # slope wrapper for boxplot_terrain_diff()
 def boxplot_slope(
     dem_list: list[xr.Dataset | gpd.GeoDataFrame],
-    ax: plt.Axes | None = None,
+    ax: Axes | None = None,
     slope_bins: np.ndarray | None = None,
     ylims: list[float] | None = None,
     title: str = "Elevation Differences (m) by Slope",
     ylabel: str = "Elevation Difference (m)",
     elev_col: str | None = None,
-) -> plt.Axes:
+) -> Axes:
     """
     Boxplots of elevation differences grouped by elevation values.
     Grouped on the first dem in dem_list, which must have an 'slope' variable
@@ -980,13 +992,13 @@ def boxplot_slope(
 
 def boxplot_elevation(
     dem_list: list[xr.Dataset | gpd.GeoDataFrame],
-    ax: plt.Axes | None = None,
+    ax: Axes | None = None,
     elevation_bins: np.ndarray | None = None,
     ylims: list[float] | None = None,
     title: str = "Elevation Differences (m) by Source Elevation",
     ylabel: str = "Elevation Difference (m)",
     elev_col: str | None = None,
-) -> plt.Axes:
+) -> Axes:
     """
     Boxplots of elevation differences grouped by elevation values.
     Grouped on the first dem in dem_list, which must have an 'elevation' variable
@@ -1034,13 +1046,13 @@ def boxplot_elevation(
 
 def boxplot_aspect(
     dem_list: list[xr.Dataset | gpd.GeoDataFrame],
-    ax: plt.Axes | None = None,
+    ax: Axes | None = None,
     aspect_bins: np.ndarray | None = None,
     ylims: list[float] | None = None,
     title: str = "Elevation Differences (m) by Source Aspect",
     ylabel: str = "Elevation Difference (m)",
     elev_col: str | None = None,
-) -> plt.Axes:
+) -> Axes:
     """
     Boxplots of elevation differences grouped by aspect values.
     Grouped on the first dem in dem_list, which must have an 'aspect' variable
@@ -1085,7 +1097,7 @@ def boxplot_aspect(
 
 
 def _create_stats_legend(
-    ax: plt.Axes,
+    ax: Axes,
     stats_dict: dict[str, float],
 ) -> None:
     """
@@ -1107,21 +1119,19 @@ def _create_stats_legend(
 
     # Append Std, NMAD, and Count to legend
     handles.append(
-        plt.Line2D([0], [0], color="none", label=f"{'Std':<7}{stats_dict['Std']:>5.2f}")
+        Line2D([0], [0], color="none", label=f"{'Std':<7}{stats_dict['Std']:>5.2f}")
     )
     handles.append(
-        plt.Line2D(
-            [0], [0], color="none", label=f"{'NMAD':<7}{stats_dict['NMAD']:>5.2f}"
-        )
+        Line2D([0], [0], color="none", label=f"{'NMAD':<7}{stats_dict['NMAD']:>5.2f}")
     )
     handles.append(
-        plt.Line2D([0], [0], color="none", label=f"{'Min':<7}{stats_dict['Min']:>5.1f}")
+        Line2D([0], [0], color="none", label=f"{'Min':<7}{stats_dict['Min']:>5.1f}")
     )
     handles.append(
-        plt.Line2D([0], [0], color="none", label=f"{'Max':<7}{stats_dict['Max']:>5.1f}")
+        Line2D([0], [0], color="none", label=f"{'Max':<7}{stats_dict['Max']:>5.1f}")
     )
     handles.append(
-        plt.Line2D(
+        Line2D(
             [0],
             [0],
             color="none",
@@ -1139,7 +1149,7 @@ def hist_esa(
     dem_list: list[xr.Dataset | gpd.GeoDataFrame],
     elev_col: str | None = None,
     min_count: int = 30,
-) -> plt.Figure:
+) -> npt.NDArray[np.object_]:
     """
     Histogram of elevation differences between DEMs or point data, grouped by ESA World Cover 2021 land cover class.
 
@@ -1159,6 +1169,8 @@ def hist_esa(
     if len(dem_list) != 2:
         msg_len = "dem_list must contain exactly two datasets"
         raise ValueError(msg_len)
+
+    axes: npt.NDArray[np.object_]
 
     # calculate elevation differences if second dataset is a GDF
     if isinstance(dem_list[1], gpd.GeoDataFrame):

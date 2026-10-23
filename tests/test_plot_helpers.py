@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import matplotlib.patches
-import matplotlib.pyplot as plt
 import pytest
+from matplotlib.axes import Axes
 
 
 @pytest.fixture
@@ -13,9 +13,7 @@ def assert_boxplot():
 
     def _assert_boxplot(axd, expected_boxes):
         """Helper to verify boxplot properties"""
-        assert isinstance(axd, plt.Axes), (
-            "Return value should be a matplotlib Axes object"
-        )
+        assert isinstance(axd, Axes), "Return value should be a matplotlib Axes object"
         assert len(axd.get_children()) > 0, "Figure should exist"
         assert (
             len(
