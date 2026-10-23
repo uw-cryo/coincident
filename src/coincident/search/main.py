@@ -216,12 +216,14 @@ def _validate_spatial_bounds(
 
     Raises
     ------
-    ValueError
+    TypeError
         If the AOI is not type GeoDataFrame or GeoSeries
+    ValueError
+        If the AOI contains multiple geometries
     """
     if not isinstance(intersects, gpd.GeoDataFrame | gpd.GeoSeries):
         message = f"intersects value must be a GeoDataFrame or GeoSeries, not {type(intersects)}"
-        raise ValueError(message)  # noqa: TRY004 (keep public exception type)
+        raise TypeError(message)
     if len(intersects) > 1:
         message = "GeoDataFrame contains multiple geometries, search requires a single geometry"
         raise ValueError(message)
