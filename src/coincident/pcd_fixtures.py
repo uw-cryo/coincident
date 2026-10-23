@@ -57,6 +57,13 @@ class PcdSiteParams(TypedDict):
     filters: _PcdFilters
 
 
+# TODO: some granule_ids are no longer returned by read_pcd_site() because their
+# current catalog footprints fall 3-57 km outside the site search area. Check whether
+# this is a metadata change or a real mismatch, and archive the original fixture data
+# since old versions are not kept forever (Oct 2026):
+# - gedi: AZ_PimaCo_2_2021 (3), TX_DesertMountains_B1_2018 (2), CO_WestCentral_2019 (1),
+#   WY_FEMA_East_B9_2019 (5)
+# - icesat-2: WY_FEMA_East_B9_2019 (12400402, 12780406)
 PCD_SITES: dict[str, PcdSiteParams] = {
     "CA_SanFrancisco_1_B23": {
         "provider": "USGS",
@@ -207,7 +214,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "filters": {
             "3dep": {"workunit": "CA_YosemiteNP_2019"},
             "vantor": {"stereo_ids": ["102001008E543300", "102001008EE06B00"]},
-            "icesat-2": {"granule_ids": ["ATL03_20191008182255_01810506_007_02.h5"]},
+            "icesat-2": {"granule_ids": ["ATL03_20191008182255_01810506_007_01.h5"]},
             "gedi": {
                 "granule_ids": [
                     "GEDI02_A_2019279200308_O04626_02_T03812_02_003_01_V002",
@@ -224,7 +231,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "filters": {
             "3dep": {"workunit": "TX_DesertMountains_B1_2018"},
             "vantor": {"stereo_ids": ["1030010097D5CC00", "10300100984A3A00"]},
-            "icesat-2": {"granule_ids": ["ATL03_20190924180456_13540406_007_02.h5"]},
+            "icesat-2": {"granule_ids": ["ATL03_20190924180456_13540406_007_01.h5"]},
             "gedi": {
                 "granule_ids": [
                     "GEDI02_A_2019249064153_O04152_02_T01470_02_003_01_V002",
@@ -244,7 +251,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "filters": {
             "3dep": {"workunit": "CO_WestCentral_2019"},
             "vantor": {"stereo_ids": ["102001008BD60800", "1020010088168700"]},
-            "icesat-2": {"granule_ids": ["ATL03_20191008052407_01730502_007_02.h5"]},
+            "icesat-2": {"granule_ids": ["ATL03_20191008052407_01730502_007_01.h5"]},
             "gedi": {
                 "granule_ids": [
                     "GEDI02_A_2019228215125_O03836_03_T03938_02_003_01_V002",
@@ -264,10 +271,10 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             "vantor": {"stereo_ids": ["1020010086976A00", "1020010089403600"]},
             "icesat-2": {
                 "granule_ids": [
-                    "ATL03_20190721091907_03560402_007_02.h5",
-                    "ATL03_20190723212639_03940406_007_02.h5",
-                    "ATL03_20190819075518_07980402_007_02.h5",
-                    "ATL03_20190821200249_08360406_007_02.h5",
+                    "ATL03_20190721091907_03560402_007_01.h5",
+                    "ATL03_20190723212639_03940406_007_01.h5",
+                    "ATL03_20190819075518_07980402_007_01.h5",
+                    "ATL03_20190821200249_08360406_007_01.h5",
                     "ATL03_20190917063123_12400402_007_02.h5",
                     "ATL03_20190919183853_12780406_007_02.h5",
                 ]
@@ -329,8 +336,8 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             },
             "icesat-2": {
                 "granule_ids": [
-                    "ATL03_20190903043904_10250402_007_02.h5",
-                    "ATL03_20190807181029_06210406_007_02.h5",
+                    "ATL03_20190903043904_10250402_007_01.h5",
+                    "ATL03_20190807181029_06210406_007_01.h5",
                 ]
             },
             "gedi": {
@@ -350,9 +357,9 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             "vantor": {"stereo_ids": ["10300100965CBA00", "10300100962F3500"]},
             "icesat-2": {
                 "granule_ids": [
-                    "ATL03_20190529005739_09280306_007_02.h5",
-                    "ATL03_20190522125829_08290302_007_02.h5",
-                    "ATL03_20190821083817_08290402_007_02.h5",
+                    "ATL03_20190529005739_09280306_007_01.h5",
+                    "ATL03_20190522125829_08290302_007_01.h5",
+                    "ATL03_20190821083817_08290402_007_01.h5",
                 ]
             },
             "gedi": {
@@ -448,12 +455,16 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
     else:
         gf_als = gpd.GeoDataFrame()
 
-    msg_vantor = "Searching for Vantor data..."
-    logging.info(msg_vantor)
-    gf_vantor = search(
-        dataset="vantor", intersects=gf_overlap_search, datetime=search_date
-    )
-    gf_vantor = gf_vantor[gf_vantor.id.isin(filters["vantor"]["stereo_ids"])]
+    if "vantor" in filters:
+        msg_vantor = "Searching for Vantor data..."
+        logging.info(msg_vantor)
+        gf_vantor = search(
+            dataset="vantor", intersects=gf_overlap_search, datetime=search_date
+        )
+        gf_vantor = gf_vantor[gf_vantor.id.isin(filters["vantor"]["stereo_ids"])]
+    else:
+        # e.g. stereo imagery no longer available https://github.com/uw-cryo/coincident/issues/143
+        gf_vantor = gpd.GeoDataFrame()
 
     msg_gedi = "Searching for GEDI data..."
     logging.info(msg_gedi)
