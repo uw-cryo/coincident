@@ -466,7 +466,10 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
         gf_vantor = gf_vantor[gf_vantor.id.isin(filters["vantor"]["stereo_ids"])]
     else:
         # e.g. stereo imagery no longer available https://github.com/uw-cryo/coincident/issues/143
-        gf_vantor = gpd.GeoDataFrame()
+        # keep id, datetime and geometry so plotting/mapping code works for every site
+        gf_vantor = gpd.GeoDataFrame(
+            {"id": [], "datetime": []}, geometry=[], crs="EPSG:4326"
+        )
 
     msg_gedi = "Searching for GEDI data..."
     logger.info(msg_gedi)
