@@ -7,7 +7,7 @@ from __future__ import annotations
 # maxar-platorm still hasn't renamed and expects MAXAR_API_KEY, so make sure we have both environment variables set before importing!
 import os
 import warnings
-from typing import Any
+from typing import Any, cast
 
 import arro3.core
 import geopandas as gpd
@@ -50,7 +50,8 @@ def _filter_assets(assets: gpd.GeoDataFrame) -> dict[str, str]:
 def to_geopandas(
     collection: list[pystac.Item]
     | pystac.item_collection.ItemCollection
-    | arro3.core.Table,
+    | arro3.core.Table
+    | None,
 ) -> gpd.GeoDataFrame:
     """
     Convert a STAC ItemCollection to a GeoDataFrame.
@@ -109,12 +110,12 @@ def to_pystac_items(gf: gpd.GeoDataFrame) -> list[pystac.Item]:
     item_collection = pystac.item_collection.ItemCollection.from_dict(
         feature_collection
     )
-    return item_collection.items  # type: ignore[no-any-return]
+    return item_collection.items
 
 
 def search(
-    client: pystac_client.client.Client, **kwargs: dict[str, Any] | None
-) -> pystac_client.item_search.ItemSearch:
+    client: pystac_client.client.Client, **kwargs: Any
+) -> pystac.item_collection.ItemCollection:
     """Search any STAC API (e.g. https://github.com/nasa/cmr-stac)"""
     # NOTE: add logging for kwargs?
     # print(kwargs)
@@ -133,7 +134,7 @@ def configure_vantor_client(
     # Custom Vantor setting
     client.area_based_calc = area_based_calc
 
-    return client
+    return cast("pystac_client.client.Client", client)
 
 
 def configure_stac_client(url: str) -> pystac_client.client.Client:
