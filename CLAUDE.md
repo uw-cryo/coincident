@@ -28,6 +28,9 @@ pixi run pytest tests/test_search.py::test_function_name
 # Lint
 pixi run lint
 
+# Type check (runs in the pixi env so mypy sees all dependencies, not in pre-commit)
+pixi run typecheck
+
 # Pre-commit hooks
 pixi run precommit
 ```

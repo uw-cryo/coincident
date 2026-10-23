@@ -30,6 +30,10 @@ jobs:
         run: |
           pixi run lint
 
+      - name: Run mypy
+        run: |
+          pixi run typecheck
+
       - name: Run Pytest
         if: github.event_name != 'workflow_dispatch'
         run: |

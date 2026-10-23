@@ -127,8 +127,8 @@ files = ["src", "tests"]
 strict = true
 warn_unreachable = true
 warn_unused_configs = true
-# NOTE: not sure why mypy not finding dependency libraries, so disabling this check...
-# error: Cannot find implementation or library stub for module named "geopandas"  [import-not-found]
+# NOTE: geopandas, pandas, shapely, sliderule, maxar_platform, osgeo and others
+# ship no type information (or need separate stub packages), so they are typed as Any
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
@@ -263,6 +263,8 @@ precommit = { cmd = "pre-commit run --all-files", description = "Run all pre-com
 lint = { cmd = "pylint src", description = "Lint source code with pylint" }
 networktest = { cmd = "pytest --cov --cov-report=xml --cov-report=term --durations=0", description = "Run all tests, including those requiring network access and credentials" }
 test = { cmd = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term", description = "Run tests that don't require network access" }
+# NOTE: run mypy here rather than pre-commit so it sees the types of all installed dependencies
+typecheck = { cmd = "mypy", description = "Type check src and tests with mypy" }
 
 [tool.pixi.feature.docs.tasks]
 # NOTE: || true to always update readthedocs even if there are errors
