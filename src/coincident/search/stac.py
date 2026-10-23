@@ -86,7 +86,7 @@ def to_geopandas(
 
     # Additional columns for convenience
     # NOTE: these become entries under STAC properties
-    gf["dayofyear"] = gf["datetime"].dt.dayofyear
+    gf["dayofyear"] = gf["datetime"].dt.day_of_year
 
     return gf
 

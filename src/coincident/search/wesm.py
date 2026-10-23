@@ -7,12 +7,13 @@ from __future__ import annotations
 
 import os
 from importlib import resources
+from types import TracebackType
 from typing import Any
 
 # import rustac
 import pandas as pd
 import pyogrio
-import requests  # type: ignore[import-untyped]
+import requests
 from geopandas import GeoDataFrame, read_file
 from pandas import Timedelta, Timestamp
 from shapely.geometry import box
@@ -44,7 +45,7 @@ class TemporaryEnvVars:
         self,
         exc_type: type[BaseException] | None,
         exc_value: BaseException | None,
-        traceback: Any,
+        traceback: TracebackType | None,
     ) -> None:
         # Restore original values
         for key, value in self.old_values.items():
@@ -90,7 +91,7 @@ def stacify_column_names(gf: GeoDataFrame) -> GeoDataFrame:
     )
     duration = gf.end_datetime - gf.start_datetime
     gf["datetime"] = gf.start_datetime + duration / 2
-    gf["dayofyear"] = gf.datetime.dt.dayofyear
+    gf["dayofyear"] = gf.datetime.dt.day_of_year
     gf["duration"] = duration.dt.days
 
     return gf
@@ -326,13 +327,12 @@ def query_tnm_api(
     Returns:
       list: A list of JSON items returned from the TNM API.
     """
-    # params is a dict[str, object], but requests expects Mapping[str, Any]
     items = []
     offset = 0
     url = "https://tnmaccess.nationalmap.gov/api/v1/products"
 
     while True:
-        params = {
+        params: dict[str, str | int] = {
             "datasets": tnmdataset,
             "polygon": polygon_str,
             "prodFormats": prodFormats,

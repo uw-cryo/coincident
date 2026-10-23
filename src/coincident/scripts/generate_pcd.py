@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 import geopandas as gpd
-import requests  # type: ignore[import-untyped]
+import requests
 
 OWNER = "uw-cryo"
 REPO = "coincident"
@@ -60,8 +60,7 @@ def fetch_and_convert_PCD_assets() -> None:
         with requests.get(download_url, stream=True, timeout=60) as r:
             r.raise_for_status()
             with Path(temp_path).open("wb") as f:
-                for chunk in r.iter_content():
-                    f.write(chunk)
+                f.writelines(r.iter_content())
 
         msg_asset_err = f"  - Reading {asset_name} into GeoDataFrame..."
         logging.debug(msg_asset_err)

@@ -27,15 +27,27 @@ The process goes as follows:
 
 from __future__ import annotations
 
+import os
 import re  # for NEON vendor products, client-side spatial filtering
 from typing import Any
 
 import geopandas as gpd
 import pandas as pd
-import requests  # type: ignore[import-untyped]
+import requests
 from pandas import Timestamp
 from shapely.geometry import Point, Polygon, box
 from shapely.ops import unary_union
+
+
+def _neon_headers() -> dict[str, str]:
+    """
+    Return NEON API request headers, including an API token if set.
+
+    NEON requires a token for data downloads as of June 2026. Set the
+    NEON_API_TOKEN environment variable (https://data.neonscience.org/data-api/authentication/).
+    """
+    token = os.environ.get("NEON_API_TOKEN")
+    return {"X-API-Token": token} if token else {}
 
 
 def _get_tile_bbox(file_name: str, tile_size: int = 1000) -> Polygon | None:
@@ -77,7 +89,7 @@ def _build_neon_point_gf(sites_url: str) -> gpd.GeoDataFrame:
     -------
         A GeoDataFrame with site information and point geometries.
     """
-    sites_request = requests.get(sites_url, timeout=30)
+    sites_request = requests.get(sites_url, headers=_neon_headers(), timeout=30)
     sites_json = sites_request.json()
 
     df_neon = pd.concat(
@@ -165,8 +177,8 @@ def _get_neon_flight_geometry(url: str, fallback_geometry: Any) -> Any:
         The unioned flight geometry (in EPSG:4326) or the fallback geometry.
     """
     try:
-        response = requests.get(url, timeout=30)
-    except Exception:
+        response = requests.get(url, headers=_neon_headers(), timeout=30)
+    except requests.RequestException:
         return fallback_geometry
 
     if response.status_code != 200:
@@ -229,7 +241,7 @@ def search_bboxes(
     if intersects is None:
         intersects = gpd.GeoSeries([Point(-180, -90).buffer(360)], crs="EPSG:4326")
 
-    sites_url = "http://data.neonscience.org/api/v0/sites"
+    sites_url = "https://data.neonscience.org/api/v0/sites"
 
     # Build and temporally filter the NEON site points
     gf_neon = _build_neon_point_gf(sites_url)
@@ -287,9 +299,9 @@ def query_neon_data_api(
     -------
       The JSON response from the NEON API.
     """
-    SERVER = "http://data.neonscience.org/api/v0/"
+    SERVER = "https://data.neonscience.org/api/v0/"
     query_url = f"{SERVER}data/{product_code}/{site_id}/{month_str}"
-    response = requests.get(query_url, timeout=30)
+    response = requests.get(query_url, headers=_neon_headers(), timeout=30)
     if response.status_code != 200:
         msg_neon_fail = (
             f"NEON API request failed with status code {response.status_code}"

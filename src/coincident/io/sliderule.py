@@ -45,7 +45,7 @@ def _gdf_to_sliderule_params(gf: gpd.GeoDataFrame) -> dict[str, Any]:
 def _granule_from_assets(assets: gpd.GeoDataFrame) -> str | None:
     granule = None
     # NOTE: change to while loop in case tons of assets?
-    for _k, v in assets.items():
+    for v in assets.values():
         if v.get("roles") == "data":
             granule = Path(v.get("href")).name
 
