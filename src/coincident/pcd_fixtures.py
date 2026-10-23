@@ -16,6 +16,8 @@ from shapely import wkt
 
 from coincident.search import search, wesm
 
+logger = logging.getLogger(__name__)
+
 
 # types for mypy:
 class _3depFilter(TypedDict):
@@ -57,6 +59,11 @@ class PcdSiteParams(TypedDict):
     filters: _PcdFilters
 
 
+# NOTE: granule_ids are restricted to the four-way overlap area (overlap_geometry).
+# 13 commented-out granules (AZ, TX, CO, WY) intersect the full 3DEP workunit but not
+# the overlap area (4-44 km away), so read_pcd_site() never returned them; they were
+# likely candidates from the ALS-based search before the overlap was computed.
+# TODO: archive the original fixture data since old granule versions are not kept forever
 PCD_SITES: dict[str, PcdSiteParams] = {
     "CA_SanFrancisco_1_B23": {
         "provider": "USGS",
@@ -66,11 +73,12 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             "3dep": {"workunit": "CA_SanFrancisco_1_B23"},
             "vantor": {"stereo_ids": ["10200100DE097E00", "10200100DC70E900"]},
             "icesat-2": {
+                # NOTE: version and revision numbers may change going forward (006_02 -> 007_01, etc.)
                 "granule_ids": [
-                    "ATL03_20230117092727_04251806_007_02.h5",
-                    "ATL03_20230418050714_04251906_007_02.h5",
-                    "ATL03_20230522151905_09511902_007_02.h5",
-                    "ATL03_20230718004632_04252006_007_02.h5",
+                    "ATL03_20230117092727_04251806_007_01.h5",
+                    "ATL03_20230418050714_04251906_007_01.h5",
+                    "ATL03_20230522151905_09511902_007_01.h5",
+                    "ATL03_20230718004632_04252006_007_01.h5",
                 ]
             },
             "gedi": {
@@ -95,9 +103,9 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             },
             "gedi": {
                 "granule_ids": [
-                    "GEDI02_A_2021261011319_O15667_02_T08065_02_003_02_V002",
-                    "GEDI02_A_2021264234230_O15728_02_T10605_02_003_02_V002",
-                    "GEDI02_A_2021285225842_O16053_03_T08636_02_003_02_V002",
+                    # "GEDI02_A_2021261011319_O15667_02_T08065_02_003_02_V002",
+                    # "GEDI02_A_2021264234230_O15728_02_T10605_02_003_02_V002",
+                    # "GEDI02_A_2021285225842_O16053_03_T08636_02_003_02_V002",
                     "GEDI02_A_2021332204942_O16780_02_T08218_02_003_02_V002",
                 ]
             },
@@ -171,7 +179,8 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "overlap_geometry": "POLYGON ((-84.12671569644924 31.01941095632088, -84.13329816636715 31.568656984115982, -84.11305907559789 31.746612946981553, -84.05059072866084 31.69169387974824, -84.0310090441035 31.606427307310568, -84.02359554302821 31.222141221316225, -84.0384748132213 31.02889768223571, -84.12671569644924 31.01941095632088))",
         "filters": {
             "3dep": {"workunit": "GA_Central_3_2019"},
-            "vantor": {"stereo_ids": ["10300100A26FD700", "10300100A132F900"]},
+            # https://github.com/uw-cryo/coincident/issues/143
+            # "vantor": {"stereo_ids": ["10300100A26FD700", "10300100A132F900"]},
             "icesat-2": {
                 "granule_ids": [
                     "ATL03_20200203102127_05910606_007_01.h5",
@@ -205,7 +214,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "filters": {
             "3dep": {"workunit": "CA_YosemiteNP_2019"},
             "vantor": {"stereo_ids": ["102001008E543300", "102001008EE06B00"]},
-            "icesat-2": {"granule_ids": ["ATL03_20191008182255_01810506_007_02.h5"]},
+            "icesat-2": {"granule_ids": ["ATL03_20191008182255_01810506_007_01.h5"]},
             "gedi": {
                 "granule_ids": [
                     "GEDI02_A_2019279200308_O04626_02_T03812_02_003_01_V002",
@@ -222,12 +231,12 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "filters": {
             "3dep": {"workunit": "TX_DesertMountains_B1_2018"},
             "vantor": {"stereo_ids": ["1030010097D5CC00", "10300100984A3A00"]},
-            "icesat-2": {"granule_ids": ["ATL03_20190924180456_13540406_007_02.h5"]},
+            "icesat-2": {"granule_ids": ["ATL03_20190924180456_13540406_007_01.h5"]},
             "gedi": {
                 "granule_ids": [
-                    "GEDI02_A_2019249064153_O04152_02_T01470_02_003_01_V002",
+                    # "GEDI02_A_2019249064153_O04152_02_T01470_02_003_01_V002",
                     "GEDI02_A_2019257110927_O04279_03_T04122_02_003_01_V002",
-                    "GEDI02_A_2019271214434_O04503_02_T04163_02_003_01_V002",
+                    # "GEDI02_A_2019271214434_O04503_02_T04163_02_003_01_V002",
                     "GEDI02_A_2019284003705_O04691_03_T04428_02_003_01_V002",
                     "GEDI02_A_2019298111055_O04915_02_T04622_02_003_01_V002",
                     "GEDI02_A_2019306154007_O05042_03_T01429_02_003_01_V002",
@@ -242,10 +251,10 @@ PCD_SITES: dict[str, PcdSiteParams] = {
         "filters": {
             "3dep": {"workunit": "CO_WestCentral_2019"},
             "vantor": {"stereo_ids": ["102001008BD60800", "1020010088168700"]},
-            "icesat-2": {"granule_ids": ["ATL03_20191008052407_01730502_007_02.h5"]},
+            "icesat-2": {"granule_ids": ["ATL03_20191008052407_01730502_007_01.h5"]},
             "gedi": {
                 "granule_ids": [
-                    "GEDI02_A_2019228215125_O03836_03_T03938_02_003_01_V002",
+                    # "GEDI02_A_2019228215125_O03836_03_T03938_02_003_01_V002",
                     "GEDI02_A_2019247142840_O04126_03_T02362_02_003_02_V002",
                     "GEDI02_A_2019255050055_O04244_02_T03888_02_003_01_V002",
                     "GEDI02_A_2019270053052_O04477_03_T03785_02_003_01_V002",
@@ -262,27 +271,27 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             "vantor": {"stereo_ids": ["1020010086976A00", "1020010089403600"]},
             "icesat-2": {
                 "granule_ids": [
-                    "ATL03_20190721091907_03560402_007_02.h5",
-                    "ATL03_20190723212639_03940406_007_02.h5",
-                    "ATL03_20190819075518_07980402_007_02.h5",
-                    "ATL03_20190821200249_08360406_007_02.h5",
-                    "ATL03_20190917063123_12400402_007_02.h5",
-                    "ATL03_20190919183853_12780406_007_02.h5",
+                    "ATL03_20190721091907_03560402_007_01.h5",
+                    "ATL03_20190723212639_03940406_007_01.h5",
+                    "ATL03_20190819075518_07980402_007_01.h5",
+                    "ATL03_20190821200249_08360406_007_01.h5",
+                    # "ATL03_20190917063123_12400402_007_02.h5",
+                    # "ATL03_20190919183853_12780406_007_02.h5",
                 ]
             },
             "gedi": {
                 "granule_ids": [
                     "GEDI02_A_2019194055411_O03298_02_T00155_02_003_01_V002",
                     "GEDI02_A_2019200084834_O03393_03_T03035_02_003_02_V002",
-                    "GEDI02_A_2019209000122_O03527_02_T04730_02_003_01_V002",
-                    "GEDI02_A_2019211043557_O03561_03_T00847_02_003_01_V002",
+                    # "GEDI02_A_2019209000122_O03527_02_T04730_02_003_01_V002",
+                    # "GEDI02_A_2019211043557_O03561_03_T00847_02_003_01_V002",
                     "GEDI02_A_2019219194832_O03695_02_T03965_02_003_02_V002",
-                    "GEDI02_A_2019223180803_O03756_02_T03613_02_003_01_V002",
+                    # "GEDI02_A_2019223180803_O03756_02_T03613_02_003_01_V002",
                     "GEDI02_A_2019225224231_O03790_03_T02729_02_003_01_V002",
-                    "GEDI02_A_2019242104318_O04046_02_T02343_02_003_02_V002",
+                    # "GEDI02_A_2019242104318_O04046_02_T02343_02_003_02_V002",
                     "GEDI02_A_2019244151907_O04080_03_T02576_02_003_02_V002",
                     "GEDI02_A_2019257045811_O04275_02_T00002_02_003_01_V002",
-                    "GEDI02_A_2019261032101_O04336_02_T04883_02_003_01_V002",
+                    # "GEDI02_A_2019261032101_O04336_02_T04883_02_003_01_V002",
                     "GEDI02_A_2019267062026_O04431_03_T05575_02_003_01_V002",
                 ]
             },
@@ -327,8 +336,8 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             },
             "icesat-2": {
                 "granule_ids": [
-                    "ATL03_20190903043904_10250402_007_02.h5",
-                    "ATL03_20190807181029_06210406_007_02.h5",
+                    "ATL03_20190903043904_10250402_007_01.h5",
+                    "ATL03_20190807181029_06210406_007_01.h5",
                 ]
             },
             "gedi": {
@@ -348,9 +357,9 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             "vantor": {"stereo_ids": ["10300100965CBA00", "10300100962F3500"]},
             "icesat-2": {
                 "granule_ids": [
-                    "ATL03_20190529005739_09280306_007_02.h5",
-                    "ATL03_20190522125829_08290302_007_02.h5",
-                    "ATL03_20190821083817_08290402_007_02.h5",
+                    "ATL03_20190529005739_09280306_007_01.h5",
+                    "ATL03_20190522125829_08290302_007_01.h5",
+                    "ATL03_20190821083817_08290402_007_01.h5",
                 ]
             },
             "gedi": {
@@ -387,66 +396,6 @@ PCD_SITES: dict[str, PcdSiteParams] = {
 }
 
 
-# def load_pcd_geometries() -> gpd.GeoDataFrame:
-#     """
-#     Loads PCD site geometries by downloading them from the latest GitHub release.
-
-#     This function finds the 'pcd_overlap_geometries_2025.parquet' asset from
-#     the latest release, downloads it into memory, and loads it into a GeoDataFrame.
-
-#     Returns:
-#         gpd.GeoDataFrame: A GeoDataFrame with 'pcd_id' and 'geometry' columns.
-
-#     Raises:
-#         FileNotFoundError: If the geometry asset is not found in the latest release.
-#     """
-#     OWNER = "uw-cryo"
-#     REPO = "coincident"
-#     GEOMETRY_FILENAME = "pcd_overlap_geometries_2025.parquet"
-
-#     logging.info("Fetching latest release to find geometry file...")
-#     api_url = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest"
-
-#     try:
-#         response = requests.get(api_url)
-#         response.raise_for_status()
-#         assets = response.json().get("assets", [])
-#     except requests.exceptions.RequestException as e:
-#         msg_git_release = f"Failed to fetch GitHub release info: {e}"
-#         logging.error(msg_git_release)
-#         raise
-
-#     asset_url = next(
-#         (
-#             asset["browser_download_url"]
-#             for asset in assets
-#             if asset["name"] == GEOMETRY_FILENAME
-#         ),
-#         None,
-#     )
-
-#     if not asset_url:
-#         msg_no_asset = (
-#             f"Asset '{GEOMETRY_FILENAME}' not found in the latest GitHub release."
-#         )
-#         raise FileNotFoundError(msg_no_asset)
-
-#     # logging.info(f"Downloading geometry file: {GEOMETRY_FILENAME}")
-
-#     try:
-#         response = requests.get(asset_url)
-#         response.raise_for_status()
-
-#         # read downloaded content directly from an in-memory buffer
-#         buffer = io.BytesIO(response.content)
-#         return gpd.read_parquet(buffer)
-
-#     except requests.exceptions.RequestException as e:
-#         msg_no_download = f"Failed to download geometry file: {e}"
-#         logging.error(msg_no_download)
-#         raise
-
-
 # NOTE: could adjust the below to do a cascading_search but this works easier with how
 # I set up the PCD_SITES dict and also the cascading_search automatically dissolves
 # vantor stereo where this preserves both images
@@ -462,7 +411,7 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
         raise ValueError(msg_invalid_id)
 
     msg_site_id = f"Reading data for PCD Site: {pcd_id}"
-    logging.info(msg_site_id)
+    logger.info(msg_site_id)
     site_params = PCD_SITES[pcd_id]
     search_date = list(site_params["datetime"])
     provider = site_params["provider"]
@@ -485,7 +434,7 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
 
     # Search for lidar
     ms_als_prov = f"Searching for {provider} data..."
-    logging.info(ms_als_prov)
+    logger.info(ms_als_prov)
     if provider == "USGS":
         gf_als = search(
             dataset="3dep", intersects=gf_overlap_search, datetime=search_date
@@ -506,20 +455,27 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
     else:
         gf_als = gpd.GeoDataFrame()
 
-    msg_vantor = "Searching for Vantor data..."
-    logging.info(msg_vantor)
-    gf_vantor = search(
-        dataset="vantor", intersects=gf_overlap_search, datetime=search_date
-    )
-    gf_vantor = gf_vantor[gf_vantor.id.isin(filters["vantor"]["stereo_ids"])]
+    if "vantor" in filters:
+        msg_vantor = "Searching for Vantor data..."
+        logger.info(msg_vantor)
+        gf_vantor = search(
+            dataset="vantor", intersects=gf_overlap_search, datetime=search_date
+        )
+        gf_vantor = gf_vantor[gf_vantor.id.isin(filters["vantor"]["stereo_ids"])]
+    else:
+        # e.g. stereo imagery no longer available https://github.com/uw-cryo/coincident/issues/143
+        # keep id, datetime and geometry so plotting/mapping code works for every site
+        gf_vantor = gpd.GeoDataFrame(
+            {"id": [], "datetime": []}, geometry=[], crs="EPSG:4326"
+        )
 
     msg_gedi = "Searching for GEDI data..."
-    logging.info(msg_gedi)
+    logger.info(msg_gedi)
     gf_gedi = search(dataset="gedi", intersects=gf_overlap_search, datetime=search_date)
     gf_gedi = gf_gedi[gf_gedi.id.isin(filters["gedi"]["granule_ids"])]
 
     msg_is2 = "Searching for ICESat-2 data..."
-    logging.info(msg_is2)
+    logger.info(msg_is2)
     gf_is2 = search(
         dataset="icesat-2", intersects=gf_overlap_search, datetime=search_date
     )
@@ -548,17 +504,17 @@ def download_pcd_files(
     """
     if not (geoparquet or geojson):
         msg = "No output format selected. Set geoparquet or geojson to True."
-        logging.warning(msg)
+        logger.warning(msg)
         return
 
     # Create output dir if it doesn't exist
     try:
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         msg_dir = f"Output directory '{output_dir}' is ready."
-        logging.info(msg_dir)
+        logger.info(msg_dir)
     except OSError as e:
         msg_dir_fail = f"Failed to create output directory: {e}"
-        logging.error(msg_dir_fail)
+        logger.error(msg_dir_fail)
         raise
 
     # Group sites by provider (USGS, NEON, NCALM)
@@ -572,7 +528,7 @@ def download_pcd_files(
     # iterate over each provider (USGS, NEON, NCALM) group
     for provider, pcd_ids in sites_by_provider.items():
         msg_provider = f"Processing provider: {provider}"
-        logging.info(msg_provider)
+        logger.info(msg_provider)
 
         # in-memory stores for GeoDataFrames for the current provider
         provider_data: dict[str, list[gpd.GeoDataFrame]] = {
@@ -591,10 +547,11 @@ def download_pcd_files(
                         # Add the primary PCD ID to each dataframe for consistent tracking
                         gdf["pcd_id"] = pcd_id
                         provider_data[sensor].append(gdf)
-            except Exception as e:
-                msg_fail = f"Failed to download data for site '{pcd_id}'. Error: {e}"
-                logging.error(msg_fail)
-                continue  # Move to the next site
+            except Exception:  # pylint: disable=broad-exception-caught
+                # Log with traceback and move to the next site
+                msg_fail = f"Failed to download data for site '{pcd_id}'"
+                logger.exception(msg_fail)
+                continue
 
         # Write the collected data for the provider to files
         for sensor, gdf_list in provider_data.items():
@@ -602,13 +559,13 @@ def download_pcd_files(
                 msg_no_data = (
                     f"No data found for sensor '{sensor}' under provider '{provider}'."
                 )
-                logging.info(msg_no_data)
+                logger.info(msg_no_data)
                 continue
 
             msg_concat = (
                 f"Concatenating {len(gdf_list)} GeoDataFrames for {provider}-{sensor}."
             )
-            logging.info(msg_concat)
+            logger.info(msg_concat)
             full_gdf = pd.concat(gdf_list, ignore_index=True)
 
             # provider-specific ID column name
@@ -639,21 +596,21 @@ def download_pcd_files(
                 try:
                     pq_path = f"{base_path}.parquet"
                     msg_write = f"Writing file: {pq_path}"
-                    logging.info(msg_write)
+                    logger.info(msg_write)
                     full_gdf.to_parquet(pq_path)
-                except Exception as e:
-                    msg_err = f"Failed to write GeoParquet file {pq_path}: {e}"
-                    logging.error(msg_err)
+                except Exception:  # pylint: disable=broad-exception-caught
+                    msg_err = f"Failed to write GeoParquet file {pq_path}"
+                    logger.exception(msg_err)
 
             if geojson:
                 try:
                     json_path = f"{base_path}.geojson"
                     msg_write = f"Writing file: {json_path}"
-                    logging.info(msg_write)
+                    logger.info(msg_write)
                     full_gdf.to_file(json_path, driver="GeoJSON")
-                except Exception as e:
-                    msg_err = f"Failed to write GeoJSON file {json_path}: {e}"
-                    logging.error(msg_err)
+                except Exception:  # pylint: disable=broad-exception-caught
+                    msg_err = f"Failed to write GeoJSON file {json_path}"
+                    logger.exception(msg_err)
 
     msg_done = "All providers processed. File download complete."
-    logging.info(msg_done)
+    logger.info(msg_done)
