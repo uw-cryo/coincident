@@ -12,7 +12,7 @@ from typing import Any
 # import rustac
 import pandas as pd
 import pyogrio
-import requests  # type: ignore[import-untyped]
+import requests
 from geopandas import GeoDataFrame, read_file
 from pandas import Timedelta, Timestamp
 from shapely.geometry import box
@@ -326,13 +326,12 @@ def query_tnm_api(
     Returns:
       list: A list of JSON items returned from the TNM API.
     """
-    # params is a dict[str, object], but requests expects Mapping[str, Any]
     items = []
     offset = 0
     url = "https://tnmaccess.nationalmap.gov/api/v1/products"
 
     while True:
-        params = {
+        params: dict[str, str | int] = {
             "datasets": tnmdataset,
             "polygon": polygon_str,
             "prodFormats": prodFormats,

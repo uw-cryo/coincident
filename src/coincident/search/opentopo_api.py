@@ -12,7 +12,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
-import requests  # type: ignore[import-untyped]
+import requests
 from obstore.store import S3Store
 from pandas import Timestamp
 from shapely.geometry import shape
