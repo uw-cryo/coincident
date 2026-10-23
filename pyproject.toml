@@ -177,9 +177,6 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
-# TODO: revisit logging and error handling in https://github.com/uw-cryo/coincident/pull/145
-"src/coincident/pcd_fixtures.py" = ["LOG015", "BLE001"]
-"src/coincident/scripts/generate_pcd.py" = ["LOG015", "BLE001"]
 
 [tool.pylint]
 ignore-paths = [".*/_version.py"]

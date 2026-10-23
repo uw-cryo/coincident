@@ -6,6 +6,8 @@ from pathlib import Path
 import geopandas as gpd
 import requests
 
+logger = logging.getLogger(__name__)
+
 OWNER = "uw-cryo"
 REPO = "coincident"
 # RELEASE_TAG = "v0.4"
@@ -20,7 +22,7 @@ def fetch_and_convert_PCD_assets() -> None:
     from the specified GitHub release.
     """
     msg_release_fetch = f" Fetching release information for tag '{RELEASE_TAG}'..."
-    logging.debug(msg_release_fetch)
+    logger.debug(msg_release_fetch)
     if RELEASE_TAG == "latest":
         api_url = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/latest"
     else:
@@ -34,13 +36,13 @@ def fetch_and_convert_PCD_assets() -> None:
 
     if not assets:
         msg_no_asset = "No assets found in the release."
-        logging.debug(msg_no_asset)
+        logger.debug(msg_no_asset)
         return
 
     # create the output directory if it doesn't exist
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     msg_print_out_dir = f" Output directory is: {OUTPUT_DIR}"
-    logging.debug(msg_print_out_dir)
+    logger.debug(msg_print_out_dir)
 
     pcd_assets = [
         asset
@@ -56,22 +58,22 @@ def fetch_and_convert_PCD_assets() -> None:
         temp_path = OUTPUT_DIR / asset_name
 
         msg_download_asset = f"\nDownloading {asset_name}..."
-        logging.debug(msg_download_asset)
+        logger.debug(msg_download_asset)
         with requests.get(download_url, stream=True, timeout=60) as r:
             r.raise_for_status()
             with Path(temp_path).open("wb") as f:
                 f.writelines(r.iter_content())
 
         msg_asset_err = f"  - Reading {asset_name} into GeoDataFrame..."
-        logging.debug(msg_asset_err)
+        logger.debug(msg_asset_err)
         try:
             if temp_path.suffix == ".parquet":
                 gdf = gpd.read_parquet(temp_path)
             else:  # .geojson
                 gdf = gpd.read_file(temp_path)
-        except Exception as e:
-            msg_read_error = f"  -  Could not read file {asset_name}: {e}"
-            logging.debug(msg_read_error)
+        except Exception:  # pylint: disable=broad-exception-caught
+            msg_read_error = f"  -  Could not read file {asset_name}"
+            logger.exception(msg_read_error)
             temp_path.unlink()  # Clean up failed download
             continue
 
@@ -79,20 +81,22 @@ def fetch_and_convert_PCD_assets() -> None:
 
         gpkg_path = OUTPUT_DIR / f"{output_basename}.geojson"
         msg_save_gj = f"  -   Saving to {gpkg_path.name}..."
-        logging.debug(msg_save_gj)
+        logger.debug(msg_save_gj)
         gdf.to_file(gpkg_path, driver="GeoJSON")
 
         geoparquet_path = OUTPUT_DIR / f"{output_basename}.geoparquet"
         msg_save_parquet = f"  -  Saving to {geoparquet_path.name}..."
-        logging.debug(msg_save_parquet)
+        logger.debug(msg_save_parquet)
         gdf.to_parquet(geoparquet_path)
 
         # Clean up the original downloaded file
         temp_path.unlink()
 
     msg_files_downloaded = "\n All assets processed successfully."
-    logging.debug(msg_files_downloaded)
+    logger.debug(msg_files_downloaded)
 
 
 if __name__ == "__main__":
+    logging.basicConfig(format="%(message)s")
+    logger.setLevel(logging.DEBUG)
     fetch_and_convert_PCD_assets()

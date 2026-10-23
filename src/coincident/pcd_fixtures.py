@@ -16,6 +16,8 @@ from shapely import wkt
 
 from coincident.search import search, wesm
 
+logger = logging.getLogger(__name__)
+
 
 # types for mypy:
 class _3depFilter(TypedDict):
@@ -411,7 +413,7 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
         raise ValueError(msg_invalid_id)
 
     msg_site_id = f"Reading data for PCD Site: {pcd_id}"
-    logging.info(msg_site_id)
+    logger.info(msg_site_id)
     site_params = PCD_SITES[pcd_id]
     search_date = list(site_params["datetime"])
     provider = site_params["provider"]
@@ -434,7 +436,7 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
 
     # Search for lidar
     ms_als_prov = f"Searching for {provider} data..."
-    logging.info(ms_als_prov)
+    logger.info(ms_als_prov)
     if provider == "USGS":
         gf_als = search(
             dataset="3dep", intersects=gf_overlap_search, datetime=search_date
@@ -457,7 +459,7 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
 
     if "vantor" in filters:
         msg_vantor = "Searching for Vantor data..."
-        logging.info(msg_vantor)
+        logger.info(msg_vantor)
         gf_vantor = search(
             dataset="vantor", intersects=gf_overlap_search, datetime=search_date
         )
@@ -467,12 +469,12 @@ def read_pcd_site(pcd_id: str) -> dict[str, gpd.GeoDataFrame]:
         gf_vantor = gpd.GeoDataFrame()
 
     msg_gedi = "Searching for GEDI data..."
-    logging.info(msg_gedi)
+    logger.info(msg_gedi)
     gf_gedi = search(dataset="gedi", intersects=gf_overlap_search, datetime=search_date)
     gf_gedi = gf_gedi[gf_gedi.id.isin(filters["gedi"]["granule_ids"])]
 
     msg_is2 = "Searching for ICESat-2 data..."
-    logging.info(msg_is2)
+    logger.info(msg_is2)
     gf_is2 = search(
         dataset="icesat-2", intersects=gf_overlap_search, datetime=search_date
     )
@@ -501,17 +503,17 @@ def download_pcd_files(
     """
     if not (geoparquet or geojson):
         msg = "No output format selected. Set geoparquet or geojson to True."
-        logging.warning(msg)
+        logger.warning(msg)
         return
 
     # Create output dir if it doesn't exist
     try:
         Path(output_dir).mkdir(parents=True, exist_ok=True)
         msg_dir = f"Output directory '{output_dir}' is ready."
-        logging.info(msg_dir)
+        logger.info(msg_dir)
     except OSError as e:
         msg_dir_fail = f"Failed to create output directory: {e}"
-        logging.error(msg_dir_fail)
+        logger.error(msg_dir_fail)
         raise
 
     # Group sites by provider (USGS, NEON, NCALM)
@@ -525,7 +527,7 @@ def download_pcd_files(
     # iterate over each provider (USGS, NEON, NCALM) group
     for provider, pcd_ids in sites_by_provider.items():
         msg_provider = f"Processing provider: {provider}"
-        logging.info(msg_provider)
+        logger.info(msg_provider)
 
         # in-memory stores for GeoDataFrames for the current provider
         provider_data: dict[str, list[gpd.GeoDataFrame]] = {
@@ -544,10 +546,11 @@ def download_pcd_files(
                         # Add the primary PCD ID to each dataframe for consistent tracking
                         gdf["pcd_id"] = pcd_id
                         provider_data[sensor].append(gdf)
-            except Exception as e:
-                msg_fail = f"Failed to download data for site '{pcd_id}'. Error: {e}"
-                logging.error(msg_fail)
-                continue  # Move to the next site
+            except Exception:  # pylint: disable=broad-exception-caught
+                # Log with traceback and move to the next site
+                msg_fail = f"Failed to download data for site '{pcd_id}'"
+                logger.exception(msg_fail)
+                continue
 
         # Write the collected data for the provider to files
         for sensor, gdf_list in provider_data.items():
@@ -555,13 +558,13 @@ def download_pcd_files(
                 msg_no_data = (
                     f"No data found for sensor '{sensor}' under provider '{provider}'."
                 )
-                logging.info(msg_no_data)
+                logger.info(msg_no_data)
                 continue
 
             msg_concat = (
                 f"Concatenating {len(gdf_list)} GeoDataFrames for {provider}-{sensor}."
             )
-            logging.info(msg_concat)
+            logger.info(msg_concat)
             full_gdf = pd.concat(gdf_list, ignore_index=True)
 
             # provider-specific ID column name
@@ -592,21 +595,21 @@ def download_pcd_files(
                 try:
                     pq_path = f"{base_path}.parquet"
                     msg_write = f"Writing file: {pq_path}"
-                    logging.info(msg_write)
+                    logger.info(msg_write)
                     full_gdf.to_parquet(pq_path)
-                except Exception as e:
-                    msg_err = f"Failed to write GeoParquet file {pq_path}: {e}"
-                    logging.error(msg_err)
+                except Exception:  # pylint: disable=broad-exception-caught
+                    msg_err = f"Failed to write GeoParquet file {pq_path}"
+                    logger.exception(msg_err)
 
             if geojson:
                 try:
                     json_path = f"{base_path}.geojson"
                     msg_write = f"Writing file: {json_path}"
-                    logging.info(msg_write)
+                    logger.info(msg_write)
                     full_gdf.to_file(json_path, driver="GeoJSON")
-                except Exception as e:
-                    msg_err = f"Failed to write GeoJSON file {json_path}: {e}"
-                    logging.error(msg_err)
+                except Exception:  # pylint: disable=broad-exception-caught
+                    msg_err = f"Failed to write GeoJSON file {json_path}"
+                    logger.exception(msg_err)
 
     msg_done = "All providers processed. File download complete."
-    logging.info(msg_done)
+    logger.info(msg_done)
