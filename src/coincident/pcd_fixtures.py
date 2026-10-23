@@ -59,13 +59,11 @@ class PcdSiteParams(TypedDict):
     filters: _PcdFilters
 
 
-# TODO: some granule_ids are no longer returned by read_pcd_site() because their
-# current catalog footprints fall 3-57 km outside the site search area. Check whether
-# this is a metadata change or a real mismatch, and archive the original fixture data
-# since old versions are not kept forever (Oct 2026):
-# - gedi: AZ_PimaCo_2_2021 (3), TX_DesertMountains_B1_2018 (2), CO_WestCentral_2019 (1),
-#   WY_FEMA_East_B9_2019 (5)
-# - icesat-2: WY_FEMA_East_B9_2019 (12400402, 12780406)
+# NOTE: granule_ids are restricted to the four-way overlap area (overlap_geometry).
+# 13 commented-out granules (AZ, TX, CO, WY) intersect the full 3DEP workunit but not
+# the overlap area (4-44 km away), so read_pcd_site() never returned them; they were
+# likely candidates from the ALS-based search before the overlap was computed.
+# TODO: archive the original fixture data since old granule versions are not kept forever
 PCD_SITES: dict[str, PcdSiteParams] = {
     "CA_SanFrancisco_1_B23": {
         "provider": "USGS",
@@ -105,9 +103,9 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             },
             "gedi": {
                 "granule_ids": [
-                    "GEDI02_A_2021261011319_O15667_02_T08065_02_003_02_V002",
-                    "GEDI02_A_2021264234230_O15728_02_T10605_02_003_02_V002",
-                    "GEDI02_A_2021285225842_O16053_03_T08636_02_003_02_V002",
+                    # "GEDI02_A_2021261011319_O15667_02_T08065_02_003_02_V002",
+                    # "GEDI02_A_2021264234230_O15728_02_T10605_02_003_02_V002",
+                    # "GEDI02_A_2021285225842_O16053_03_T08636_02_003_02_V002",
                     "GEDI02_A_2021332204942_O16780_02_T08218_02_003_02_V002",
                 ]
             },
@@ -236,9 +234,9 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             "icesat-2": {"granule_ids": ["ATL03_20190924180456_13540406_007_01.h5"]},
             "gedi": {
                 "granule_ids": [
-                    "GEDI02_A_2019249064153_O04152_02_T01470_02_003_01_V002",
+                    # "GEDI02_A_2019249064153_O04152_02_T01470_02_003_01_V002",
                     "GEDI02_A_2019257110927_O04279_03_T04122_02_003_01_V002",
-                    "GEDI02_A_2019271214434_O04503_02_T04163_02_003_01_V002",
+                    # "GEDI02_A_2019271214434_O04503_02_T04163_02_003_01_V002",
                     "GEDI02_A_2019284003705_O04691_03_T04428_02_003_01_V002",
                     "GEDI02_A_2019298111055_O04915_02_T04622_02_003_01_V002",
                     "GEDI02_A_2019306154007_O05042_03_T01429_02_003_01_V002",
@@ -256,7 +254,7 @@ PCD_SITES: dict[str, PcdSiteParams] = {
             "icesat-2": {"granule_ids": ["ATL03_20191008052407_01730502_007_01.h5"]},
             "gedi": {
                 "granule_ids": [
-                    "GEDI02_A_2019228215125_O03836_03_T03938_02_003_01_V002",
+                    # "GEDI02_A_2019228215125_O03836_03_T03938_02_003_01_V002",
                     "GEDI02_A_2019247142840_O04126_03_T02362_02_003_02_V002",
                     "GEDI02_A_2019255050055_O04244_02_T03888_02_003_01_V002",
                     "GEDI02_A_2019270053052_O04477_03_T03785_02_003_01_V002",
@@ -277,23 +275,23 @@ PCD_SITES: dict[str, PcdSiteParams] = {
                     "ATL03_20190723212639_03940406_007_01.h5",
                     "ATL03_20190819075518_07980402_007_01.h5",
                     "ATL03_20190821200249_08360406_007_01.h5",
-                    "ATL03_20190917063123_12400402_007_02.h5",
-                    "ATL03_20190919183853_12780406_007_02.h5",
+                    # "ATL03_20190917063123_12400402_007_02.h5",
+                    # "ATL03_20190919183853_12780406_007_02.h5",
                 ]
             },
             "gedi": {
                 "granule_ids": [
                     "GEDI02_A_2019194055411_O03298_02_T00155_02_003_01_V002",
                     "GEDI02_A_2019200084834_O03393_03_T03035_02_003_02_V002",
-                    "GEDI02_A_2019209000122_O03527_02_T04730_02_003_01_V002",
-                    "GEDI02_A_2019211043557_O03561_03_T00847_02_003_01_V002",
+                    # "GEDI02_A_2019209000122_O03527_02_T04730_02_003_01_V002",
+                    # "GEDI02_A_2019211043557_O03561_03_T00847_02_003_01_V002",
                     "GEDI02_A_2019219194832_O03695_02_T03965_02_003_02_V002",
-                    "GEDI02_A_2019223180803_O03756_02_T03613_02_003_01_V002",
+                    # "GEDI02_A_2019223180803_O03756_02_T03613_02_003_01_V002",
                     "GEDI02_A_2019225224231_O03790_03_T02729_02_003_01_V002",
-                    "GEDI02_A_2019242104318_O04046_02_T02343_02_003_02_V002",
+                    # "GEDI02_A_2019242104318_O04046_02_T02343_02_003_02_V002",
                     "GEDI02_A_2019244151907_O04080_03_T02576_02_003_02_V002",
                     "GEDI02_A_2019257045811_O04275_02_T00002_02_003_01_V002",
-                    "GEDI02_A_2019261032101_O04336_02_T04883_02_003_01_V002",
+                    # "GEDI02_A_2019261032101_O04336_02_T04883_02_003_01_V002",
                     "GEDI02_A_2019267062026_O04431_03_T05575_02_003_01_V002",
                 ]
             },
