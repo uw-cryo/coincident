@@ -257,16 +257,16 @@ types-requests = ">=2.33.0.20261006,<3"
 coincident = {path = ".", editable = true}
 
 [tool.pixi.feature.dev.tasks]
-precommit = "pre-commit run --all-files"
+precommit = { cmd = "pre-commit run --all-files", description = "Run all pre-commit hooks on all files" }
 # NOTE: consider --output-format=github for github actions
-lint = "pylint src"
-networktest = "pytest --cov --cov-report=xml --cov-report=term --durations=0"
-test = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term"
+lint = { cmd = "pylint src", description = "Lint source code with pylint" }
+networktest = { cmd = "pytest --cov --cov-report=xml --cov-report=term --durations=0", description = "Run all tests, including those requiring network access and credentials" }
+test = { cmd = "pytest -o markers=network -m 'not network' --cov --cov-report=xml --cov-report=term", description = "Run tests that don't require network access" }
 
 [tool.pixi.feature.docs.tasks]
 # NOTE: || true to always update readthedocs even if there are errors
-monitor_docs = "./monitor-docs.sh &"
+monitor_docs = { cmd = "./monitor-docs.sh &", description = "Monitor docs build in the background" }
 # NOTE: gtime on macos via `brew install gnu-time` or simply `time` on linux
-check_notebook_resource_usage = "gtime -v jupyter nbconvert --to notebook --output /tmp/nbconverted.ipynb --execute" # docs/examples/quickstart.ipynb
-docs = "python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true"
-rebuild_docs = "rm -rf docs/_build ; python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true"
+check_notebook_resource_usage = { cmd = "gtime -v jupyter nbconvert --to notebook --output /tmp/nbconverted.ipynb --execute", description = "Execute a notebook and report time and memory usage" } # docs/examples/quickstart.ipynb
+docs = { cmd = "python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true", description = "Build HTML documentation" }
+rebuild_docs = { cmd = "rm -rf docs/_build ; python -m sphinx --keep-going -T -b html -d docs/_build/doctrees -D language=en docs docs/_build/html || true", description = "Remove previous build and rebuild HTML documentation" }
