@@ -30,8 +30,9 @@ def initialize_sliderule():
 @pytest.fixture(scope="package")
 def aoi():
     # 11 vertices, 1,361km^2
-    aoi_url = "https://raw.githubusercontent.com/SlideRuleEarth/sliderule-python/main/data/grandmesa.geojson"
-    return gpd.read_file(aoi_url)
+    # Vendored from SlideRuleEarth/sliderule-python (BSD-3-Clause) data/grandmesa.geojson;
+    # upstream repo went private in late 2026, breaking the raw URL
+    return gpd.read_file("tests/data/grandmesa.geojson")
 
 
 @pytest.fixture
