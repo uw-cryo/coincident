@@ -45,9 +45,11 @@ def _set_config(
     config: dict[str, Any] | None = None,
 ) -> stac_asset.Config:
     """Set stac_asset config. Automatically add Vantor API key if needed"""
-    if item.properties.get("constellation") == "vantor" and config is None:
+    # NOTE: Vantor items are still labeled constellation='maxar' and the API still
+    # expects a 'MAXAR-API-KEY' header (VANTOR_API_KEY is copied to MAXAR_API_KEY on import)
+    if item.properties.get("constellation") in ("maxar", "vantor") and config is None:
         return stac_asset.Config(
-            http_headers={"VANTOR-API-KEY": os.environ.get("VANTOR_API_KEY", "")}
+            http_headers={"MAXAR-API-KEY": os.environ.get("MAXAR_API_KEY", "")}
         )
     if "nasa.gov" in (item.get_self_href() or "") and config is None:
         exclude_keys = []

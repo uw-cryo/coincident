@@ -9,6 +9,26 @@ import coincident
 from coincident.io.xarray import to_dataset
 
 network = pytest.mark.network
+try:
+    import maxar_platform.discovery  # noqa: F401
+
+    not_authenticated = False
+except:  # noqa: E722
+    not_authenticated = True
+vantor_authenticated = pytest.mark.skipif(
+    not_authenticated, reason="Not authenticated with Vantor API"
+)
+
+
+@network
+@vantor_authenticated
+def test_open_vantor_browse():
+    """Browse images require the API key to be passed as an HTTP header."""
+    gf = coincident.search.search(dataset="vantor", ids=["102001008EC5AC00"])
+    item = coincident.search.to_pystac_items(gf)[0]
+    da = coincident.io.xarray.open_vantor_browse(item, overview_level=2)
+    assert isinstance(da, xr.DataArray)
+    assert da.dtype == "uint8"
 
 
 @network

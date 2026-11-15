@@ -190,7 +190,8 @@ def open_vantor_browse(item: pystac.Item, overview_level: int = 0) -> xr.DataArr
 
     env = rasterio.Env(
         GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
-        GDAL_HTTP_HEADERS=f"VANTOR-API-KEY:{os.environ['VANTOR_API_KEY']}",
+        # NOTE: the API still expects a 'MAXAR-API-KEY' header
+        GDAL_HTTP_HEADERS=f"MAXAR-API-KEY:{os.environ.get('MAXAR_API_KEY', '')}",
     )
     with env:
         return xr.open_dataarray(

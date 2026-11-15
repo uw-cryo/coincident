@@ -34,7 +34,7 @@ dependencies = [
   "ipywidgets",
   "matplotlib",
   "matplotlib-scalebar",
-  "maxar-platform",
+  "maxar-platform<2", # 2.0 (Nov 2026) untested
   "obstore",
   "pyarrow",
   "pystac-client",
