@@ -47,6 +47,18 @@ def _filter_assets(assets: gpd.GeoDataFrame) -> dict[str, str]:
     return {key: assets[key] for key in keep_keys}
 
 
+def _drop_msft_attributes(feature_collection: dict[str, Any]) -> dict[str, Any]:
+    """Remove Planetary Computer's out-of-spec top-level item keys (e.g. '_msft:ts').
+
+    rustac drops these anyway but logs a 'stac.item' WARNING for each one,
+    so removing them first gives the same result without the noise.
+    """
+    for feature in feature_collection.get("features", []):
+        for key in [k for k in feature if k.startswith("_msft:")]:
+            del feature[key]
+    return feature_collection
+
+
 def to_geopandas(
     collection: list[pystac.Item]
     | pystac.item_collection.ItemCollection
@@ -77,7 +89,7 @@ def to_geopandas(
         raise ValueError(message)
 
     if isinstance(collection, pystac.item_collection.ItemCollection):
-        collection = rustac.to_arrow(collection.to_dict())
+        collection = rustac.to_arrow(_drop_msft_attributes(collection.to_dict()))
 
     # NOTE: I believe all STAC footprints are expected as EPSG:4326 (proj:geometry is optional)
     gf = gpd.GeoDataFrame.from_arrow(collection).set_crs(epsg=4326)
