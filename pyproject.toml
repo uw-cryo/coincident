@@ -118,6 +118,7 @@ run.source = ["coincident"]
 [tool.codespell]
 ignore-words-list = "ALOS,ALS,HSI,als"
 skip = "pixi.lock,docs/examples/elevation_plotting.ipynb"
+ignore-regex = '"image/png": ".*"'  # base64 notebook figures
 
 [tool.mypy]
 disallow_incomplete_defs = false
