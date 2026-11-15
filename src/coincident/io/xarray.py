@@ -54,6 +54,15 @@ def _coarsen_mean(da: xr.DataArray, factor: int) -> xr.DataArray:
     return da.coarsen(x=factor, y=factor, boundary="trim").mean()  # type: ignore[attr-defined,no-any-return]
 
 
+def _mosaic_max(dataarrays: list[xr.DataArray]) -> xr.DataArray:
+    """Mosaic adjacent tiles by aligning on the union of their x/y grids and taking the max.
+
+    join="outer" is set explicitly: tiles have different x/y coordinates, and
+    xarray's concat default is changing from "outer" to "exact", which would raise.
+    """
+    return xr.concat(dataarrays, dim="band", join="outer").max(dim="band")
+
+
 def load_dem_7912(dataset: str, aoi: gpd.GeoDataFrame) -> xr.DataArray:
     """
     Load a Digital Elevation Model (DEM) dataset and clip it to the area of interest (AOI).
@@ -494,7 +503,7 @@ def load_neon_dem(
     # 6: Merge the tiles:
     # Concatenate along a new "band" dimension and then take the max across bands.
     tile_crs = dem_dataarrays[0].rio.crs
-    merged = xr.concat(dem_dataarrays, dim="band").max(dim="band").rename("elevation")
+    merged = _mosaic_max(dem_dataarrays).rename("elevation")
     # Reproject the AOI to the tile CRS and clip the mosaic
     if clip:
         aoi_tile_crs = aoi.to_crs(tile_crs)
@@ -702,9 +711,7 @@ def load_noaa_dem(
     # Step 6: Merge the DEM tiles.
     # Concatenate along a new "band" dimension and use the maximum value across bands to form a mosaic.
     tile_crs = dem_dataarrays[0].rio.crs
-    merged_dem = (
-        xr.concat(dem_dataarrays, dim="band").max(dim="band").rename("elevation")
-    )
+    merged_dem = _mosaic_max(dem_dataarrays).rename("elevation")
 
     # Step 7: Reproject the AOI to tile CRS and clip the mosaic if requested.
     if clip:

@@ -118,6 +118,7 @@ run.source = ["coincident"]
 [tool.codespell]
 ignore-words-list = "ALOS,ALS,HSI,als"
 skip = "pixi.lock,docs/examples/elevation_plotting.ipynb"
+ignore-regex = '"image/png": ".*"'  # base64 notebook figures
 
 [tool.mypy]
 disallow_incomplete_defs = false
@@ -227,7 +228,7 @@ pystac-client = ">=0.9.1,<0.10"
 requests = ">=2.34.2,<3"
 rioxarray = ">=0.23.0,<0.24"
 scipy = ">=1.18.1,<2"
-sliderule = ">=5.7.0,<6"
+sliderule = ">=5.8.1,<6"
 rustac = ">=0.9.17,<0.10"
 tqdm = ">=4.70.1,<5"
 contextily = ">=1.7.1,<2"

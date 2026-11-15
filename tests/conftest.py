@@ -17,7 +17,6 @@ def initialize_sliderule():
             verbose=True,
             organization="uw",
             desired_nodes=2,
-            bypass_dns=True,
             time_to_live=60,
         )
     else:

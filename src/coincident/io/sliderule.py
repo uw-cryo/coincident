@@ -52,6 +52,24 @@ def _granule_from_assets(assets: gpd.GeoDataFrame) -> str | None:
     return granule
 
 
+def _subset_granules_to_aoi(
+    gf: gpd.GeoDataFrame, aoi: gpd.GeoDataFrame | None
+) -> gpd.GeoDataFrame:
+    """Drop granules that don't intersect the AOI envelope sent to SlideRule.
+
+    SlideRule spends time opening every granule in `resources`, even those
+    that return no data within `poly`, so this avoids needless server work.
+    If no granules intersect, `gf` is returned unchanged so SlideRule's
+    empty-result handling applies (an empty `resources` list would instead
+    trigger a full CMR search server-side).
+    """
+    if aoi is None:
+        return gf
+    envelope = aoi.to_crs(gf.crs).dissolve().envelope.iloc[0]
+    subset = gf[gf.intersects(envelope)]
+    return subset if not subset.empty else gf
+
+
 def _decode_worldcover(gf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     mapping = {
         key: value["description"]
@@ -132,6 +150,7 @@ def subset_gedi02a(
     -----
     The function sets `degrade_filter=True` and `l2_quality_filter=True` by default.
     """
+    gf = _subset_granules_to_aoi(gf, aoi)
     granule_names = gf.assets.apply(_granule_from_assets).to_list()
 
     gedi_defaults: dict[str, Any] = {"degrade_filter": True, "l2_quality_filter": True}
@@ -184,6 +203,7 @@ def subset_atl06(
     -------
         GeoDataFrame with ATL06 standard product measurements.
     """
+    gf = _subset_granules_to_aoi(gf, aoi)
     # Not necessary but avoids another CMR search
     granule_names = gf.assets.apply(_granule_from_assets).to_list()
     granule_names = [x.replace("ATL03", "ATL06") for x in granule_names]
@@ -249,6 +269,7 @@ def subset_atl08(
     -------
         GeoDataFrame with ATL08 standard product measurements.
     """
+    gf = _subset_granules_to_aoi(gf, aoi)
     # Not necessary but avoids another CMR search
     granule_names = gf.assets.apply(_granule_from_assets).to_list()
     granule_names = [x.replace("ATL03", "ATL08") for x in granule_names]
@@ -309,6 +330,7 @@ def process_atl06sr(
         Processed GeoDataFrame with the results from SlideRule.
     """
 
+    gf = _subset_granules_to_aoi(gf, aoi)
     # Time range and AOI from input GeoDataFrame
     params = _gdf_to_sliderule_params(gf)
     # Common default settings for sliderule processing
@@ -425,13 +447,29 @@ def sample_raster(
 
         gfsr["time"] = gfsr.file.apply(get_wesm_datetime)
 
-        # Return results in original CRS of passed dataframe
-        gf3dep = gfsr.to_crs(gf.crs)
-
-        # Return with order matching input geodataframe
-        samples = gf.sjoin_nearest(gf3dep, how="left").drop(columns="index_right")
+        # Return with order and CRS matching input geodataframe
+        samples = _match_samples_to_points(gf, gfsr)
 
     return samples
+
+
+def _match_samples_to_points(
+    gf: gpd.GeoDataFrame, samples: gpd.GeoDataFrame, max_distance: float = 1.0
+) -> gpd.GeoDataFrame:
+    """Left-join raster samples back onto the input points, in the input's order and CRS.
+
+    The nearest-neighbour join runs in a projected (UTM) CRS so `max_distance` is in
+    metres. Each sample is located at its input point, so points whose sample was
+    dropped (e.g. NaN or another WESM project) get NaN rather than a neighbour's value.
+    """
+    crs_utm = gf.estimate_utm_crs()
+    joined = (
+        gf.to_crs(crs_utm)
+        .sjoin_nearest(samples.to_crs(crs_utm), how="left", max_distance=max_distance)
+        .drop(columns="index_right")
+    )
+    # Restore the exact input geometries (avoids round-trip floating point error)
+    return joined.set_geometry(gf.geometry.loc[joined.index].values, crs=gf.crs)
 
 
 def to_3d(
