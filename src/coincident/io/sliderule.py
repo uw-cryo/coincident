@@ -447,13 +447,29 @@ def sample_raster(
 
         gfsr["time"] = gfsr.file.apply(get_wesm_datetime)
 
-        # Return results in original CRS of passed dataframe
-        gf3dep = gfsr.to_crs(gf.crs)
-
-        # Return with order matching input geodataframe
-        samples = gf.sjoin_nearest(gf3dep, how="left").drop(columns="index_right")
+        # Return with order and CRS matching input geodataframe
+        samples = _match_samples_to_points(gf, gfsr)
 
     return samples
+
+
+def _match_samples_to_points(
+    gf: gpd.GeoDataFrame, samples: gpd.GeoDataFrame, max_distance: float = 1.0
+) -> gpd.GeoDataFrame:
+    """Left-join raster samples back onto the input points, in the input's order and CRS.
+
+    The nearest-neighbour join runs in a projected (UTM) CRS so `max_distance` is in
+    metres. Each sample is located at its input point, so points whose sample was
+    dropped (e.g. NaN or another WESM project) get NaN rather than a neighbour's value.
+    """
+    crs_utm = gf.estimate_utm_crs()
+    joined = (
+        gf.to_crs(crs_utm)
+        .sjoin_nearest(samples.to_crs(crs_utm), how="left", max_distance=max_distance)
+        .drop(columns="index_right")
+    )
+    # Restore the exact input geometries (avoids round-trip floating point error)
+    return joined.set_geometry(gf.geometry.loc[joined.index].values, crs=gf.crs)
 
 
 def to_3d(

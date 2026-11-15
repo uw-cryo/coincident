@@ -39,6 +39,26 @@ def test_gdf_to_sliderule_polygon():
     assert len(poly) == 5
 
 
+def test_match_samples_to_points():
+    # pytest turns warnings into errors, so this also checks no geographic-CRS warning
+    lon = [-106.46953038438801, -106.47209604357627]
+    lat = [38.781089777057986, 38.78292421778072]
+    gf = gpd.GeoDataFrame(geometry=gpd.points_from_xy(lon, lat, crs="EPSG:9989"))
+    # Only the first point has a sample (e.g. the second was dropped as NaN)
+    samples = gpd.GeoDataFrame(
+        {"value": [3110.0]},
+        geometry=gpd.points_from_xy(lon[:1], lat[:1], crs="EPSG:9989"),
+    )
+
+    matched = coincident.io.sliderule._match_samples_to_points(gf, samples)
+
+    assert matched.crs == gf.crs
+    assert matched.geometry.equals(gf.geometry)
+    assert matched["value"].iloc[0] == 3110.0
+    # ~250 m away, so it must not inherit the neighbouring point's value
+    assert np.isnan(matched["value"].iloc[1])
+
+
 @pytest.fixture(scope="class")
 def expected_gedi_columns():
     return {
@@ -251,9 +271,6 @@ class TestSlideRule:
         assert {1034, 615} == set(data.rgt)
         assert int(data.h_mean.max()) == 3568
 
-    @pytest.mark.filterwarnings(
-        "ignore:Geometry is in a geographic CRS:UserWarning:geopandas"
-    )
     @pytest.mark.xfail(reason="USGS TNM is often down", strict=False)
     def test_sample_raster_3dep_tnm(self):
         gf = gpd.GeoDataFrame(
