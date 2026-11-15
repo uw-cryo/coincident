@@ -13,6 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import geopandas as gpd
 import requests
@@ -182,7 +183,8 @@ def download_files(
 
     local_paths = []
     for url in tqdm(files, desc=outer_desc, position=0):
-        filename = Path(url).name
+        # Strip query strings (e.g. NEON's signed GCS URLs) from the local filename
+        filename = Path(urlparse(url).path).name
         dest = Path(output_dir) / filename
         local_paths.append(str(dest))
 
@@ -759,7 +761,7 @@ def download_noaa_dem(
     for _, row in selected_tiles.iterrows():
         tile_url = row["url"]
         # Extract the filename from the URL.
-        file_name = tile_url.split("/")[-1]
+        file_name = Path(urlparse(tile_url).path).name
         output_file = (
             output_path / f"clipped_{file_name}" if clip else output_path / file_name
         )

@@ -62,7 +62,7 @@ docs = [
   "mapclassify",
   "myst-nb",
   "myst_parser>=0.13",
-  "pydata-sphinx-theme>=0.17.1,<0.18",
+  "pydata-sphinx-theme>=0.24.0,<0.25",
   "sphinx>=8.0",
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
@@ -114,6 +114,7 @@ run.source = ["coincident"]
 [tool.codespell]
 ignore-words-list = "ALOS,ALS,HSI,als"
 skip = "pixi.lock,docs/examples/elevation_plotting.ipynb"
+ignore-regex = '"image/png": ".*"'  # base64 notebook figures
 
 [tool.mypy]
 disallow_incomplete_defs = false
@@ -223,7 +224,7 @@ pystac-client = ">=0.9.1,<0.10"
 requests = ">=2.34.2,<3"
 rioxarray = ">=0.23.0,<0.24"
 scipy = ">=1.18.1,<2"
-sliderule = ">=5.7.0,<6"
+sliderule = ">=5.8.1,<6"
 rustac = ">=0.9.17,<0.10"
 tqdm = ">=4.70.1,<5"
 contextily = ">=1.7.1,<2"
@@ -242,7 +243,7 @@ pytest = ">=9.1.1,<10"
 mapclassify = ">=2.11.0,<3"
 myst-nb = ">=1.4.0,<2"
 myst-parser = ">=5.1.0,<6"
-pydata-sphinx-theme = ">=0.17.1,<0.18"
+pydata-sphinx-theme = ">=0.24.0,<0.25"
 sphinx = ">=9.2.0,<10"
 sphinx-autodoc-typehints = ">=3.17.2,<4"
 sphinx-copybutton = ">=0.5.2,<0.6"

@@ -1,0 +1,51 @@
+%%{init: {
+  "theme": "base",
+  "flowchart": {"curve": "basis", "nodeSpacing": 16, "rankSpacing": 22, "padding": 6},
+  "themeVariables": {
+    "fontFamily": "Helvetica, Arial, sans-serif",
+    "fontSize": "13px",
+    "primaryColor": "#ffffff",
+    "primaryTextColor": "#1a1a1a",
+    "primaryBorderColor": "#4d4d4d",
+    "lineColor": "#4d4d4d",
+    "clusterBkg": "#f4f4f4",
+    "clusterBorder": "#9a9a9a"
+  }
+}}%%
+flowchart LR
+
+  subgraph S1["<b>1. Coincident data search</b>"]
+    direction TB
+    A(["<b>Reference airborne LiDAR</b><br/><i>USGS 3DEP</i>"])
+    B["<b>Spatiotemporal search</b>"]
+    C1["<b>Stereo imagery</b><br/><i>WorldView</i>"]
+    C2["<b>Satellite LiDAR</b><br/><i>ICESat-2</i>"]
+    C3["<b>Auxiliary data</b><br/><i>WorldCover</i>"]
+    D["<b>Overlap filtering</b>"]
+    A --> B
+    B --> C1 & C2 & C3
+    C1 & C2 & C3 --> D
+  end
+
+  subgraph S2["<b>2. 3D CRS alignment</b>"]
+    direction TB
+    E["<b>Native reference frames</b><br/><i>NAD83 + NAVD88</i>"]
+    F["<b>3D transformation</b>"]
+    G["<b>Common 3D CRS</b><br/><i>ITRF2014</i>"]
+    E --> F --> G
+  end
+
+  subgraph S3["<b>3. Elevation cross-validation</b>"]
+    direction TB
+    H["<b>Intercomparison</b>"]
+    I["<b>Stratified statistics</b>"]
+    J1(["<b>Surface topography</b>"])
+    J2(["<b>Vegetation structure</b>"])
+    H --> I
+    I --> J1 & J2
+  end
+
+  S1 --> S2 --> S3
+
+  classDef io fill:#e8e8e8,stroke:#333333,stroke-width:1.5px
+  class A,J1,J2 io

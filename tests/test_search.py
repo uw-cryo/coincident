@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import logging
 import typing
+from datetime import UTC, datetime
 from importlib.metadata import version
 
 import geopandas as gpd
+import pystac
 import pytest
 from geopandas.testing import assert_geodataframe_equal
-from shapely.geometry import Polygon, box
+from shapely.geometry import Point, Polygon, box
 
 import coincident
 from coincident._utils import vantor_api_key
@@ -44,6 +47,27 @@ def test_polygon_invalid_type():
 def test_to_geopandas_empty_search_result():
     with pytest.raises(ValueError, match="ItemCollection is empty"):
         coincident.search.stac.to_geopandas([])
+
+
+def test_to_geopandas_drops_msft_attributes(caplog):
+    # Planetary Computer adds out-of-spec top-level keys that rustac warns about
+    item = pystac.Item(
+        id="test",
+        geometry=box(0, 0, 1, 1).__geo_interface__,
+        bbox=[0, 0, 1, 1],
+        datetime=datetime(2020, 1, 1, tzinfo=UTC),
+        properties={},
+        extra_fields={"_msft:ts": "2024-01-01T00:00:00Z", "_msft:etag": "abc"},
+    )
+    item.add_asset("data", pystac.Asset(href="https://example.com/data.tif"))
+    collection = pystac.ItemCollection([item])
+
+    with caplog.at_level(logging.WARNING):
+        gf = coincident.search.stac.to_geopandas(collection)
+
+    assert "out-of-spec" not in caplog.text
+    assert not any(c.startswith("_msft:") for c in gf.columns)
+    assert len(gf) == 1
 
 
 def test_unconstrained_search_raises():
@@ -520,8 +544,21 @@ def test_ncalm_search(large_aoi):
 # NEON
 # TODO: add a test for provisional NEON datasets
 # =======
+def test_neon_sites_near_aoi():
+    # pytest turns warnings into errors, so this also checks no geographic-CRS warning
+    sites = gpd.GeoDataFrame(
+        {"id": ["near", "far"]},
+        geometry=[Point(-71.5, 42.0), Point(-100.0, 40.0)],
+        crs="EPSG:4326",
+    )
+    aoi = gpd.GeoDataFrame(geometry=[box(-72.0, 42.5, -71.0, 43.0)], crs="EPSG:4326")
+
+    near = coincident.search.neon_api._sites_near_aoi(sites, aoi)
+
+    assert near["id"].tolist() == ["near"]
+
+
 @network
-@pytest.mark.filterwarnings("ignore:Geometry is in a geographic CRS:UserWarning")
 def test_neon_search():
     intersects = gpd.read_file(
         "https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/MA/shape.geojson"

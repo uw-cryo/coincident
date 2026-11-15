@@ -16,6 +16,34 @@ vantor_authenticated = pytest.mark.skipif(
 )
 
 
+def test_download_files_strips_query_string(tmp_path, monkeypatch):
+    # NEON returns signed GCS URLs; the query string must not end up in the filename
+    class FakeResponse:
+        def __init__(self) -> None:
+            self.headers = {"content-length": "4"}
+
+        def raise_for_status(self):
+            pass
+
+        def iter_content(self, chunk_size):  # noqa: ARG002
+            yield b"data"
+
+    monkeypatch.setattr(
+        "coincident.io.download.requests.get", lambda *_, **__: FakeResponse()
+    )
+    signature = "a" * 512
+    url = (
+        "https://storage.googleapis.com/neon-aop-products/NEON_D10_ARIK_DP3_"
+        "715000_4395000_DSM.tif?X-Goog-Algorithm=GOOG4-RSA-SHA256"
+        f"&X-Goog-Signature={signature}"
+    )
+    paths = coincident.io.download.download_files([url], output_dir=str(tmp_path))
+
+    expected = tmp_path / "NEON_D10_ARIK_DP3_715000_4395000_DSM.tif"
+    assert paths == [str(expected)]
+    assert expected.read_bytes() == b"data"
+
+
 @network
 @vantor_authenticated
 @pytest.mark.filterwarnings("ignore:the actual content type does not match")

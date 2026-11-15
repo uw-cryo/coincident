@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import geopandas as gpd
+import numpy as np
 import pytest
 import xarray as xr
 from shapely.geometry import box
@@ -10,6 +11,23 @@ from coincident._utils import vantor_api_key
 from coincident.io.xarray import to_dataset
 
 network = pytest.mark.network
+
+
+def test_mosaic_max_adjacent_tiles():
+    # Tiles with different x coords; pytest turns warnings into errors, so this
+    # also checks the xarray join FutureWarning isn't emitted
+    y = [1.0, 0.0]
+    left = xr.DataArray(np.full((2, 3), 1.0), coords={"y": y, "x": [0.0, 1.0, 2.0]})
+    right = xr.DataArray(np.full((2, 3), 2.0), coords={"y": y, "x": [2.0, 3.0, 4.0]})
+
+    merged = coincident.io.xarray._mosaic_max([left, right])
+
+    assert merged.x.values.tolist() == [0.0, 1.0, 2.0, 3.0, 4.0]
+    # overlapping column x=2 takes the max; no NaNs in the mosaic
+    np.testing.assert_array_equal(merged.sel(x=2.0).values, [2.0, 2.0])
+    assert not merged.isnull().any()
+
+
 vantor_authenticated = pytest.mark.skipif(
     not vantor_api_key(), reason="VANTOR_API_KEY not set"
 )
