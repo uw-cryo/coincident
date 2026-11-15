@@ -102,7 +102,7 @@ calculation, haversine distance, DEM sampling, map tile fetching.
 - **Packaging:** hatchling (PEP 517), version from `src/coincident/__init__.py`
 - **Linting:** ruff (isort + pylint + flake8 plugins), pylint, mypy
 - **CI:** GitHub Actions — pre-commit gate, then matrix test (Python
-  3.12/3.13/3.14 × ubuntu/macos) using `uv`
+  3.12/3.13/3.14/3.15 × ubuntu/macos) using `uv`
 - **Docs:** Sphinx + MyST-NB (Jupyter notebooks as examples), hosted on
   ReadTheDocs
 
