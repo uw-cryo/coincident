@@ -10567,7 +10567,7 @@ packages:
   - ipywidgets
   - matplotlib
   - matplotlib-scalebar
-  - maxar-platform
+  - maxar-platform<2
   - obstore
   - odc-stac
   - pyarrow
