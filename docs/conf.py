@@ -75,7 +75,6 @@ autodoc_mock_imports = [
     "pyproj",
     # Specialized data access
     "sliderule",
-    "maxar_platform",
     # STAC libraries (less critical but can add up)
     # NOTE: pystac and pystac_client are needed for intersphinx type linking
     # "pystac",

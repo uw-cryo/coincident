@@ -9,18 +9,13 @@ from geopandas.testing import assert_geodataframe_equal
 from shapely.geometry import Polygon, box
 
 import coincident
+from coincident._utils import vantor_api_key
 
 # Decorate tests requiring internet (slow & flaky)
 network = pytest.mark.network
 
-try:
-    import maxar_platform.discovery  # noqa: F401
-
-    not_authenticated = False
-except:  # noqa: E722
-    not_authenticated = True
 vantor_authenticated = pytest.mark.skipif(
-    not_authenticated, reason="Not authenticated with Vantor API"
+    not vantor_api_key(), reason="VANTOR_API_KEY not set"
 )
 
 expected_stac_version = "1.1.0" if version("pystac") >= "1.12" else "1.0.0"

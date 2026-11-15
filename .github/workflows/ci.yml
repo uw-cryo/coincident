@@ -51,7 +51,6 @@ jobs:
       fail-fast: false
       matrix:
         # Test against at least 3 most recent Python versions
-        # NOTE: 3.15 blocked by maxar-platform -> pygeofilter<0.3 -> lark<1 (imports sre_parse)
         python-version: ["3.12", "3.13", "3.14"]
         runs-on: [ubuntu-latest]
         include:

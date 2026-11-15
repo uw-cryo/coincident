@@ -22,6 +22,7 @@ from obstore.store import S3Store
 from shapely.geometry import MultiPolygon, Polygon, box
 
 import coincident.io.gdal
+from coincident._utils import VANTOR_API_KEY_HEADER, vantor_api_key
 from coincident.search.neon_api import (
     _get_tile_bbox,
     query_neon_data_api,
@@ -190,8 +191,7 @@ def open_vantor_browse(item: pystac.Item, overview_level: int = 0) -> xr.DataArr
 
     env = rasterio.Env(
         GDAL_DISABLE_READDIR_ON_OPEN="EMPTY_DIR",
-        # NOTE: the API still expects a 'MAXAR-API-KEY' header
-        GDAL_HTTP_HEADERS=f"MAXAR-API-KEY:{os.environ.get('MAXAR_API_KEY', '')}",
+        GDAL_HTTP_HEADERS=f"{VANTOR_API_KEY_HEADER}:{vantor_api_key()}",
     )
     with env:
         return xr.open_dataarray(

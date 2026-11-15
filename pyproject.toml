@@ -34,7 +34,6 @@ dependencies = [
   "ipywidgets",
   "matplotlib",
   "matplotlib-scalebar",
-  "maxar-platform<2", # 2.0 (Nov 2026) untested
   "obstore",
   "pyarrow",
   "pystac-client",
@@ -83,14 +82,11 @@ version.source = "vcs"
 [tool.pytest.ini_options]
 addopts = ["-ra", "--showlocals", "--strict-markers", "--strict-config"]
 filterwarnings = [
-  "error", # NOTE: try to remove with maxar-platform>1.0.1
-  "ignore::DeprecationWarning:lark",
+  "error",
   "ignore::DeprecationWarning:sliderule",
-  "ignore:maxar_platform authentication error:UserWarning", # https://github.com/microsoft/planetary-computer-sdk-for-python/issues/58
   "ignore::pydantic.warnings.PydanticDeprecatedSince20",
   "ignore:Inheritance class OAuth2Client from ClientSession is discouraged:DeprecationWarning", # Coming from sliderule and boto
   "ignore:datetime.datetime.utcnow().*:DeprecationWarning", # Optional imports
-  "ignore:Unable to authenticate with Vantor API:UserWarning",
   "ignore:.* not found:UserWarning", # NOTE: should be able to remove with geopandas 1.1
   "ignore:.*shapely.geos.*:DeprecationWarning:geopandas", # NOTE: only occurring in CI Python 3.10?!
   "ignore:The 'shapely.ops.transform:DeprecationWarning:odc.geo", # NOTE: shapely>=2.2, odc-geo<=0.5.3
@@ -127,7 +123,7 @@ files = ["src", "tests"]
 strict = true
 warn_unreachable = true
 warn_unused_configs = true
-# NOTE: geopandas, pandas, shapely, sliderule, maxar_platform, osgeo and others
+# NOTE: geopandas, pandas, shapely, sliderule, osgeo and others
 # ship no type information (or need separate stub packages), so they are typed as Any
 ignore_missing_imports = true
 
