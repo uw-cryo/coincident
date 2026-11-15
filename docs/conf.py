@@ -195,4 +195,10 @@ nb_execution_show_tb = True
 nb_execution_timeout = 90
 nb_execution_allow_errors = True
 # NOTE: skip execution of specific notebooks that require large downloads or long processing times
-nb_execution_excludepatterns = ["noaa-coastal-lidar.ipynb"]
+# SlideRule notebooks are committed with outputs (metadata.keep_output) because the public
+# SlideRule cluster can be slow enough to exceed the ReadTheDocs build time limit
+nb_execution_excludepatterns = [
+    "noaa-coastal-lidar.ipynb",
+    "sliderule.ipynb",
+    "elevation_plotting.ipynb",
+]
