@@ -286,6 +286,7 @@ class TestSlideRule:
         # NOTE: results in same CRS as input
         assert samples.crs == "EPSG:9989"
         assert {"file", "geometry", "time", "value"} == set(samples.columns)
-        assert samples.time.dtype == "<M8[ns]"
+        assert gpd.pd.api.types.is_datetime64_dtype(samples.time)
         assert str(samples.time.dt.date.iloc[0]) == "2019-09-04"
-        assert set(samples.value.astype("i2")) == {3110, 3178}
+        # Values (in input order) shifted ~1 m with SlideRule v5.8 (was {3110, 3178} as ints)
+        np.testing.assert_allclose(samples.value, [3178.9, 3111.2], atol=1.0)
