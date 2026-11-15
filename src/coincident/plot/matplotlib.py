@@ -332,7 +332,7 @@ def plot_altimeter_points(
 def plot_diff_hist(
     differences: np.ndarray,
     ax: Axes | None = None,
-    range: tuple[float, float] | None = None,
+    range: tuple[float, float] | None = None,  # pylint: disable=redefined-builtin  # matches matplotlib hist()
     add_stats: bool = True,
     **kwargs: Any,
 ) -> Axes:
@@ -566,6 +566,7 @@ def compare_dems(
     da_wc = _get_landcover(first_dem_coarse if downsample_factor else first_dem)
 
     # We'll reuse the lidar hillshade for altimeter plots
+    da_reference_hillshade = None
     if add_hillshade:
         if downsample_factor:
             da_reference_hillshade = gdaldem(first_dem_coarse, subcommand="hillshade")

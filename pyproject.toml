@@ -93,6 +93,7 @@ filterwarnings = [
   "ignore:.*unclosed transport.*:ResourceWarning:asyncio",
   "ignore:SLIDERULE_GITHUB_TOKEN is set:UserWarning", # from test_sliderule.py
   "ignore:.*EARTHDATA_TOKEN.* is not set:UserWarning", # from io.__init__.py
+  "ignore:Use `@` matmul instead of:PendingDeprecationWarning:rioxarray", # NOTE: rioxarray<0.24 (Python 3.12) with affine>=3
 ]
 log_cli_level = "INFO"
 markers = [
@@ -177,6 +178,7 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.pylint]
 ignore-paths = [".*/_version.py"]
+extension-pkg-allow-list = ["cql2"]
 messages_control.disable = [
   "design",
   "fixme",
