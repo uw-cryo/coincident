@@ -9,7 +9,7 @@ import geopandas as gpd
 import pystac
 import pytest
 from geopandas.testing import assert_geodataframe_equal
-from shapely.geometry import Polygon, box
+from shapely.geometry import Point, Polygon, box
 
 import coincident
 
@@ -549,8 +549,21 @@ def test_ncalm_search(large_aoi):
 # NEON
 # TODO: add a test for provisional NEON datasets
 # =======
+def test_neon_sites_near_aoi():
+    # pytest turns warnings into errors, so this also checks no geographic-CRS warning
+    sites = gpd.GeoDataFrame(
+        {"id": ["near", "far"]},
+        geometry=[Point(-71.5, 42.0), Point(-100.0, 40.0)],
+        crs="EPSG:4326",
+    )
+    aoi = gpd.GeoDataFrame(geometry=[box(-72.0, 42.5, -71.0, 43.0)], crs="EPSG:4326")
+
+    near = coincident.search.neon_api._sites_near_aoi(sites, aoi)
+
+    assert near["id"].tolist() == ["near"]
+
+
 @network
-@pytest.mark.filterwarnings("ignore:Geometry is in a geographic CRS:UserWarning")
 def test_neon_search():
     intersects = gpd.read_file(
         "https://raw.githubusercontent.com/unitedstates/districts/refs/heads/gh-pages/states/MA/shape.geojson"

@@ -204,6 +204,32 @@ def _get_neon_flight_geometry(url: str, fallback_geometry: Any) -> Any:
     return fallback_geometry
 
 
+def _sites_near_aoi(
+    gf_sites: gpd.GeoDataFrame,
+    intersects: gpd.GeoDataFrame | gpd.GeoSeries,
+    pad_degrees: float = 1.0,
+) -> gpd.GeoDataFrame:
+    """
+    Coarse pre-filter: keep sites within `pad_degrees` of the AOI bounding boxes.
+
+    Pads each AOI geometry's lon/lat bounds rather than measuring distances, so
+    no planar distance is computed on geographic coordinates. Exact filtering
+    against the real flight geometries happens later in `search_bboxes`.
+    """
+    bounds = intersects.to_crs("EPSG:4326").bounds
+    padded = [
+        box(
+            r.minx - pad_degrees,
+            r.miny - pad_degrees,
+            r.maxx + pad_degrees,
+            r.maxy + pad_degrees,
+        )
+        for r in bounds.itertuples()
+    ]
+    search_area = unary_union(padded)
+    return gf_sites[gf_sites.intersects(search_area)].reset_index(drop=True)
+
+
 def search_bboxes(
     intersects: gpd.GeoDataFrame | gpd.GeoSeries,
     search_start: Timestamp,
@@ -247,12 +273,8 @@ def search_bboxes(
     gf_neon = _build_neon_point_gf(sites_url)
     gf_neon = _temporal_filter_neon(gf_neon, search_start, search_end)
 
-    # Spatially restrict to sites near the AOI using a nearest join
-    gf_neon = gpd.sjoin_nearest(
-        gf_neon, intersects[["geometry"]], max_distance=1
-    ).reset_index(drop=True)
-    if "index_right" in gf_neon.columns:
-        gf_neon = gf_neon.drop(columns=["index_right"], errors="ignore")
+    # Spatially restrict to sites within ~1 degree of the AOI
+    gf_neon = _sites_near_aoi(gf_neon, intersects)
 
     # Update each site's geometry by fetching the flight geometry via regex-based extraction.
     # The fallback (site point) is also used to estimate the appropriate UTM CRS.
