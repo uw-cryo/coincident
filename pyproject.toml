@@ -63,7 +63,7 @@ docs = [
   "mapclassify",
   "myst-nb",
   "myst_parser>=0.13",
-  "pydata-sphinx-theme>=0.17.1,<0.18",
+  "pydata-sphinx-theme>=0.24.0,<0.25",
   "sphinx>=8.0",
   "sphinx_autodoc_typehints",
   "sphinx_copybutton",
@@ -247,7 +247,7 @@ pytest = ">=9.1.1,<10"
 mapclassify = ">=2.11.0,<3"
 myst-nb = ">=1.4.0,<2"
 myst-parser = ">=5.1.0,<6"
-pydata-sphinx-theme = ">=0.17.1,<0.18"
+pydata-sphinx-theme = ">=0.24.0,<0.25"
 sphinx = ">=9.2.0,<10"
 sphinx-autodoc-typehints = ">=3.17.2,<4"
 sphinx-copybutton = ">=0.5.2,<0.6"

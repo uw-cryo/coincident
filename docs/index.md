@@ -10,6 +10,16 @@ This Python package provides functions to conveniently _search_ across different
 also provides utilities to efficiently load measurements into GeoPandas and
 Xarray for intercomparison.
 
+```{figure} ./images/workflow/coincident_workflow.excalidraw.svg
+:alt: coincident workflow: search for coincident data, align to a common 3D CRS, then analyze
+:width: 100%
+
+The `coincident` workflow: (1) search data providers for measurements that
+coincide with a reference airborne LiDAR acquisition, (2) align them to a common
+3D coordinate reference system, and (3) cross-validate elevations to assess
+surface topography and vegetation structure.
+```
+
 ![intro](./images/intro.png)
 
 ## Documentation structure
