@@ -1,0 +1,58 @@
+name: Upstream
+
+# Test against the newest available dependency versions (ignoring pixi.lock)
+# to catch upstream breaking changes before they land in the committed lockfile.
+on:
+  schedule:
+    - cron: 0 6 * * 1 # weekly, Monday 06:00 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Only install the pixi binary; the committed lockfile is not used
+      - uses: prefix-dev/setup-pixi@v0.11.3
+        with:
+          manifest-path: pyproject.toml
+          run-install: false
+          cache: false
+
+      # `pixi upgrade` (rather than `pixi update`) also lifts the upper bounds
+      # in [tool.pixi.*] (e.g. pyarrow <26 -> <27) so new major versions are tested.
+      # Changes to pyproject.toml / pixi.lock are discarded with the runner.
+      - name: Upgrade all dependencies
+        run: |
+          pixi upgrade
+          git diff --stat
+
+      # NOTE: https://github.com/prefix-dev/setup-pixi/issues/136
+      - name: Ensure Dynamic version
+        run: |
+          pip install -e . --no-deps
+
+      - name: Summarize environment
+        run: |
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          pixi list -e dev >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run mypy
+        run: |
+          pixi run -e dev typecheck
+
+      - name: Run Pytest (including network)
+        env:
+          VANTOR_API_KEY: ${{ secrets.VANTOR_API_KEY }}
+          EARTHDATA_TOKEN: ${{ secrets.EARTHDATA_TOKEN }}
+          NEON_API_TOKEN: ${{ secrets.NEON_API_TOKEN }}
+        run: |
+          pixi run -e dev networktest
