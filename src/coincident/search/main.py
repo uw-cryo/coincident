@@ -113,8 +113,10 @@ def search(
         stac_api_kwargs["intersects"] = aoi
 
         if dataset.provider == "vantor":
-            # NOTE: not sure how to avoid incompatible type "str | None"; expected "str" for Dataset.attrs
-            client = stac.configure_vantor_client(dataset.area_based_calc)  # type: ignore[attr-defined]
+            client = stac.configure_vantor_client(
+                dataset.search,  # type: ignore[arg-type]
+                dataset.area_based_calc,  # type: ignore[attr-defined]
+            )
             item_collection = stac.search(client, **stac_api_kwargs)
             gf = stac.to_geopandas(item_collection)
             # TODO: don't add this restriction? Just add to documentation?

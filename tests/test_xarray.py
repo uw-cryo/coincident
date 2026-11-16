@@ -7,6 +7,7 @@ import xarray as xr
 from shapely.geometry import box
 
 import coincident
+from coincident._utils import vantor_api_key
 from coincident.io.xarray import to_dataset
 
 network = pytest.mark.network
@@ -27,14 +28,8 @@ def test_mosaic_max_adjacent_tiles():
     assert not merged.isnull().any()
 
 
-try:
-    import maxar_platform.discovery  # noqa: F401
-
-    not_authenticated = False
-except:  # noqa: E722
-    not_authenticated = True
 vantor_authenticated = pytest.mark.skipif(
-    not_authenticated, reason="Not authenticated with Vantor API"
+    not vantor_api_key(), reason="VANTOR_API_KEY not set"
 )
 
 

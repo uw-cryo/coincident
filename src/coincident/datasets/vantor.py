@@ -21,7 +21,7 @@ class Stereo(Dataset):
     collections: list[str] = field(
         default_factory=lambda: ["wv01", "wv02", "wv03-vnir", "ge01"]
     )
-    search: str = "https://api.maxar.com/discovery/v1/search"
+    search: str = "https://api.maxar.com/discovery/v1/catalogs/imagery"
     start: str = "2007-01-01"
     end: str | None = None
     type: str = "stereo"

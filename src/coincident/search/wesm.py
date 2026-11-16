@@ -31,6 +31,8 @@ wesm_gpkg_url = defaults.search
 
 
 class TemporaryEnvVars:
+    """Context manager that temporarily sets environment variables."""
+
     def __init__(self, **kwargs: str) -> None:
         self.env_vars: dict[str, str] = kwargs
         self.old_values: dict[str, str | None] = {}

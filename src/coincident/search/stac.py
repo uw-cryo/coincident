@@ -4,37 +4,56 @@ STAC Search Functions
 
 from __future__ import annotations
 
-# maxar-platorm still hasn't renamed and expects MAXAR_API_KEY, so make sure we have both environment variables set before importing!
-import os
-import warnings
-from typing import Any, cast
+from typing import Any
 
 import arro3.core
+import cql2
 import geopandas as gpd
 import pystac
 import pystac_client
 import rustac
 from pystac_client.stac_api_io import StacApiIO
 
-if "MAXAR_API_KEY" not in os.environ and "VANTOR_API_KEY" in os.environ:
-    os.environ["MAXAR_API_KEY"] = os.environ["VANTOR_API_KEY"]
+from coincident._utils import VANTOR_API_KEY_HEADER, vantor_api_key
 
-try:
-    import maxar_platform
-except ImportError:
-    msg_notfound = "'maxar-platform' package not found. Install for vantor functionality: https://pypi.org/project/maxar-platform/"
-    warnings.warn(msg_notfound, stacklevel=2)
 
-try:
-    import maxar_platform.discovery
-except maxar_platform.session.NoSessionCredentials:
-    msg_noauth = "Unable to authenticate with Vantor API. Please set VANTOR_API_KEY environment variable."
-    warnings.warn(msg_noauth, stacklevel=2)
-except maxar_platform.exceptions.UnAuthorizedException:
-    msg_noauth = (
-        "Unable to authenticate with Vantor API. Please check VANTOR_API_KEY is valid."
-    )
-    warnings.warn(msg_noauth, stacklevel=2)
+class VantorStacApiIO(StacApiIO):
+    """StacApiIO for the Vantor Discovery API
+
+    Adds two Vantor-specific behaviors to standard STAC API requests:
+
+    - CQL2 text filters are converted to CQL2 JSON, since the Discovery API
+      does not accept text filters in POST requests
+    - Optionally request area-based calculations (e.g. cloud cover within the
+      search AOI rather than the entire scene)
+      https://developers.maxar.com/docs/discovery/guides/discovery-guide#area-based-calculations
+    """
+
+    def __init__(self, area_based_calc: bool = False, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
+        self.area_based_calc = area_based_calc
+
+    def request(
+        self,
+        href: str,
+        method: str | None = None,
+        headers: dict[str, str] | None = None,
+        parameters: dict[str, Any] | None = None,
+    ) -> str:
+        if parameters:
+            parameters = dict(parameters)
+            has_aoi = "bbox" in parameters or "intersects" in parameters
+            if method == "POST":
+                if parameters.get("filter-lang") == "cql2-text":
+                    parameters["filter"] = cql2.parse_text(
+                        parameters["filter"]
+                    ).to_json()
+                    parameters["filter-lang"] = "cql2-json"
+                if self.area_based_calc and has_aoi:
+                    parameters["area-based-calc"] = True
+            elif self.area_based_calc and has_aoi:
+                parameters["area-based-calc"] = 1
+        return str(super().request(href, method, headers, parameters))
 
 
 def _filter_assets(assets: gpd.GeoDataFrame) -> dict[str, str]:
@@ -138,15 +157,17 @@ def search(
 
 
 def configure_vantor_client(
-    area_based_calc: bool = True,
+    url: str,
+    area_based_calc: bool = False,
 ) -> pystac_client.client.Client:
-    # automatically checks authentication
-
-    client = maxar_platform.discovery.open_catalog(catalog="imagery")
-    # Custom Vantor setting
-    client.area_based_calc = area_based_calc
-
-    return cast("pystac_client.client.Client", client)
+    """STAC client for the Vantor Discovery API, authenticated with VANTOR_API_KEY"""
+    stac_io = VantorStacApiIO(
+        area_based_calc=area_based_calc,
+        headers={VANTOR_API_KEY_HEADER: vantor_api_key()},
+        timeout=60,
+        max_retries=5,
+    )
+    return pystac_client.Client.open(url=url, stac_io=stac_io)
 
 
 def configure_stac_client(url: str) -> pystac_client.client.Client:

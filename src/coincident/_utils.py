@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from collections.abc import Callable
 from functools import wraps
 from importlib.util import find_spec
@@ -31,3 +32,12 @@ def depends_on_optional(module_name: str) -> Callable[[F], F]:
         return cast(F, wrapper)
 
     return decorator
+
+
+# NOTE: Vantor was formerly Maxar, and the API still expects a 'MAXAR-API-KEY' header
+VANTOR_API_KEY_HEADER = "MAXAR-API-KEY"
+
+
+def vantor_api_key() -> str:
+    """Vantor API key from VANTOR_API_KEY (or legacy MAXAR_API_KEY) environment variable"""
+    return os.environ.get("VANTOR_API_KEY") or os.environ.get("MAXAR_API_KEY") or ""

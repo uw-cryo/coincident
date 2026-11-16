@@ -149,14 +149,14 @@ def create_vrt(
     )
     vrt_ds = gdal.BuildVRT(vrt_path, url_list, options=vrt_options)
     # Close the dataset to flush to disk
-    vrt_ds = None  # noqa: F841
+    del vrt_ds
 
     # A bit hacky, but we want to use /vsicurl/ when *constructing* the VRT, but not reading tiff tiles later on
     # Read VRT content once if modifications are needed
     # TODO: alternatively use gdal bindings to modify VRT in memory
     if not prepend_vsicurl or ignore_overviews:
         # print("Modifying VRT content...")
-        with Path(vrt_path).open("rt") as fp:
+        with Path(vrt_path).open("rt", encoding="utf-8") as fp:
             vrt_content = fp.readlines()
 
         if not prepend_vsicurl:
@@ -171,7 +171,7 @@ def create_vrt(
                 if not line.strip().startswith("<OverviewList")
             ]
 
-        with Path(vrt_path).open("w") as fp:
+        with Path(vrt_path).open("w", encoding="utf-8") as fp:
             fp.writelines(vrt_content)
 
         # Unset global config
@@ -250,7 +250,9 @@ def warp_with_pipeline(
         multithread=True,  # I don't think this gets stored in VRT?,
         creationOptions=["BLOCKYSIZE=512", "BLOCKXSIZE=512"],
     )
-    warped_ds = gdal.Warp(vrt_path, inputData, options=warp_options)  # noqa: F841
+    warped_ds = gdal.Warp(vrt_path, inputData, options=warp_options)
+    # Close the dataset to flush to disk
+    del warped_ds
     # numpy_result = warped_ds.ReadAsArray()
     # del warped_ds
     # return xr.DataArray(numpy_result)
